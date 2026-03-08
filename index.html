@@ -78,6 +78,39 @@
                 padding: 0 1.5rem;
             }
 
+            /* Language toggle */
+            .lang-toggle {
+                position: fixed;
+                top: 1rem;
+                right: 1rem;
+                z-index: 100;
+                display: flex;
+                gap: 0;
+                background: var(--bg2);
+                border: 1px solid var(--bg3);
+                border-radius: var(--radius);
+                overflow: hidden;
+            }
+            .lang-toggle button {
+                background: none;
+                border: none;
+                color: var(--text2);
+                padding: 0.45rem 0.8rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all var(--transition);
+                letter-spacing: 0.05em;
+            }
+            .lang-toggle button.active {
+                background: var(--accent);
+                color: #fff;
+            }
+            .lang-toggle button:hover:not(.active) {
+                color: var(--text);
+                background: var(--bg3);
+            }
+
             /* Hero */
             .hero {
                 min-height: 100vh;
@@ -505,17 +538,25 @@
                 .btn-secondary {
                     border: 1px solid #ccc;
                 }
+                .lang-toggle {
+                    display: none;
+                }
             }
         </style>
     </head>
     <body>
+        <nav class="lang-toggle" aria-label="Language selector">
+            <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+            <button id="btn-fr" onclick="setLang('fr')">FR</button>
+        </nav>
+
         <header class="hero">
             <div class="hero-content">
                 <h1>Simon <span class="accent">Brunou</span></h1>
-                <p class="subtitle">Fullstack Developer</p>
-                <p class="location">Saint-Nolff, Brittany, France</p>
+                <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
+                <p class="location" data-i18n="location">Saint-Nolff, Brittany, France</p>
                 <div class="hero-links">
-                    <a href="mailto:simon.brunou@proton.me" class="btn-primary"
+                    <a href="mailto:simon.brunou@proton.me" class="btn-primary" data-i18n="cta"
                         >Get in Touch</a
                     >
                     <a
@@ -539,8 +580,8 @@
         <main>
             <section id="about">
                 <div class="container fade-in">
-                    <h2 class="section-title">About</h2>
-                    <p class="about-text">
+                    <h2 class="section-title" data-i18n="about_title">About</h2>
+                    <p class="about-text" data-i18n="about_text">
                         Committed, motivated and serious Fullstack Developer
                         with experience in mobile application development,
                         project management, client communication and regular
@@ -554,10 +595,10 @@
 
             <section id="skills">
                 <div class="container fade-in">
-                    <h2 class="section-title">Skills</h2>
+                    <h2 class="section-title" data-i18n="skills_title">Skills</h2>
                     <div class="skills-grid">
                         <div class="skill-card">
-                            <h3>Languages</h3>
+                            <h3 data-i18n="skills_languages">Languages</h3>
                             <div class="skill-tags">
                                 <span class="tag">Rust</span>
                                 <span class="tag">Dart</span>
@@ -570,7 +611,7 @@
                             </div>
                         </div>
                         <div class="skill-card">
-                            <h3>Frameworks</h3>
+                            <h3 data-i18n="skills_frameworks">Frameworks</h3>
                             <div class="skill-tags">
                                 <span class="tag">Flutter</span>
                                 <span class="tag">React Native</span>
@@ -581,7 +622,7 @@
                             </div>
                         </div>
                         <div class="skill-card">
-                            <h3>Tools &amp; DevOps</h3>
+                            <h3 data-i18n="skills_tools">Tools &amp; DevOps</h3>
                             <div class="skill-tags">
                                 <span class="tag">Git</span>
                                 <span class="tag">Docker</span>
@@ -597,72 +638,72 @@
 
             <section id="experience">
                 <div class="container fade-in">
-                    <h2 class="section-title">Experience</h2>
+                    <h2 class="section-title" data-i18n="exp_title">Experience</h2>
                     <div class="timeline">
                         <div class="timeline-item">
-                            <h3>Fullstack Developer</h3>
-                            <div class="company">Confidential Startup</div>
+                            <h3 data-i18n="exp1_role">Fullstack Developer</h3>
+                            <div class="company" data-i18n="exp1_company">Confidential Startup</div>
                             <div class="period">Feb 2025 — Jul 2025</div>
                             <ul>
-                                <li>
+                                <li data-i18n="exp1_li1">
                                     Built mobile POC application in Dart and
                                     Flutter for fundraising
                                 </li>
-                                <li>Developed Rust libraries</li>
+                                <li data-i18n="exp1_li2">Developed Rust libraries</li>
                             </ul>
                         </div>
                         <div class="timeline-item">
-                            <h3>Fullstack Developer</h3>
+                            <h3 data-i18n="exp2_role">Fullstack Developer</h3>
                             <div class="company">BYSTAMP</div>
                             <div class="period">Jul 2017 — Feb 2025</div>
                             <ul>
-                                <li>
+                                <li data-i18n="exp2_li1">
                                     Android/iOS apps using Kotlin, Swift, Dart,
                                     and Flutter
                                 </li>
-                                <li>
+                                <li data-i18n="exp2_li2">
                                     Desktop applications (Windows, macOS, Linux)
                                     with React and Electron
                                 </li>
-                                <li>
+                                <li data-i18n="exp2_li3">
                                     Backend development in Java, Kotlin, then
                                     Rust
                                 </li>
-                                <li>Middleware development in Rust and C</li>
-                                <li>
+                                <li data-i18n="exp2_li4">Middleware development in Rust and C</li>
+                                <li data-i18n="exp2_li5">
                                     Multi-language code libraries (Swift,
                                     Kotlin, Rust, JavaScript, TypeScript, C)
                                 </li>
-                                <li>
+                                <li data-i18n="exp2_li6">
                                     DevOps: GitLab CI/CD, Docker, Proxmox,
                                     Terraform
                                 </li>
-                                <li>
+                                <li data-i18n="exp2_li7">
                                     Mentored apprentices and conducted
                                     university presentations
                                 </li>
                             </ul>
                         </div>
                         <div class="timeline-item">
-                            <h3>Intern</h3>
+                            <h3 data-i18n="exp3_role">Intern</h3>
                             <div class="company">BYSTAMP</div>
                             <div class="period">Jan 2017 — Jul 2017</div>
                             <ul>
-                                <li>
+                                <li data-i18n="exp3_li1">
                                     Mobile app development, web services,
                                     website maintenance
                                 </li>
-                                <li>
+                                <li data-i18n="exp3_li2">
                                     Business Intelligence and CRM implementation
                                 </li>
                             </ul>
                         </div>
                         <div class="timeline-item">
-                            <h3>Intern</h3>
+                            <h3 data-i18n="exp4_role">Intern</h3>
                             <div class="company">IUT de Vannes</div>
                             <div class="period">Mar 2014 — Jun 2014</div>
                             <ul>
-                                <li>
+                                <li data-i18n="exp4_li1">
                                     Mobile application maintenance and evolution
                                 </li>
                             </ul>
@@ -673,11 +714,11 @@
 
             <section id="education">
                 <div class="container fade-in">
-                    <h2 class="section-title">Education</h2>
+                    <h2 class="section-title" data-i18n="edu_title">Education</h2>
                     <div class="edu-grid">
                         <div class="edu-card">
                             <div>
-                                <h3>Master in Multimedia, Web, Networks</h3>
+                                <h3 data-i18n="edu1_degree">Master in Multimedia, Web, Networks</h3>
                                 <div class="school">
                                     Université de Bretagne Sud
                                 </div>
@@ -686,7 +727,7 @@
                         </div>
                         <div class="edu-card">
                             <div>
-                                <h3>License in Mathematics, IT, Statistics</h3>
+                                <h3 data-i18n="edu2_degree">License in Mathematics, IT, Statistics</h3>
                                 <div class="school">
                                     Université de Bretagne Sud
                                 </div>
@@ -695,7 +736,7 @@
                         </div>
                         <div class="edu-card">
                             <div>
-                                <h3>DUT in Computer Science</h3>
+                                <h3 data-i18n="edu3_degree">DUT in Computer Science</h3>
                                 <div class="school">IUT de Vannes</div>
                             </div>
                             <div class="year">2012 — 2014</div>
@@ -706,15 +747,15 @@
 
             <section id="languages">
                 <div class="container fade-in">
-                    <h2 class="section-title">Languages</h2>
+                    <h2 class="section-title" data-i18n="lang_title">Languages</h2>
                     <div class="lang-list">
                         <div class="lang-item">
-                            <strong>English</strong>
-                            <span>Fluent</span>
+                            <strong data-i18n="lang_english">English</strong>
+                            <span data-i18n="lang_english_level">Fluent</span>
                         </div>
                         <div class="lang-item">
-                            <strong>German</strong>
-                            <span>Basic</span>
+                            <strong data-i18n="lang_german">German</strong>
+                            <span data-i18n="lang_german_level">Basic</span>
                         </div>
                     </div>
                 </div>
@@ -722,12 +763,12 @@
 
             <section id="interests">
                 <div class="container fade-in">
-                    <h2 class="section-title">Interests</h2>
+                    <h2 class="section-title" data-i18n="interests_title">Interests</h2>
                     <div class="interests">
-                        <div class="interest">🖥️ Homelab</div>
-                        <div class="interest">☕ Coffee</div>
-                        <div class="interest">🚴 Cycling</div>
-                        <div class="interest">🧗 Rock climbing</div>
+                        <div class="interest">🖥️ <span data-i18n="interest_homelab">Homelab</span></div>
+                        <div class="interest">☕ <span data-i18n="interest_coffee">Coffee</span></div>
+                        <div class="interest">🚴 <span data-i18n="interest_cycling">Cycling</span></div>
+                        <div class="interest">🧗 <span data-i18n="interest_climbing">Rock climbing</span></div>
                     </div>
                 </div>
             </section>
@@ -735,8 +776,8 @@
             <section id="contact">
                 <div class="container fade-in">
                     <div class="contact">
-                        <h2 class="section-title">Let's Connect</h2>
-                        <p>
+                        <h2 class="section-title" data-i18n="contact_title">Let's Connect</h2>
+                        <p data-i18n="contact_text">
                             Interested in working together or just want to say
                             hello?
                         </p>
@@ -771,11 +812,118 @@
 
         <footer>
             <div class="container">
-                <p>&copy; 2026 Simon Brunou — Built with care in Brittany</p>
+                <p data-i18n="footer">&copy; 2026 Simon Brunou — Built with care in Brittany</p>
             </div>
         </footer>
 
         <script>
+            const translations = {
+                en: {
+                    subtitle: "Fullstack Developer",
+                    location: "Saint-Nolff, Brittany, France",
+                    cta: "Get in Touch",
+                    about_title: "About",
+                    about_text: "Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.",
+                    skills_title: "Skills",
+                    skills_languages: "Languages",
+                    skills_frameworks: "Frameworks",
+                    skills_tools: "Tools & DevOps",
+                    exp_title: "Experience",
+                    exp1_role: "Fullstack Developer",
+                    exp1_company: "Confidential Startup",
+                    exp1_li1: "Built mobile POC application in Dart and Flutter for fundraising",
+                    exp1_li2: "Developed Rust libraries",
+                    exp2_role: "Fullstack Developer",
+                    exp2_li1: "Android/iOS apps using Kotlin, Swift, Dart, and Flutter",
+                    exp2_li2: "Desktop applications (Windows, macOS, Linux) with React and Electron",
+                    exp2_li3: "Backend development in Java, Kotlin, then Rust",
+                    exp2_li4: "Middleware development in Rust and C",
+                    exp2_li5: "Multi-language code libraries (Swift, Kotlin, Rust, JavaScript, TypeScript, C)",
+                    exp2_li6: "DevOps: GitLab CI/CD, Docker, Proxmox, Terraform",
+                    exp2_li7: "Mentored apprentices and conducted university presentations",
+                    exp3_role: "Intern",
+                    exp3_li1: "Mobile app development, web services, website maintenance",
+                    exp3_li2: "Business Intelligence and CRM implementation",
+                    exp4_role: "Intern",
+                    exp4_li1: "Mobile application maintenance and evolution",
+                    edu_title: "Education",
+                    edu1_degree: "Master in Multimedia, Web, Networks",
+                    edu2_degree: "License in Mathematics, IT, Statistics",
+                    edu3_degree: "DUT in Computer Science",
+                    lang_title: "Languages",
+                    lang_english: "English",
+                    lang_english_level: "Fluent",
+                    lang_german: "German",
+                    lang_german_level: "Basic",
+                    interests_title: "Interests",
+                    interest_homelab: "Homelab",
+                    interest_coffee: "Coffee",
+                    interest_cycling: "Cycling",
+                    interest_climbing: "Rock climbing",
+                    contact_title: "Let's Connect",
+                    contact_text: "Interested in working together or just want to say hello?",
+                    footer: "© 2026 Simon Brunou — Built with care in Brittany",
+                },
+                fr: {
+                    subtitle: "Développeur Fullstack",
+                    location: "Saint-Nolff, Bretagne, France",
+                    cta: "Me Contacter",
+                    about_title: "À propos",
+                    about_text: "Développeur Fullstack sérieux et motivé, avec de l'expérience dans le développement d'applications mobiles, la gestion de projet, la relation client et la livraison régulière de produits. Basé en Bretagne, France, je construis des applications robustes sur toute la stack — du mobile et du bureau jusqu'au backend et au middleware — avec une passion pour Rust et la programmation système.",
+                    skills_title: "Compétences",
+                    skills_languages: "Langages",
+                    skills_frameworks: "Frameworks",
+                    skills_tools: "Outils & DevOps",
+                    exp_title: "Expérience",
+                    exp1_role: "Développeur Fullstack",
+                    exp1_company: "Startup Confidentielle",
+                    exp1_li1: "Développement d'une application mobile POC en Dart et Flutter pour une levée de fonds",
+                    exp1_li2: "Développement de bibliothèques Rust",
+                    exp2_role: "Développeur Fullstack",
+                    exp2_li1: "Applications Android/iOS avec Kotlin, Swift, Dart et Flutter",
+                    exp2_li2: "Applications desktop (Windows, macOS, Linux) avec React et Electron",
+                    exp2_li3: "Développement backend en Java, Kotlin, puis Rust",
+                    exp2_li4: "Développement middleware en Rust et C",
+                    exp2_li5: "Bibliothèques de code multi-langages (Swift, Kotlin, Rust, JavaScript, TypeScript, C)",
+                    exp2_li6: "DevOps : GitLab CI/CD, Docker, Proxmox, Terraform",
+                    exp2_li7: "Encadrement d'apprentis et présentations en université",
+                    exp3_role: "Stagiaire",
+                    exp3_li1: "Développement d'applications mobiles, services web, maintenance de site",
+                    exp3_li2: "Mise en place d'outils de Business Intelligence et CRM",
+                    exp4_role: "Stagiaire",
+                    exp4_li1: "Maintenance et évolution d'une application mobile",
+                    edu_title: "Formation",
+                    edu1_degree: "Master en Multimédia, Web, Réseaux",
+                    edu2_degree: "Licence en Mathématiques, Informatique, Statistiques",
+                    edu3_degree: "DUT Informatique",
+                    lang_title: "Langues",
+                    lang_english: "Anglais",
+                    lang_english_level: "Courant",
+                    lang_german: "Allemand",
+                    lang_german_level: "Notions",
+                    interests_title: "Centres d'intérêt",
+                    interest_homelab: "Homelab",
+                    interest_coffee: "Café",
+                    interest_cycling: "Cyclisme",
+                    interest_climbing: "Escalade",
+                    contact_title: "Restons en contact",
+                    contact_text: "Intéressé par une collaboration ou simplement envie de dire bonjour ?",
+                    footer: "© 2026 Simon Brunou — Fait avec soin en Bretagne",
+                },
+            };
+
+            function setLang(lang) {
+                const t = translations[lang];
+                document.querySelectorAll("[data-i18n]").forEach((el) => {
+                    const key = el.getAttribute("data-i18n");
+                    if (t[key] !== undefined) el.textContent = t[key];
+                });
+                document.documentElement.lang = lang;
+                document.getElementById("btn-en").classList.toggle("active", lang === "en");
+                document.getElementById("btn-fr").classList.toggle("active", lang === "fr");
+                try { localStorage.setItem("lang", lang); } catch (_) {}
+            }
+
             document.addEventListener("DOMContentLoaded", () => {
                 const o = new IntersectionObserver(
                     (e) => {
@@ -791,6 +939,10 @@
                 document
                     .querySelectorAll(".fade-in")
                     .forEach((el) => o.observe(el));
+
+                let saved;
+                try { saved = localStorage.getItem("lang"); } catch (_) {}
+                if (saved === "fr") setLang("fr");
             });
         </script>
     </body>
