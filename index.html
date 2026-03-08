@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simon Brunou — Fullstack Developer</title>
+<meta name="description" content="Simon Brunou — Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps.">
+<meta name="author" content="Simon Brunou">
+<meta name="theme-color" content="#1a1a2e">
+<meta property="og:title" content="Simon Brunou — Fullstack Developer">
+<meta property="og:description" content="Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<link rel="canonical" href="https://simonbrunou.bzh">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#222240;--text:#e0e0f0;--text2:#a0a0c0;--accent:#6c63ff;--accent2:#ff6b6b;--accent-glow:rgba(108,99,255,.15);--radius:12px;--transition:0.3s cubic-bezier(.4,0,.2,1)}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none;transition:color var(--transition)}
+a:hover{color:var(--accent2)}
+h1,h2,h3{line-height:1.2}
+.container{max-width:900px;margin:0 auto;padding:0 1.5rem}
+
+/* Hero */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,var(--accent-glow),transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(255,107,107,.08),transparent 60%)}
+.hero-content{text-align:center;position:relative;z-index:1;animation:fadeUp .8s ease-out}
+.hero h1{font-size:clamp(2.5rem,6vw,4rem);font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem}
+.hero h1 .accent{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero .subtitle{font-size:clamp(1.1rem,2.5vw,1.5rem);color:var(--text2);margin-bottom:1rem}
+.hero .location{color:var(--text2);font-size:.95rem;margin-bottom:2rem}
+.hero .location::before{content:'📍 '}
+.hero-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.hero-links a{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.3rem;border-radius:var(--radius);font-weight:500;font-size:.9rem;transition:all var(--transition)}
+.btn-primary{background:var(--accent);color:#fff!important}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(108,99,255,.35)}
+.btn-secondary{border:1.5px solid var(--bg3);color:var(--text)!important;background:var(--bg2)}
+.btn-secondary:hover{border-color:var(--accent);background:var(--bg3)}
+
+/* Sections */
+section{padding:5rem 0}
+.section-title{font-size:1.8rem;font-weight:700;margin-bottom:2.5rem;position:relative;display:inline-block}
+.section-title::after{content:'';position:absolute;bottom:-8px;left:0;width:50px;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px}
+
+/* About */
+.about-text{font-size:1.1rem;color:var(--text2);max-width:700px;line-height:1.8}
+
+/* Skills */
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
+.skill-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:1.5rem;transition:all var(--transition)}
+.skill-card:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.skill-card h3{font-size:1rem;color:var(--text2);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.skill-tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{padding:.35rem .75rem;background:var(--bg3);border-radius:8px;font-size:.85rem;color:var(--text);transition:all var(--transition)}
+.skill-card:hover .tag{background:var(--accent-glow);color:var(--accent)}
+
+/* Timeline */
+.timeline{position:relative;padding-left:2rem}
+.timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--accent),var(--accent2),transparent)}
+.timeline-item{position:relative;margin-bottom:3rem;padding-left:1.5rem}
+.timeline-item::before{content:'';position:absolute;left:-2rem;top:.4rem;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 0 3px var(--accent-glow)}
+.timeline-item h3{font-size:1.15rem;font-weight:700;margin-bottom:.25rem}
+.timeline-item .company{color:var(--accent);font-weight:500;font-size:1rem}
+.timeline-item .period{color:var(--text2);font-size:.85rem;margin-bottom:.75rem}
+.timeline-item ul{color:var(--text2);padding-left:1.2rem}
+.timeline-item li{margin-bottom:.35rem;font-size:.95rem}
+
+/* Education */
+.edu-grid{display:grid;gap:1.25rem}
+.edu-card{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;transition:all var(--transition)}
+.edu-card:hover{border-color:var(--accent)}
+.edu-card h3{font-size:1.05rem;font-weight:600}
+.edu-card .school{color:var(--text2);font-size:.9rem}
+.edu-card .year{color:var(--accent);font-size:.9rem;font-weight:500;white-space:nowrap}
+
+/* Interests */
+.interests{display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem}
+.interest{display:flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);font-size:.95rem;transition:all var(--transition)}
+.interest:hover{border-color:var(--accent);transform:translateY(-2px)}
+
+/* Contact */
+.contact{background:var(--bg2);border-radius:var(--radius);padding:3rem;border:1px solid var(--bg3);text-align:center}
+.contact h2{margin-bottom:1rem}
+.contact p{color:var(--text2);margin-bottom:2rem}
+.contact-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.contact-link{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.3rem;border:1.5px solid var(--bg3);border-radius:var(--radius);color:var(--text)!important;font-size:.9rem;transition:all var(--transition)}
+.contact-link:hover{border-color:var(--accent);background:var(--accent-glow)}
+
+/* Languages */
+.lang-list{display:flex;gap:1.5rem;flex-wrap:wrap}
+.lang-item{background:var(--bg2);border:1px solid var(--bg3);border-radius:var(--radius);padding:1rem 1.5rem;transition:all var(--transition)}
+.lang-item:hover{border-color:var(--accent)}
+.lang-item strong{display:block;margin-bottom:.25rem}
+.lang-item span{color:var(--text2);font-size:.9rem}
+
+/* Footer */
+footer{text-align:center;padding:2rem 0;color:var(--text2);font-size:.85rem;border-top:1px solid var(--bg3)}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease-out,transform .6s ease-out}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* Responsive */
+@media(max-width:600px){
+  section{padding:3rem 0}
+  .timeline{padding-left:1.5rem}
+  .timeline-item{padding-left:1rem}
+  .contact{padding:2rem 1.5rem}
+  .edu-card{flex-direction:column;align-items:flex-start}
+}
+
+/* Print */
+@media print{
+  body{background:#fff;color:#111}
+  .hero{min-height:auto;padding:2rem 0}
+  section{padding:1.5rem 0}
+  .hero::before{display:none}
+  .btn-primary,.btn-secondary{border:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-content">
+    <h1>Simon <span class="accent">Brunou</span></h1>
+    <p class="subtitle">Fullstack Developer</p>
+    <p class="location">Saint-Nolff, Brittany, France</p>
+    <div class="hero-links">
+      <a href="mailto:simon.brunou@proton.me" class="btn-primary">Get in Touch</a>
+      <a href="https://github.com/simonbrunou" class="btn-secondary" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://linkedin.com/in/simon-brunou" class="btn-secondary" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="about">
+    <div class="container fade-in">
+      <h2 class="section-title">About</h2>
+      <p class="about-text">Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.</p>
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="container fade-in">
+      <h2 class="section-title">Skills</h2>
+      <div class="skills-grid">
+        <div class="skill-card">
+          <h3>Languages</h3>
+          <div class="skill-tags">
+            <span class="tag">Rust</span>
+            <span class="tag">Dart</span>
+            <span class="tag">Kotlin</span>
+            <span class="tag">Swift</span>
+            <span class="tag">Java</span>
+            <span class="tag">JavaScript</span>
+            <span class="tag">TypeScript</span>
+            <span class="tag">C</span>
+          </div>
+        </div>
+        <div class="skill-card">
+          <h3>Frameworks</h3>
+          <div class="skill-tags">
+            <span class="tag">Flutter</span>
+            <span class="tag">React Native</span>
+            <span class="tag">Android</span>
+            <span class="tag">iOS</span>
+            <span class="tag">React</span>
+            <span class="tag">Electron</span>
+          </div>
+        </div>
+        <div class="skill-card">
+          <h3>Tools &amp; DevOps</h3>
+          <div class="skill-tags">
+            <span class="tag">Git</span>
+            <span class="tag">Docker</span>
+            <span class="tag">Proxmox</span>
+            <span class="tag">GitLab CI/CD</span>
+            <span class="tag">Terraform</span>
+            <span class="tag">Figma</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="experience">
+    <div class="container fade-in">
+      <h2 class="section-title">Experience</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <h3>Fullstack Developer</h3>
+          <div class="company">Confidential Startup</div>
+          <div class="period">Feb 2025 — Jul 2025</div>
+          <ul>
+            <li>Built mobile POC application in Dart and Flutter for fundraising</li>
+            <li>Developed Rust libraries</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <h3>Fullstack Developer</h3>
+          <div class="company">BYSTAMP</div>
+          <div class="period">Jul 2017 — Feb 2025</div>
+          <ul>
+            <li>Android/iOS apps using Kotlin, Swift, Dart, and Flutter</li>
+            <li>Desktop applications (Windows, macOS, Linux) with React and Electron</li>
+            <li>Backend development in Java, Kotlin, then Rust</li>
+            <li>Middleware development in Rust and C</li>
+            <li>Multi-language code libraries (Swift, Kotlin, Rust, JavaScript, TypeScript, C)</li>
+            <li>DevOps: GitLab CI/CD, Docker, Proxmox, Terraform</li>
+            <li>Mentored apprentices and conducted university presentations</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <h3>Intern</h3>
+          <div class="company">BYSTAMP</div>
+          <div class="period">Jan 2017 — Jul 2017</div>
+          <ul>
+            <li>Mobile app development, web services, website maintenance</li>
+            <li>Business Intelligence and CRM implementation</li>
+          </ul>
+        </div>
+        <div class="timeline-item">
+          <h3>Intern</h3>
+          <div class="company">IUT de Vannes</div>
+          <div class="period">Mar 2014 — Jun 2014</div>
+          <ul>
+            <li>Mobile application maintenance and evolution</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="education">
+    <div class="container fade-in">
+      <h2 class="section-title">Education</h2>
+      <div class="edu-grid">
+        <div class="edu-card">
+          <div>
+            <h3>Master in Multimedia, Web, Networks</h3>
+            <div class="school">Université de Bretagne Sud</div>
+          </div>
+          <div class="year">2015 — 2017</div>
+        </div>
+        <div class="edu-card">
+          <div>
+            <h3>License in Mathematics, IT, Statistics</h3>
+            <div class="school">Université de Bretagne Sud</div>
+          </div>
+          <div class="year">2014 — 2015</div>
+        </div>
+        <div class="edu-card">
+          <div>
+            <h3>DUT in Computer Science</h3>
+            <div class="school">IUT de Vannes</div>
+          </div>
+          <div class="year">2012 — 2014</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="languages">
+    <div class="container fade-in">
+      <h2 class="section-title">Languages</h2>
+      <div class="lang-list">
+        <div class="lang-item">
+          <strong>English</strong>
+          <span>Fluent</span>
+        </div>
+        <div class="lang-item">
+          <strong>German</strong>
+          <span>Basic</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="interests">
+    <div class="container fade-in">
+      <h2 class="section-title">Interests</h2>
+      <div class="interests">
+        <div class="interest">🖥️ Homelab</div>
+        <div class="interest">☕ Coffee</div>
+        <div class="interest">🚴 Cycling</div>
+        <div class="interest">🧗 Rock climbing</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="container fade-in">
+      <div class="contact">
+        <h2 class="section-title">Let's Connect</h2>
+        <p>Interested in working together or just want to say hello?</p>
+        <div class="contact-links">
+          <a href="mailto:simon.brunou@proton.me" class="contact-link">✉️ simon.brunou@proton.me</a>
+          <a href="tel:+33621041865" class="contact-link">📞 +33 621 041 865</a>
+          <a href="https://github.com/simonbrunou" class="contact-link" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://linkedin.com/in/simon-brunou" class="contact-link" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <p>&copy; 2026 Simon Brunou — Built with care in Brittany</p>
+  </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{const o=new IntersectionObserver(e=>{e.forEach(el=>{if(el.isIntersecting){el.target.classList.add('visible');o.unobserve(el.target)}})},{threshold:.15});document.querySelectorAll('.fade-in').forEach(el=>o.observe(el))});
+</script>
+</body>
+</html>
