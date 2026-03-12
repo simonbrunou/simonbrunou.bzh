@@ -33,7 +33,7 @@
                 background-clip: text;
             }
             p {
-                color: #a0a0c0;
+                color: #b0b0d0;
                 font-size: 1.2rem;
                 margin: 1rem 0 2rem;
             }
@@ -45,18 +45,33 @@
                 text-decoration: none;
                 font-weight: 500;
                 transition: all 0.3s;
+                display: inline-block;
             }
             a:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(108, 99, 255, 0.35);
             }
+            a:focus-visible {
+                outline: 3px solid #6c63ff;
+                outline-offset: 3px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    transition-duration: 0.01ms !important;
+                }
+            }
+            @media (forced-colors: active) {
+                a {
+                    border: 2px solid LinkText !important;
+                }
+            }
         </style>
     </head>
     <body>
-        <div>
+        <main>
             <h1>404</h1>
             <p>This page doesn't exist. Let's get you back on track.</p>
             <a href="/">Back Home</a>
-        </div>
+        </main>
     </body>
 </html>
