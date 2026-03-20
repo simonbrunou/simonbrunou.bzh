@@ -7,6 +7,3 @@
 
 # node
 node_modules/
-
-# generated PDF
-resume/simon-brunou-cv.pdf
