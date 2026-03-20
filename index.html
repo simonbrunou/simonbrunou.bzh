@@ -46,117 +46,7 @@
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
         />
-        <script type="application/ld+json">
-            {
-                "@context": "https://schema.org",
-                "@type": "Person",
-                "name": "Simon Brunou",
-                "url": "https://simonbrunou.bzh",
-                "email": "simon.brunou@proton.me",
-                "telephone": "+33621041865",
-                "jobTitle": "Fullstack Developer",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressLocality": "Saint-Nolff",
-                    "addressRegion": "Brittany",
-                    "addressCountry": "FR"
-                },
-                "knowsLanguage": [
-                    {"@type": "Language", "name": "French", "alternateName": "fr"},
-                    {"@type": "Language", "name": "English", "alternateName": "en"},
-                    {"@type": "Language", "name": "German", "alternateName": "de"}
-                ],
-                "knowsAbout": [
-                    "Rust", "Dart", "Kotlin", "Swift", "Java", "JavaScript", "TypeScript", "Python", "C",
-                    "Flutter", "React Native", "React", "Electron", "Angular", "Spring Boot", "Node.js",
-                    "Git", "Docker", "Proxmox", "GitLab CI/CD", "Terraform",
-                    "Mobile Development", "Fullstack Development", "DevOps"
-                ],
-                "hasOccupation": [
-                    {
-                        "@type": "Role",
-                        "roleName": "Fullstack Developer",
-                        "startDate": "2025-02",
-                        "endDate": "2025-07",
-                        "description": "Built mobile POC application in Dart and Flutter for fundraising. Developed Rust libraries.",
-                        "worksFor": {
-                            "@type": "Organization",
-                            "name": "Confidential Startup"
-                        }
-                    },
-                    {
-                        "@type": "Role",
-                        "roleName": "Fullstack Developer",
-                        "startDate": "2017-07",
-                        "endDate": "2025-02",
-                        "description": "Android/iOS apps using Kotlin, Swift, Dart, and Flutter. Desktop applications with React and Electron. Backend and middleware development in Java, Kotlin, Rust, and C. DevOps with GitLab CI/CD, Docker, Proxmox, Terraform.",
-                        "worksFor": {
-                            "@type": "Organization",
-                            "name": "BYSTAMP"
-                        }
-                    },
-                    {
-                        "@type": "Role",
-                        "roleName": "Intern",
-                        "startDate": "2017-01",
-                        "endDate": "2017-07",
-                        "description": "Mobile app development, web services, website maintenance. Business Intelligence and CRM implementation.",
-                        "worksFor": {
-                            "@type": "Organization",
-                            "name": "BYSTAMP"
-                        }
-                    },
-                    {
-                        "@type": "Role",
-                        "roleName": "Intern",
-                        "startDate": "2014-03",
-                        "endDate": "2014-06",
-                        "description": "Mobile application maintenance and evolution.",
-                        "worksFor": {
-                            "@type": "Organization",
-                            "name": "IUT de Vannes"
-                        }
-                    }
-                ],
-                "alumniOf": [
-                    {
-                        "@type": "EducationalOrganization",
-                        "name": "Université de Bretagne Sud"
-                    },
-                    {
-                        "@type": "EducationalOrganization",
-                        "name": "IUT de Vannes"
-                    }
-                ],
-                "hasCredential": [
-                    {
-                        "@type": "EducationalOccupationalCredential",
-                        "credentialCategory": "degree",
-                        "name": "Master in Multimedia, Web, Networks",
-                        "recognizedBy": {"@type": "EducationalOrganization", "name": "Université de Bretagne Sud"},
-                        "dateCreated": "2017"
-                    },
-                    {
-                        "@type": "EducationalOccupationalCredential",
-                        "credentialCategory": "degree",
-                        "name": "License in Mathematics, IT, Statistics",
-                        "recognizedBy": {"@type": "EducationalOrganization", "name": "Université de Bretagne Sud"},
-                        "dateCreated": "2015"
-                    },
-                    {
-                        "@type": "EducationalOccupationalCredential",
-                        "credentialCategory": "degree",
-                        "name": "DUT in Computer Science",
-                        "recognizedBy": {"@type": "EducationalOrganization", "name": "IUT de Vannes"},
-                        "dateCreated": "2014"
-                    }
-                ],
-                "sameAs": [
-                    "https://github.com/simonbrunou",
-                    "https://www.linkedin.com/in/simon-brunou-a7a5a489"
-                ]
-            }
-        </script>
+        <!-- JSON-LD structured data is generated dynamically from data.js -->
         <style>
             *,
             *::before,
@@ -822,16 +712,7 @@
     <body>
         <a href="#about" class="skip-link" data-i18n="skip_link">Skip to main content</a>
 
-        <div class="sr-only" role="region" aria-label="Resume summary">
-            <h1>Simon Brunou — Fullstack Developer</h1>
-            <p>Email: simon.brunou@proton.me | Phone: +33 621 041 865</p>
-            <p>Location: Saint-Nolff, Brittany, France</p>
-            <p>GitHub: https://github.com/simonbrunou | LinkedIn: https://www.linkedin.com/in/simon-brunou-a7a5a489</p>
-            <h2>Summary</h2>
-            <p>Committed, motivated Fullstack Developer with 8+ years of experience in mobile application development, project management, client communication and regular product delivery. Skilled in Rust, Dart, Kotlin, Swift, Java, JavaScript, TypeScript, Python, C. Frameworks: Flutter, React Native, Android, iOS, React, Electron, Angular, Spring Boot, Node.js. DevOps: Git, Docker, Proxmox, GitLab CI/CD, Terraform.</p>
-            <h2>Languages</h2>
-            <p>French (Native), English (Fluent), German (Basic)</p>
-        </div>
+        <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
         <nav class="lang-toggle" aria-label="Language selector">
             <button id="btn-en" class="active" aria-pressed="true" onclick="setLang('en')">EN</button>
@@ -840,39 +721,10 @@
 
         <header class="hero">
             <div class="hero-content">
-                <h1>Simon <span class="accent">Brunou</span></h1>
+                <h1 id="hero-name"></h1>
                 <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
                 <p class="location" data-i18n="location">Saint-Nolff, Brittany, France</p>
-                <div class="hero-links">
-                    <a href="mailto:simon.brunou@proton.me" class="btn-primary" data-i18n="cta"
-                        >Get in Touch</a
-                    >
-                    <a
-                        href="https://simonbrunou.github.io/resume/"
-                        class="btn-secondary"
-                        target="_blank"
-                        rel="noopener"
-                        aria-label="Resume (opens in new tab)"
-                        data-i18n="resume_link"
-                        >Resume<span class="sr-only"> (opens in new tab)</span></a
-                    >
-                    <a
-                        href="https://github.com/simonbrunou"
-                        class="btn-secondary"
-                        target="_blank"
-                        rel="noopener"
-                        aria-label="GitHub (opens in new tab)"
-                        >GitHub<span class="sr-only"> (opens in new tab)</span></a
-                    >
-                    <a
-                        href="https://www.linkedin.com/in/simon-brunou-a7a5a489"
-                        class="btn-secondary"
-                        target="_blank"
-                        rel="noopener"
-                        aria-label="LinkedIn (opens in new tab)"
-                        >LinkedIn<span class="sr-only"> (opens in new tab)</span></a
-                    >
-                </div>
+                <div id="hero-links" class="hero-links"></div>
             </div>
         </header>
 
@@ -880,210 +732,42 @@
             <section id="about" aria-labelledby="about-heading">
                 <div class="container fade-in">
                     <h2 id="about-heading" class="section-title" data-i18n="about_title">About</h2>
-                    <p class="about-text" data-i18n="about_text">
-                        Committed, motivated and serious Fullstack Developer
-                        with experience in mobile application development,
-                        project management, client communication and regular
-                        product delivery. Based in Brittany, France, I build
-                        robust applications across the entire stack — from
-                        mobile and desktop to backend and middleware — with a
-                        passion for Rust and systems programming.
-                    </p>
+                    <p class="about-text" data-i18n="about_text"></p>
                 </div>
             </section>
 
             <section id="skills" aria-labelledby="skills-heading">
                 <div class="container fade-in">
                     <h2 id="skills-heading" class="section-title" data-i18n="skills_title">Skills</h2>
-                    <div class="skills-grid">
-                        <div class="skill-card">
-                            <h3 data-i18n="skills_languages">Languages</h3>
-                            <div class="skill-tags" role="list">
-                                <span class="tag" role="listitem">Rust</span>
-                                <span class="tag" role="listitem">Dart</span>
-                                <span class="tag" role="listitem">Kotlin</span>
-                                <span class="tag" role="listitem">Swift</span>
-                                <span class="tag" role="listitem">Java</span>
-                                <span class="tag" role="listitem">JavaScript</span>
-                                <span class="tag" role="listitem">TypeScript</span>
-                                <span class="tag" role="listitem">Python</span>
-                                <span class="tag" role="listitem">C</span>
-                            </div>
-                        </div>
-                        <div class="skill-card">
-                            <h3 data-i18n="skills_frameworks">Frameworks</h3>
-                            <div class="skill-tags" role="list">
-                                <span class="tag" role="listitem">Flutter</span>
-                                <span class="tag" role="listitem">React Native</span>
-                                <span class="tag" role="listitem">Android</span>
-                                <span class="tag" role="listitem">iOS</span>
-                                <span class="tag" role="listitem">React</span>
-                                <span class="tag" role="listitem">Electron</span>
-                                <span class="tag" role="listitem">Angular</span>
-                                <span class="tag" role="listitem">Spring Boot</span>
-                                <span class="tag" role="listitem">Node.js</span>
-                            </div>
-                        </div>
-                        <div class="skill-card">
-                            <h3 data-i18n="skills_tools">Tools &amp; DevOps</h3>
-                            <div class="skill-tags" role="list">
-                                <span class="tag" role="listitem">Git</span>
-                                <span class="tag" role="listitem">Docker</span>
-                                <span class="tag" role="listitem">Proxmox</span>
-                                <span class="tag" role="listitem">GitLab CI/CD</span>
-                                <span class="tag" role="listitem">Terraform</span>
-                                <span class="tag" role="listitem">Figma</span>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="skills-grid" class="skills-grid"></div>
                 </div>
             </section>
 
             <section id="experience" aria-labelledby="experience-heading">
                 <div class="container fade-in">
                     <h2 id="experience-heading" class="section-title" data-i18n="exp_title">Experience</h2>
-                    <div class="timeline">
-                        <article class="timeline-item">
-                            <h3 data-i18n="exp1_role">Fullstack Developer</h3>
-                            <div class="company" data-i18n="exp1_company">Confidential Startup</div>
-                            <div class="period"><time datetime="2025-02">Feb 2025</time> — <time datetime="2025-07">Jul 2025</time></div>
-                            <ul>
-                                <li data-i18n="exp1_li1">
-                                    Built mobile companion POC application in Dart and Flutter:
-                                    interaction with connected device, user account management,
-                                    and web services consumption
-                                </li>
-                                <li data-i18n="exp1_li2">Developed Rust libraries for low-level communication with a connected device</li>
-                            </ul>
-                        </article>
-                        <article class="timeline-item">
-                            <h3 data-i18n="exp2_role">Fullstack Developer</h3>
-                            <div class="company">BYSTAMP</div>
-                            <div class="period"><time datetime="2017-07">Jul 2017</time> — <time datetime="2025-02">Feb 2025</time></div>
-                            <ul>
-                                <li data-i18n="exp2_li1">
-                                    Android/iOS apps using Kotlin, Swift, Dart,
-                                    and Flutter
-                                </li>
-                                <li data-i18n="exp2_li2">
-                                    Desktop applications (Windows, macOS, Linux)
-                                    with React and Electron
-                                </li>
-                                <li data-i18n="exp2_li3">
-                                    Development and maintenance of backend web-services
-                                    in Java and Kotlin with Spring Boot, then Rust
-                                </li>
-                                <li data-i18n="exp2_li4">Middleware development in Rust and C</li>
-                                <li data-i18n="exp2_li5">
-                                    Development, documentation and continuous delivery of
-                                    code libraries in Swift, Kotlin, Rust, JavaScript, TypeScript and C
-                                </li>
-                                <li data-i18n="exp2_li6">
-                                    Maintenance of demo applications in Flutter, Xamarin,
-                                    React Native, Kotlin and Swift
-                                </li>
-                                <li data-i18n="exp2_li7">
-                                    DevOps: GitLab CI/CD, Docker, Proxmox, Terraform —
-                                    CI/CD setup, containerization, infrastructure management,
-                                    deployment automation
-                                </li>
-                                <li data-i18n="exp2_li8">Mentored apprentices and conducted university presentations</li>
-                            </ul>
-                        </article>
-                        <article class="timeline-item">
-                            <h3 data-i18n="exp3_role">Intern</h3>
-                            <div class="company">BYSTAMP</div>
-                            <div class="period"><time datetime="2017-01">Jan 2017</time> — <time datetime="2017-07">Jul 2017</time></div>
-                            <ul>
-                                <li data-i18n="exp3_li1">
-                                    Android mobile app development in Java/Kotlin
-                                    and iOS in Objective-C/Swift
-                                </li>
-                                <li data-i18n="exp3_li2">
-                                    Maintenance and improvement of Java Spring Boot web-services
-                                </li>
-                                <li data-i18n="exp3_li3">Maintenance and improvement of Angular websites</li>
-                                <li data-i18n="exp3_li4">Business Intelligence and CRM implementation</li>
-                            </ul>
-                        </article>
-                        <article class="timeline-item">
-                            <h3 data-i18n="exp4_role">Intern</h3>
-                            <div class="company">IUT de Vannes</div>
-                            <div class="period"><time datetime="2014-03">Mar 2014</time> — <time datetime="2014-06">Jun 2014</time></div>
-                            <ul>
-                                <li data-i18n="exp4_li1">
-                                    Maintenance and evolution of a native Android app
-                                    presenting the IUT for open days and trade fairs
-                                </li>
-                                <li data-i18n="exp4_li2">PHP backend development</li>
-                            </ul>
-                        </article>
-                    </div>
+                    <div id="timeline" class="timeline"></div>
                 </div>
             </section>
 
             <section id="education" aria-labelledby="education-heading">
                 <div class="container fade-in">
                     <h2 id="education-heading" class="section-title" data-i18n="edu_title">Education</h2>
-                    <div class="edu-grid">
-                        <div class="edu-card">
-                            <div>
-                                <h3 data-i18n="edu1_degree">Master in Multimedia, Web, Networks</h3>
-                                <div class="school">
-                                    Université de Bretagne Sud
-                                </div>
-                            </div>
-                            <div class="year"><time datetime="2015">2015</time> — <time datetime="2017">2017</time></div>
-                        </div>
-                        <div class="edu-card">
-                            <div>
-                                <h3 data-i18n="edu2_degree">License in Mathematics, IT, Statistics</h3>
-                                <div class="school">
-                                    Université de Bretagne Sud
-                                </div>
-                            </div>
-                            <div class="year"><time datetime="2014">2014</time> — <time datetime="2015">2015</time></div>
-                        </div>
-                        <div class="edu-card">
-                            <div>
-                                <h3 data-i18n="edu3_degree">DUT in Computer Science</h3>
-                                <div class="school">IUT de Vannes</div>
-                            </div>
-                            <div class="year"><time datetime="2012">2012</time> — <time datetime="2014">2014</time></div>
-                        </div>
-                    </div>
+                    <div id="edu-grid" class="edu-grid"></div>
                 </div>
             </section>
 
             <section id="languages" aria-labelledby="languages-heading">
                 <div class="container fade-in">
                     <h2 id="languages-heading" class="section-title" data-i18n="lang_title">Languages</h2>
-                    <div class="lang-list">
-                        <div class="lang-item">
-                            <strong data-i18n="lang_french">French</strong>
-                            <span data-i18n="lang_french_level">Native</span>
-                        </div>
-                        <div class="lang-item">
-                            <strong data-i18n="lang_english">English</strong>
-                            <span data-i18n="lang_english_level">Fluent</span>
-                        </div>
-                        <div class="lang-item">
-                            <strong data-i18n="lang_german">German</strong>
-                            <span data-i18n="lang_german_level">Basic</span>
-                        </div>
-                    </div>
+                    <div id="lang-list" class="lang-list"></div>
                 </div>
             </section>
 
             <section id="interests" aria-labelledby="interests-heading">
                 <div class="container fade-in">
                     <h2 id="interests-heading" class="section-title" data-i18n="interests_title">Interests</h2>
-                    <div class="interests">
-                        <div class="interest"><span aria-hidden="true">🖥️</span> <span data-i18n="interest_homelab">Homelab</span></div>
-                        <div class="interest"><span aria-hidden="true">☕</span> <span data-i18n="interest_coffee">Coffee</span></div>
-                        <div class="interest"><span aria-hidden="true">🚴</span> <span data-i18n="interest_cycling">Cycling</span></div>
-                        <div class="interest"><span aria-hidden="true">🧗</span> <span data-i18n="interest_climbing">Rock climbing</span></div>
-                    </div>
+                    <div id="interests-list" class="interests"></div>
                 </div>
             </section>
 
@@ -1091,38 +775,8 @@
                 <div class="container fade-in">
                     <div class="contact">
                         <h2 id="contact-heading" class="section-title" data-i18n="contact_title">Let's Connect</h2>
-                        <p data-i18n="contact_text">
-                            Interested in working together or just want to say
-                            hello?
-                        </p>
-                        <address class="contact-links">
-                            <a
-                                href="mailto:simon.brunou@proton.me"
-                                class="contact-link"
-                                aria-label="Email: simon.brunou@proton.me"
-                                ><span aria-hidden="true">✉️</span> simon.brunou@proton.me</a
-                            >
-                            <a href="tel:+33621041865" class="contact-link"
-                                aria-label="Phone: +33 621 041 865"
-                                ><span aria-hidden="true">📞</span> +33 621 041 865</a
-                            >
-                            <a
-                                href="https://github.com/simonbrunou"
-                                class="contact-link"
-                                target="_blank"
-                                rel="noopener"
-                                aria-label="GitHub (opens in new tab)"
-                                >GitHub<span class="sr-only"> (opens in new tab)</span></a
-                            >
-                            <a
-                                href="https://www.linkedin.com/in/simon-brunou-a7a5a489"
-                                class="contact-link"
-                                target="_blank"
-                                rel="noopener"
-                                aria-label="LinkedIn (opens in new tab)"
-                                >LinkedIn<span class="sr-only"> (opens in new tab)</span></a
-                            >
-                        </address>
+                        <p data-i18n="contact_text"></p>
+                        <address id="contact-links" class="contact-links"></address>
                     </div>
                 </div>
             </section>
@@ -1130,158 +784,231 @@
 
         <footer>
             <div class="container">
-                <p data-i18n="footer">&copy; 2026 Simon Brunou — Built with care in Brittany</p>
+                <p data-i18n="footer"></p>
             </div>
         </footer>
 
+        <script src="data.js"></script>
         <script>
-            const translations = {
-                en: {
-                    subtitle: "Fullstack Developer",
-                    location: "Saint-Nolff, Brittany, France",
-                    cta: "Get in Touch",
-                    resume_link: "Resume",
-                    about_title: "About",
-                    about_text: "Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.",
-                    skills_title: "Skills",
-                    skills_languages: "Languages",
-                    skills_frameworks: "Frameworks",
-                    skills_tools: "Tools & DevOps",
-                    exp_title: "Experience",
-                    exp1_role: "Fullstack Developer",
-                    exp1_company: "Confidential Startup",
-                    exp1_li1: "Built mobile companion POC application in Dart and Flutter: interaction with connected device, user account management, and web services consumption",
-                    exp1_li2: "Developed Rust libraries for low-level communication with a connected device",
-                    exp2_role: "Fullstack Developer",
-                    exp2_li1: "Android/iOS apps using Kotlin, Swift, Dart, and Flutter",
-                    exp2_li2: "Desktop applications (Windows, macOS, Linux) with React and Electron",
-                    exp2_li3: "Development and maintenance of backend web-services in Java and Kotlin with Spring Boot, then Rust",
-                    exp2_li4: "Middleware development in Rust and C",
-                    exp2_li5: "Development, documentation and continuous delivery of code libraries in Swift, Kotlin, Rust, JavaScript, TypeScript and C",
-                    exp2_li6: "Maintenance of demo applications in Flutter, Xamarin, React Native, Kotlin and Swift",
-                    exp2_li7: "DevOps: GitLab CI/CD, Docker, Proxmox, Terraform — CI/CD setup, containerization, infrastructure management, deployment automation",
-                    exp2_li8: "Mentored apprentices and conducted university presentations",
-                    exp3_role: "Intern",
-                    exp3_li1: "Android mobile app development in Java/Kotlin and iOS in Objective-C/Swift",
-                    exp3_li2: "Maintenance and improvement of Java Spring Boot web-services",
-                    exp3_li3: "Maintenance and improvement of Angular websites",
-                    exp3_li4: "Business Intelligence and CRM implementation",
-                    exp4_role: "Intern",
-                    exp4_li1: "Maintenance and evolution of a native Android app presenting the IUT for open days and trade fairs",
-                    exp4_li2: "PHP backend development",
-                    edu_title: "Education",
-                    edu1_degree: "Master in Multimedia, Web, Networks",
-                    edu2_degree: "License in Mathematics, IT, Statistics",
-                    edu3_degree: "DUT in Computer Science",
-                    lang_title: "Languages",
-                    lang_french: "French",
-                    lang_french_level: "Native",
-                    lang_english: "English",
-                    lang_english_level: "Fluent",
-                    lang_german: "German",
-                    lang_german_level: "Basic",
-                    interests_title: "Interests",
-                    interest_homelab: "Homelab",
-                    interest_coffee: "Coffee",
-                    interest_cycling: "Cycling",
-                    interest_climbing: "Rock climbing",
-                    contact_title: "Let's Connect",
-                    contact_text: "Interested in working together or just want to say hello?",
-                    footer: "© 2026 Simon Brunou — Built with care in Brittany",
-                    skip_link: "Skip to main content",
-                },
-                fr: {
-                    subtitle: "Développeur Fullstack",
-                    location: "Saint-Nolff, Bretagne, France",
-                    cta: "Me Contacter",
-                    resume_link: "CV",
-                    about_title: "À propos",
-                    about_text: "Développeur Fullstack sérieux et motivé, avec de l'expérience dans le développement d'applications mobiles, la gestion de projet, la relation client et la livraison régulière de produits. Basé en Bretagne, France, je construis des applications robustes sur toute la stack — du mobile et du bureau jusqu'au backend et au middleware — avec une passion pour Rust et la programmation système.",
-                    skills_title: "Compétences",
-                    skills_languages: "Langages",
-                    skills_frameworks: "Frameworks",
-                    skills_tools: "Outils & DevOps",
-                    exp_title: "Expérience",
-                    exp1_role: "Développeur Fullstack",
-                    exp1_company: "Startup Confidentielle",
-                    exp1_li1: "Développement d'une application mobile compagnon (POC) en Dart et Flutter : interaction avec l'objet connecté, gestion de compte utilisateur et consommation de web services",
-                    exp1_li2: "Développement de bibliothèques en Rust pour la communication bas niveau avec un objet connecté",
-                    exp2_role: "Développeur Fullstack",
-                    exp2_li1: "Applications Android/iOS avec Kotlin, Swift, Dart et Flutter",
-                    exp2_li2: "Applications desktop (Windows, macOS, Linux) avec React et Electron",
-                    exp2_li3: "Développement et maintenance d'une application backend (web-services) en Java et Kotlin avec Spring Boot, puis Rust",
-                    exp2_li4: "Développement de middleware en Rust et C",
-                    exp2_li5: "Développement, documentation et livraison continue de bibliothèques de code en Swift, Kotlin, Rust, JavaScript, TypeScript et C",
-                    exp2_li6: "Maintenance d'applications de démonstration en Flutter, Xamarin, React Native, Kotlin et Swift",
-                    exp2_li7: "DevOps : mise en place de CI/CD (GitLab CI/CD), conteneurisation avec Docker, gestion d'infrastructure avec Proxmox et Terraform, automatisation des déploiements et livraisons",
-                    exp2_li8: "Encadrement d'alternants en tant que maître d'apprentissage et interventions à l'IUT de Vannes",
-                    exp3_role: "Stagiaire",
-                    exp3_li1: "Développement d'applications mobiles Android en Java/Kotlin et iOS en Objective-C/Swift",
-                    exp3_li2: "Maintenance et amélioration de web-services en Java Spring Boot",
-                    exp3_li3: "Maintenance et amélioration de sites web en Angular",
-                    exp3_li4: "Mise en place d'outils de Business Intelligence et d'une CRM",
-                    exp4_role: "Stagiaire",
-                    exp4_li1: "Maintenance et évolution d'une application Android native de présentation de l'IUT pour les salons et portes ouvertes",
-                    exp4_li2: "Backend en PHP",
-                    edu_title: "Formation",
-                    edu1_degree: "Master en Multimédia, Web, Réseaux",
-                    edu2_degree: "Licence en Mathématiques, Informatique, Statistiques",
-                    edu3_degree: "DUT Informatique",
-                    lang_title: "Langues",
-                    lang_french: "Français",
-                    lang_french_level: "Langue maternelle",
-                    lang_english: "Anglais",
-                    lang_english_level: "Courant",
-                    lang_german: "Allemand",
-                    lang_german_level: "Notions",
-                    interests_title: "Centres d'intérêt",
-                    interest_homelab: "Homelab",
-                    interest_coffee: "Café",
-                    interest_cycling: "Cyclisme",
-                    interest_climbing: "Escalade",
-                    contact_title: "Restons en contact",
-                    contact_text: "Intéressé par une collaboration ou simplement envie de dire bonjour ?",
-                    footer: "© 2026 Simon Brunou — Fait avec soin en Bretagne",
-                    skip_link: "Aller au contenu principal",
-                },
-            };
+            (function () {
+                var D = window.RESUME_DATA;
+                var P = D.personal;
+                var currentLang = "en";
 
-            function setLang(lang) {
-                const t = translations[lang];
-                document.querySelectorAll("[data-i18n]").forEach((el) => {
-                    const key = el.getAttribute("data-i18n");
-                    if (t[key] !== undefined) el.textContent = t[key];
+                // Build translations from shared data
+                function buildTranslations(lang) {
+                    var t = Object.assign({}, D.ui[lang], {
+                        subtitle: D.title[lang],
+                        location: P.location[lang],
+                        about_text: D.about[lang],
+                    });
+                    // Skill category labels
+                    Object.keys(D.skillCategoryLabels).forEach(function (k) {
+                        t["skills_" + k] = D.skillCategoryLabels[k][lang];
+                    });
+                    // Experience
+                    D.experience.forEach(function (exp, i) {
+                        var n = i + 1;
+                        t["exp" + n + "_role"] = exp.role[lang];
+                        t["exp" + n + "_company"] = exp.company[lang];
+                        exp.description[lang].forEach(function (desc, j) {
+                            t["exp" + n + "_li" + (j + 1)] = desc;
+                        });
+                    });
+                    // Education
+                    D.education.forEach(function (edu, i) {
+                        t["edu" + (i + 1) + "_degree"] = edu.degree[lang];
+                    });
+                    // Languages
+                    D.languages.forEach(function (l, i) {
+                        t["lang" + i + "_name"] = l.name[lang];
+                        t["lang" + i + "_level"] = l.level[lang];
+                    });
+                    // Interests
+                    D.interests.forEach(function (item, i) {
+                        t["interest" + i] = item.label[lang];
+                    });
+                    return t;
+                }
+
+                // Generate hero
+                var heroName = document.getElementById("hero-name");
+                heroName.innerHTML = P.firstName + ' <span class="accent">' + P.lastName + "</span>";
+
+                var heroLinks = document.getElementById("hero-links");
+                heroLinks.innerHTML =
+                    '<a href="mailto:' + P.email + '" class="btn-primary" data-i18n="cta">Get in Touch</a>' +
+                    '<a href="/resume/" class="btn-secondary" data-i18n="resume_link">Resume</a>' +
+                    '<a href="' + P.githubUrl + '" class="btn-secondary" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
+                    '<a href="' + P.linkedinUrl + '" class="btn-secondary" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
+
+                // Generate SR summary
+                var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
+                var langSummary = D.languages.map(function (l) { return l.name.en + " (" + l.level.en + ")"; }).join(", ");
+                document.getElementById("sr-summary").innerHTML =
+                    "<h1>" + P.name + " — " + D.title.en + "</h1>" +
+                    "<p>Email: " + P.email + " | Phone: " + P.phoneDisplay.en + "</p>" +
+                    "<p>Location: " + P.location.en + "</p>" +
+                    "<p>GitHub: " + P.githubUrl + " | LinkedIn: " + P.linkedinUrl + "</p>" +
+                    "<h2>Summary</h2><p>" + D.about.en + "</p>" +
+                    "<h2>Skills</h2><p>" + allSkills.join(", ") + "</p>" +
+                    "<h2>Languages</h2><p>" + langSummary + "</p>";
+
+                // Generate skills
+                var skillsHtml = "";
+                Object.keys(D.skills).forEach(function (cat) {
+                    skillsHtml += '<div class="skill-card"><h3 data-i18n="skills_' + cat + '">' +
+                        D.skillCategoryLabels[cat].en + '</h3><div class="skill-tags" role="list">';
+                    D.skills[cat].forEach(function (s) {
+                        skillsHtml += '<span class="tag" role="listitem">' + s + "</span>";
+                    });
+                    skillsHtml += "</div></div>";
                 });
-                document.documentElement.lang = lang;
-                const btnEn = document.getElementById("btn-en");
-                const btnFr = document.getElementById("btn-fr");
-                btnEn.classList.toggle("active", lang === "en");
-                btnFr.classList.toggle("active", lang === "fr");
-                btnEn.setAttribute("aria-pressed", lang === "en" ? "true" : "false");
-                btnFr.setAttribute("aria-pressed", lang === "fr" ? "true" : "false");
-                try { localStorage.setItem("lang", lang); } catch (_) {}
-            }
+                document.getElementById("skills-grid").innerHTML = skillsHtml;
 
-            document.addEventListener("DOMContentLoaded", () => {
-                const o = new IntersectionObserver(
-                    (e) => {
-                        e.forEach((el) => {
-                            if (el.isIntersecting) {
-                                el.target.classList.add("visible");
-                                o.unobserve(el.target);
+                // Generate experience timeline
+                var expHtml = "";
+                D.experience.forEach(function (exp, i) {
+                    var n = i + 1;
+                    expHtml += '<article class="timeline-item">' +
+                        '<h3 data-i18n="exp' + n + '_role">' + exp.role.en + "</h3>" +
+                        '<div class="company" data-i18n="exp' + n + '_company">' + exp.company.en + "</div>" +
+                        '<div class="period"><time datetime="' + exp.startDate + '">' + exp.period.en.split(" — ")[0] +
+                        '</time> — <time datetime="' + exp.endDate + '">' + exp.period.en.split(" — ")[1] + "</time></div><ul>";
+                    exp.description.en.forEach(function (desc, j) {
+                        expHtml += '<li data-i18n="exp' + n + "_li" + (j + 1) + '">' + desc + "</li>";
+                    });
+                    expHtml += "</ul></article>";
+                });
+                document.getElementById("timeline").innerHTML = expHtml;
+
+                // Generate education
+                var eduHtml = "";
+                D.education.forEach(function (edu, i) {
+                    eduHtml += '<div class="edu-card"><div>' +
+                        '<h3 data-i18n="edu' + (i + 1) + '_degree">' + edu.degree.en + "</h3>" +
+                        '<div class="school">' + edu.school + "</div></div>" +
+                        '<div class="year"><time datetime="' + edu.startYear + '">' + edu.startYear +
+                        '</time> — <time datetime="' + edu.endYear + '">' + edu.endYear + "</time></div></div>";
+                });
+                document.getElementById("edu-grid").innerHTML = eduHtml;
+
+                // Generate languages
+                var langHtml = "";
+                D.languages.forEach(function (l, i) {
+                    langHtml += '<div class="lang-item">' +
+                        '<strong data-i18n="lang' + i + '_name">' + l.name.en + "</strong>" +
+                        '<span data-i18n="lang' + i + '_level">' + l.level.en + "</span></div>";
+                });
+                document.getElementById("lang-list").innerHTML = langHtml;
+
+                // Generate interests
+                var intHtml = "";
+                D.interests.forEach(function (item, i) {
+                    intHtml += '<div class="interest"><span aria-hidden="true">' + item.emoji +
+                        '</span> <span data-i18n="interest' + i + '">' + item.label.en + "</span></div>";
+                });
+                document.getElementById("interests-list").innerHTML = intHtml;
+
+                // Generate contact
+                document.getElementById("contact-links").innerHTML =
+                    '<a href="mailto:' + P.email + '" class="contact-link" aria-label="Email: ' + P.email + '"><span aria-hidden="true">✉️</span> ' + P.email + "</a>" +
+                    '<a href="tel:' + P.phone + '" class="contact-link" aria-label="Phone: ' + P.phoneDisplay.en + '"><span aria-hidden="true">📞</span> ' + P.phoneDisplay.en + "</a>" +
+                    '<a href="' + P.githubUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
+                    '<a href="' + P.linkedinUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
+
+                // Generate JSON-LD
+                var jsonLd = {
+                    "@context": "https://schema.org",
+                    "@type": "Person",
+                    name: P.name,
+                    url: P.websiteUrl,
+                    email: P.email,
+                    telephone: P.phone,
+                    jobTitle: D.title.en,
+                    address: {
+                        "@type": "PostalAddress",
+                        addressLocality: "Saint-Nolff",
+                        addressRegion: "Brittany",
+                        addressCountry: "FR",
+                    },
+                    knowsLanguage: D.languages.map(function (l) {
+                        return { "@type": "Language", name: l.name.en, alternateName: l.code };
+                    }),
+                    knowsAbout: allSkills.concat(["Mobile Development", "Fullstack Development", "DevOps"]),
+                    hasOccupation: D.experience.map(function (exp) {
+                        return {
+                            "@type": "Role",
+                            roleName: exp.role.en,
+                            startDate: exp.startDate,
+                            endDate: exp.endDate,
+                            description: exp.description.en.join(". "),
+                            worksFor: { "@type": "Organization", name: exp.company.en },
+                        };
+                    }),
+                    alumniOf: (function () {
+                        var seen = {};
+                        return D.education.filter(function (e) {
+                            if (seen[e.school]) return false;
+                            seen[e.school] = true;
+                            return true;
+                        }).map(function (e) {
+                            return { "@type": "EducationalOrganization", name: e.school };
+                        });
+                    })(),
+                    hasCredential: D.education.map(function (e) {
+                        return {
+                            "@type": "EducationalOccupationalCredential",
+                            credentialCategory: "degree",
+                            name: e.degree.en,
+                            recognizedBy: { "@type": "EducationalOrganization", name: e.school },
+                            dateCreated: e.endYear,
+                        };
+                    }),
+                    sameAs: [P.githubUrl, P.linkedinUrl],
+                };
+                var ldScript = document.createElement("script");
+                ldScript.type = "application/ld+json";
+                ldScript.textContent = JSON.stringify(jsonLd);
+                document.head.appendChild(ldScript);
+
+                // i18n
+                window.setLang = function (lang) {
+                    currentLang = lang;
+                    var t = buildTranslations(lang);
+                    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+                        var key = el.getAttribute("data-i18n");
+                        if (t[key] !== undefined) el.textContent = t[key];
+                    });
+                    document.documentElement.lang = lang;
+                    var btnEn = document.getElementById("btn-en");
+                    var btnFr = document.getElementById("btn-fr");
+                    btnEn.classList.toggle("active", lang === "en");
+                    btnFr.classList.toggle("active", lang === "fr");
+                    btnEn.setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+                    btnFr.setAttribute("aria-pressed", lang === "fr" ? "true" : "false");
+                    try { localStorage.setItem("lang", lang); } catch (_) {}
+                };
+
+                // Fade-in observer
+                var o = new IntersectionObserver(
+                    function (entries) {
+                        entries.forEach(function (entry) {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add("visible");
+                                o.unobserve(entry.target);
                             }
                         });
                     },
-                    { threshold: 0.15 },
+                    { threshold: 0.15 }
                 );
-                document
-                    .querySelectorAll(".fade-in")
-                    .forEach((el) => o.observe(el));
+                document.querySelectorAll(".fade-in").forEach(function (el) { o.observe(el); });
 
-                let saved;
+                // Restore saved language
+                var saved;
                 try { saved = localStorage.getItem("lang"); } catch (_) {}
                 if (saved === "fr") setLang("fr");
-            });
+            })();
         </script>
     </body>
 </html>
