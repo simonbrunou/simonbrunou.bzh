@@ -411,47 +411,31 @@
                 font-weight: 600;
             }
 
-            /* Action bar */
-
-            .action-bar {
-                position: fixed;
-                top: 16px;
-                right: 16px;
-                z-index: 100;
-                display: flex;
-                gap: 8px;
-            }
-
-            .action-btn {
-                background: var(--bg-card);
-                border: 1px solid var(--border-light);
-                color: var(--text-primary);
-                padding: 8px 16px;
-                border-radius: 8px;
+            /* PDF button (inside header, left of theme toggle) */
+            .pdf-btn {
+                position: absolute;
+                top: 14px;
+                right: 60px;
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                height: 38px;
+                padding: 0 14px;
+                border-radius: 19px;
                 cursor: pointer;
                 font-family: inherit;
-                font-size: 0.85rem;
-                font-weight: 500;
+                font-size: 0.8rem;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                box-shadow: 0 2px 8px var(--shadow);
-                transition: all 0.2s;
+                transition: background 0.2s, transform 0.2s;
             }
 
-            .action-btn:hover {
-                border-color: var(--accent);
-                box-shadow: 0 4px 12px var(--shadow-lg);
-            }
-
-            .action-btn-primary {
-                background: var(--accent);
-                border-color: var(--accent);
-                color: white;
-            }
-
-            .action-btn-primary:hover {
-                opacity: 0.9;
+            .pdf-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(1.05);
             }
 
             /* Responsive */
@@ -522,7 +506,7 @@
                 }
 
                 .theme-toggle,
-                .action-bar {
+                .pdf-btn {
                     display: none !important;
                 }
 
@@ -659,12 +643,6 @@
         </style>
     </head>
     <body>
-        <div class="action-bar">
-            <button class="action-btn action-btn-primary" onclick="window.print()" title="Enregistrer en PDF via Imprimer > Enregistrer en PDF">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>
-                PDF
-            </button>
-        </div>
         <div class="container">
             <header id="resume-header" class="header"></header>
             <div class="main-content">
@@ -688,6 +666,7 @@
 
                 // Header
                 document.getElementById("resume-header").innerHTML =
+                    '<button class="pdf-btn" onclick="window.print()" title="Enregistrer en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</button>' +
                     '<button class="theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème"><span class="theme-icon"></span></button>' +
                     '<img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" />' +
                     '<h1 class="name">' + P.name + '</h1>' +
