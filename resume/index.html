@@ -115,7 +115,7 @@
                     var(--accent-alt) 100%
                 );
                 color: white;
-                padding: 48px 40px 40px;
+                padding: 40px 40px 32px;
                 text-align: center;
                 position: relative;
             }
@@ -221,11 +221,11 @@
                 display: grid;
                 grid-template-columns: 1fr;
                 gap: 0;
-                padding: 44px 44px 36px;
+                padding: 28px 44px 24px;
             }
 
             .section {
-                margin-bottom: 36px;
+                margin-bottom: 20px;
             }
 
             .section:last-child {
@@ -236,7 +236,7 @@
                 font-size: 0.8rem;
                 font-weight: 700;
                 color: var(--accent);
-                margin-bottom: 20px;
+                margin-bottom: 12px;
                 text-transform: uppercase;
                 letter-spacing: 2.5px;
                 border-bottom: none;
@@ -249,10 +249,10 @@
 
             .profile-text {
                 text-align: left;
-                line-height: 1.8;
+                line-height: 1.6;
                 font-size: 0.95rem;
                 color: var(--text-secondary);
-                padding: 16px 20px;
+                padding: 12px 16px;
                 background: var(--accent-soft);
                 border-radius: 10px;
             }
@@ -261,7 +261,7 @@
 
             .experience-item,
             .education-item {
-                margin-bottom: 28px;
+                margin-bottom: 18px;
                 border-left: 2px solid var(--border-light);
                 padding-left: 20px;
                 position: relative;
@@ -341,7 +341,7 @@
             .skills-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                gap: 24px;
+                gap: 16px;
             }
 
             .skill-category h4 {
@@ -411,47 +411,31 @@
                 font-weight: 600;
             }
 
-            /* Action bar */
-
-            .action-bar {
-                position: fixed;
-                top: 16px;
-                right: 16px;
-                z-index: 100;
-                display: flex;
-                gap: 8px;
-            }
-
-            .action-btn {
-                background: var(--bg-card);
-                border: 1px solid var(--border-light);
-                color: var(--text-primary);
-                padding: 8px 16px;
-                border-radius: 8px;
+            /* PDF button (inside header, left of theme toggle) */
+            .pdf-btn {
+                position: absolute;
+                top: 14px;
+                right: 60px;
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: white;
+                height: 38px;
+                padding: 0 14px;
+                border-radius: 19px;
                 cursor: pointer;
                 font-family: inherit;
-                font-size: 0.85rem;
-                font-weight: 500;
+                font-size: 0.8rem;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                box-shadow: 0 2px 8px var(--shadow);
-                transition: all 0.2s;
+                transition: background 0.2s, transform 0.2s;
             }
 
-            .action-btn:hover {
-                border-color: var(--accent);
-                box-shadow: 0 4px 12px var(--shadow-lg);
-            }
-
-            .action-btn-primary {
-                background: var(--accent);
-                border-color: var(--accent);
-                color: white;
-            }
-
-            .action-btn-primary:hover {
-                opacity: 0.9;
+            .pdf-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(1.05);
             }
 
             /* Responsive */
@@ -522,7 +506,7 @@
                 }
 
                 .theme-toggle,
-                .action-bar {
+                .pdf-btn {
                     display: none !important;
                 }
 
@@ -533,28 +517,28 @@
                         #8839ef 100%
                     ) !important;
                     color: white;
-                    padding: 28px 30px 24px;
+                    padding: 18px 30px 16px;
                 }
 
                 .profile-photo {
-                    width: 80px;
-                    height: 80px;
-                    margin-bottom: 10px;
+                    width: 64px;
+                    height: 64px;
+                    margin-bottom: 6px;
                 }
 
                 .name {
-                    font-size: 1.3rem;
-                    margin-bottom: 2px;
+                    font-size: 1.1rem;
+                    margin-bottom: 1px;
                 }
 
                 .title {
-                    font-size: 1.7rem;
-                    margin-bottom: 14px;
+                    font-size: 1.4rem;
+                    margin-bottom: 8px;
                 }
 
                 .contact-info {
-                    gap: 8px;
-                    margin-top: 10px;
+                    gap: 5px;
+                    margin-top: 6px;
                 }
 
                 .contact-item {
@@ -568,31 +552,31 @@
                 }
 
                 .main-content {
-                    padding: 24px 30px 20px;
+                    padding: 14px 30px 10px;
                 }
 
                 .section {
-                    margin-bottom: 20px;
+                    margin-bottom: 8px;
                 }
 
                 .section-title {
                     color: #7287fd;
                     border-left-color: #7287fd;
-                    margin-bottom: 12px;
+                    margin-bottom: 6px;
                     font-size: 0.75rem;
                 }
 
                 .profile-text {
                     background: rgba(114, 135, 253, 0.06) !important;
-                    padding: 10px 14px;
-                    font-size: 0.85rem;
-                    line-height: 1.5;
+                    padding: 6px 12px;
+                    font-size: 0.82rem;
+                    line-height: 1.4;
                 }
 
                 .experience-item,
                 .education-item {
                     border-left-color: #ccd0da;
-                    margin-bottom: 16px;
+                    margin-bottom: 8px;
                     padding-left: 14px;
                 }
 
@@ -613,17 +597,17 @@
 
                 .date {
                     font-size: 0.76rem;
-                    margin-bottom: 6px;
+                    margin-bottom: 3px;
                 }
 
                 .job-description li {
-                    font-size: 0.82rem;
-                    margin-bottom: 3px;
-                    line-height: 1.4;
+                    font-size: 0.78rem;
+                    margin-bottom: 1px;
+                    line-height: 1.3;
                 }
 
                 .skills-grid {
-                    gap: 14px;
+                    gap: 8px;
                 }
 
                 .skill-tag {
@@ -659,12 +643,6 @@
         </style>
     </head>
     <body>
-        <div class="action-bar">
-            <button class="action-btn action-btn-primary" onclick="window.print()" title="Enregistrer en PDF via Imprimer > Enregistrer en PDF">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>
-                PDF
-            </button>
-        </div>
         <div class="container">
             <header id="resume-header" class="header"></header>
             <div class="main-content">
@@ -688,6 +666,7 @@
 
                 // Header
                 document.getElementById("resume-header").innerHTML =
+                    '<button class="pdf-btn" onclick="window.print()" title="Enregistrer en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</button>' +
                     '<button class="theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème"><span class="theme-icon"></span></button>' +
                     '<img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" />' +
                     '<h1 class="name">' + P.name + '</h1>' +
