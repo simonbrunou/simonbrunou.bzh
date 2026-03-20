@@ -4,3 +4,9 @@
 !.dev.vars.example
 .env*
 !.env.example
+
+# node
+node_modules/
+
+# generated PDF
+resume/simon-brunou-cv.pdf
