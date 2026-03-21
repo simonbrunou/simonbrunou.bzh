@@ -104,15 +104,20 @@
             .theme-toggle { width: 38px; padding: 0; justify-content: center; border-radius: 50%; }
             .theme-toggle .theme-icon { font-size: 1.1rem; }
 
-            .profile-photo {
+            .photo-wrapper {
                 width: 110px;
                 height: 110px;
                 border-radius: 50%;
-                object-fit: cover;
+                overflow: hidden;
                 border: 3px solid var(--photo-border);
                 box-shadow: 0 4px 20px var(--photo-shadow);
-                display: block;
                 margin: 0 auto 18px;
+            }
+            .profile-photo {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
             }
 
             .name {
@@ -255,7 +260,7 @@
                 .contact-info { flex-direction: column; align-items: center; gap: 10px; }
                 .title { font-size: 1.6rem; }
                 .name { font-size: 1.2rem; }
-                .profile-photo { width: 90px; height: 90px; margin-bottom: 12px; }
+                .photo-wrapper { width: 90px; height: 90px; margin-bottom: 12px; }
                 .skills-grid { grid-template-columns: 1fr; }
             }
 
@@ -268,7 +273,7 @@
                 .container { box-shadow: none; margin: 0; border-radius: 0; background: white; overflow: visible; }
                 .header-actions { display: none !important; }
                 .header { background: linear-gradient(160deg, #7287fd, #8839ef) !important; padding: 18px 30px 16px; }
-                .profile-photo { width: 64px; height: 64px; margin-bottom: 6px; box-shadow: none; clip-path: circle(50%); }
+                .photo-wrapper { width: 64px; height: 64px; margin-bottom: 6px; box-shadow: none; border-color: rgba(180,190,254,0.5) !important; }
                 .name { font-size: 1.1rem; margin-bottom: 1px; }
                 .title { font-size: 1.4rem; margin-bottom: 8px; }
                 .contact-info { gap: 5px; margin-top: 6px; }
@@ -320,7 +325,7 @@
                         '<a href="/resume/simon-brunou-cv.pdf" download class="header-action" title="Télécharger en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</a>' +
                         '<button class="header-action theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème"><span class="theme-icon"></span></button>' +
                     '</div>' +
-                    '<img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" />' +
+                    '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
                     '<h1 class="name">' + P.name + '</h1>' +
                     '<h2 class="title">' + t(D.title) + '</h2>' +
                     '<ul class="contact-info">' +
