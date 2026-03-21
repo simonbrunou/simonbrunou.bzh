@@ -1,0 +1,19 @@
+{
+  "name": "simonbrunou.bzh",
+  "version": "1.0.0",
+  "description": "",
+  "main": "data.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:32985/git/simonbrunou/simonbrunou.bzh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@cloudflare/puppeteer": "^1.0.6"
+  }
+}
