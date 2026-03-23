@@ -1,0 +1,4 @@
+Contact: mailto:simon.brunou@proton.me
+Expires: 2027-03-23T00:00:00.000Z
+Preferred-Languages: en, fr
+Canonical: https://simonbrunou.bzh/.well-known/security.txt
