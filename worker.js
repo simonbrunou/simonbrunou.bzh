@@ -8,6 +8,39 @@ export default {
             return env.ASSETS.fetch(request);
         }
 
+        if (request.method !== "POST") {
+            return new Response("Method Not Allowed", { status: 405 });
+        }
+
+        // Verify Cloudflare Turnstile token
+        let token;
+        try {
+            const body = await request.json();
+            token = body.token;
+        } catch {
+            return new Response("Bad Request", { status: 400 });
+        }
+
+        if (!token) {
+            return new Response("Bad Request", { status: 400 });
+        }
+
+        const formData = new FormData();
+        formData.append("secret", env.TURNSTILE_SECRET_KEY);
+        formData.append("response", token);
+        const ip = request.headers.get("CF-Connecting-IP");
+        if (ip) formData.append("remoteip", ip);
+
+        const verifyRes = await fetch(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            { method: "POST", body: formData }
+        );
+        const outcome = await verifyRes.json();
+
+        if (!outcome.success) {
+            return new Response("Forbidden", { status: 403 });
+        }
+
         const browser = await puppeteer.launch(env.BROWSER);
         const page = await browser.newPage();
 
@@ -15,7 +48,7 @@ export default {
             { name: "prefers-color-scheme", value: "light" },
         ]);
 
-        const resumeUrl = new URL("/resume/", url.origin);
+        const resumeUrl = new URL("/resume/?pdf=1", url.origin);
         await page.goto(resumeUrl.toString(), { waitUntil: "networkidle0" });
 
         await page.evaluate(() => {
@@ -36,7 +69,7 @@ export default {
                 "Content-Type": "application/pdf",
                 "Content-Disposition":
                     'attachment; filename="simon-brunou-cv.pdf"',
-                "Cache-Control": "public, max-age=3600",
+                "Cache-Control": "no-store",
             },
         });
     },

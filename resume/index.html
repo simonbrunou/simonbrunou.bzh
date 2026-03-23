@@ -21,6 +21,8 @@
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit" async defer></script>
+
         <style>
             /* Catppuccin Latte (light) */
             :root {
@@ -310,6 +312,8 @@
             </div>
         </div>
 
+        <div id="cf-turnstile" style="display:none"></div>
+
         <script src="../data.js"></script>
         <script>
             (function () {
@@ -323,7 +327,7 @@
                 document.getElementById("resume-header").innerHTML =
                     '<div class="header-actions">' +
                         '<a href="/" class="header-action" title="Voir le site complet"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 1114 0A7 7 0 011 8z"/><path d="M1 8h14"/><path d="M8 1a10.5 10.5 0 013 7 10.5 10.5 0 01-3 7 10.5 10.5 0 01-3-7 10.5 10.5 0 013-7z"/></svg>Site</a>' +
-                        '<a href="/resume/simon-brunou-cv.pdf" download class="header-action" title="Télécharger en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</a>' +
+                        '<button type="button" id="pdf-download-btn" class="header-action" title="Télécharger en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</button>' +
                         '<button class="header-action theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème"><span class="theme-icon"></span></button>' +
                     '</div>' +
                     '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
@@ -445,6 +449,72 @@
                 });
 
                 prefersDark.addEventListener("change", function () { if (!localStorage.getItem("resume-theme")) updateIcon(); });
+            })();
+        </script>
+        <script>
+            // Cloudflare Turnstile — protects the PDF generation endpoint
+            // Replace the sitekey with your own from the Cloudflare Dashboard.
+            // Set the secret key with: wrangler secret put TURNSTILE_SECRET_KEY
+            (function () {
+                // Skip Turnstile when the page is loaded by Puppeteer for PDF generation
+                if (new URLSearchParams(window.location.search).get("pdf")) return;
+
+                var pdfBtnInner = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF';
+                var widgetId;
+
+                function getBtn() { return document.getElementById("pdf-download-btn"); }
+
+                function setLoading(loading) {
+                    var btn = getBtn();
+                    if (!btn) return;
+                    btn.disabled = loading;
+                    btn.innerHTML = loading ? pdfBtnInner.replace("PDF", "…") : pdfBtnInner;
+                }
+
+                function downloadPDF(token) {
+                    fetch("/resume/simon-brunou-cv.pdf", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ token: token }),
+                    })
+                        .then(function (r) {
+                            if (!r.ok) throw new Error("Failed: " + r.status);
+                            return r.blob();
+                        })
+                        .then(function (blob) {
+                            var blobUrl = URL.createObjectURL(blob);
+                            var a = document.createElement("a");
+                            a.href = blobUrl;
+                            a.download = "simon-brunou-cv.pdf";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(blobUrl);
+                        })
+                        .catch(function (err) { console.error(err); })
+                        .finally(function () {
+                            setLoading(false);
+                            if (widgetId !== undefined) turnstile.reset(widgetId);
+                        });
+                }
+
+                window.onloadTurnstileCallback = function () {
+                    widgetId = turnstile.render("#cf-turnstile", {
+                        sitekey: "1x00000000000000000000AA", // TODO: replace with your Cloudflare Turnstile site key
+                        size: "invisible",
+                        callback: function (token) { downloadPDF(token); },
+                        "error-callback": function () { setLoading(false); },
+                        "expired-callback": function () { setLoading(false); },
+                    });
+
+                    var btn = getBtn();
+                    if (btn) {
+                        btn.addEventListener("click", function () {
+                            setLoading(true);
+                            turnstile.execute(widgetId);
+                        });
+                    }
+                };
             })();
         </script>
     </body>
