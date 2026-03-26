@@ -498,14 +498,16 @@
                         });
                 }
 
+                var turnstileOpts = {
+                    sitekey: "0x4AAAAAACvBqO10GT9_Ajun",
+                    size: "invisible",
+                    callback: function (token) { downloadPDF(token); },
+                    "error-callback": function () { setLoading(false); },
+                    "expired-callback": function () { setLoading(false); },
+                };
+
                 window.onloadTurnstileCallback = function () {
-                    widgetId = turnstile.render("#cf-turnstile", {
-                        sitekey: "0x4AAAAAACvBqO10GT9_Ajun",
-                        size: "invisible",
-                        callback: function (token) { downloadPDF(token); },
-                        "error-callback": function () { setLoading(false); },
-                        "expired-callback": function () { setLoading(false); },
-                    });
+                    widgetId = turnstile.render("#cf-turnstile", turnstileOpts);
 
                     var btn = getBtn();
                     if (btn) {
@@ -515,6 +517,14 @@
                         });
                     }
                 };
+
+                // Re-render the widget when the page is restored from bfcache
+                window.addEventListener("pageshow", function (e) {
+                    if (e.persisted && typeof turnstile !== "undefined" && widgetId !== undefined) {
+                        turnstile.remove(widgetId);
+                        widgetId = turnstile.render("#cf-turnstile", turnstileOpts);
+                    }
+                });
             })();
         </script>
     </body>
