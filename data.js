@@ -20,6 +20,14 @@ window.RESUME_DATA = {
         websiteUrl: "https://simonbrunou.bzh",
     },
 
+    availability: {
+        open: true,
+        label: {
+            en: "Open to opportunities",
+            fr: "Ouvert aux opportunités",
+        },
+    },
+
     title: {
         en: "Fullstack Developer",
         fr: "Développeur Fullstack",
@@ -27,7 +35,7 @@ window.RESUME_DATA = {
 
     about: {
         en: "Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.",
-        fr: "Développeur Fullstack impliqué, motivé et sérieux avec de l'expérience dans le développement d'applications mobiles, la gestion de projets, la communication client et la livraison régulière de produits.",
+        fr: "Développeur Fullstack impliqué, motivé et sérieux avec de l'expérience dans le développement d'applications mobiles, la gestion de projets, la communication client et la livraison régulière de produits. Basé en Bretagne, je conçois des applications robustes sur l'ensemble de la stack — du mobile et desktop au backend et middleware — avec une passion pour Rust et la programmation système.",
     },
 
     skills: {
@@ -257,6 +265,7 @@ window.RESUME_DATA = {
                 "Interested in working together or just want to say hello?",
             footer: "© 2026 Simon Brunou — Built with care in Brittany",
             skip_link: "Skip to main content",
+            theme_toggle: "Toggle theme",
         },
         fr: {
             cta: "Me Contacter",
@@ -272,6 +281,7 @@ window.RESUME_DATA = {
                 "Intéressé par une collaboration ou simplement envie de dire bonjour ?",
             footer: "© 2026 Simon Brunou — Fait avec soin en Bretagne",
             skip_link: "Aller au contenu principal",
+            theme_toggle: "Changer de thème",
         },
     },
 };

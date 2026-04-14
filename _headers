@@ -9,3 +9,9 @@
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
+
+/resume/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/resume/photo.png
+  Cache-Control: public, max-age=604800, s-maxage=2592000, immutable
