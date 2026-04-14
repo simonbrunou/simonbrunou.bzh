@@ -1,7 +1,15 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <script>document.documentElement.classList.add('js');</script>
+        <script>
+            document.documentElement.classList.add('js');
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+                    document.documentElement.classList.add('light');
+                }
+            } catch (_) {}
+        </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <title>Simon Brunou — Fullstack Developer</title>
@@ -24,12 +32,15 @@
         <meta property="og:locale" content="en_US" />
         <meta property="og:locale:alternate" content="fr_FR" />
         <meta property="og:site_name" content="Simon Brunou" />
+        <meta property="og:image" content="https://simonbrunou.bzh/resume/photo.png" />
+        <meta property="og:image:alt" content="Simon Brunou" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Simon Brunou — Fullstack Developer" />
         <meta
             name="twitter:description"
             content="Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
         />
+        <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <meta name="robots" content="index, follow" />
         <meta
             name="keywords"
@@ -41,6 +52,7 @@
         <link rel="alternate" hreflang="x-default" href="https://simonbrunou.bzh" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
         <link
             rel="icon"
@@ -67,6 +79,18 @@
                 --radius: 12px;
                 --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
+            /* Light theme */
+            :root.light {
+                --bg: #f0f0f8;
+                --bg2: #ffffff;
+                --bg3: #e0e0ee;
+                --text: #1a1a2e;
+                --text2: #4a4a6a;
+                --accent: #5a52e0;
+                --accent2: #e04040;
+                --accent-glow: rgba(90, 82, 224, 0.1);
+            }
+
             html {
                 scroll-behavior: smooth;
                 font-size: 16px;
@@ -180,6 +204,66 @@
             .lang-toggle button:hover:not(.active) {
                 color: var(--text);
                 background: var(--bg3);
+            }
+
+            /* Theme toggle */
+            .theme-toggle {
+                position: fixed;
+                top: 1rem;
+                right: 7.5rem;
+                z-index: 100;
+                background: var(--bg2);
+                border: 1px solid var(--bg3);
+                border-radius: var(--radius);
+                color: var(--text2);
+                padding: 0.45rem 0.65rem;
+                font-size: 1rem;
+                line-height: 1;
+                cursor: pointer;
+                transition: all var(--transition);
+            }
+            .theme-toggle:hover {
+                color: var(--text);
+                background: var(--bg3);
+            }
+
+            /* Availability badge */
+            .availability {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.35rem 0.9rem;
+                border-radius: 2rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                letter-spacing: 0.03em;
+                margin-bottom: 1rem;
+                background: rgba(46, 204, 113, 0.1);
+                color: #2ecc71;
+                border: 1px solid rgba(46, 204, 113, 0.25);
+            }
+            .availability::before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #2ecc71;
+                animation: pulse-dot 2s ease-in-out infinite;
+            }
+            @keyframes pulse-dot {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.4; }
+            }
+
+            /* Hero photo */
+            .hero-photo {
+                width: 120px;
+                height: 120px;
+                border-radius: 50%;
+                border: 3px solid var(--accent);
+                box-shadow: 0 0 0 4px var(--accent-glow), 0 8px 30px rgba(0, 0, 0, 0.3);
+                margin-bottom: 1.5rem;
+                object-fit: cover;
             }
 
             /* Hero */
@@ -607,6 +691,9 @@
                     opacity: 1;
                     transform: none;
                 }
+                .availability::before {
+                    animation: none;
+                }
             }
 
             /* High contrast mode */
@@ -632,6 +719,16 @@
                 }
                 .btn-primary {
                     border: 2px solid LinkText !important;
+                }
+                .theme-toggle {
+                    border: 1px solid CanvasText !important;
+                }
+                .availability {
+                    border: 1px solid CanvasText !important;
+                }
+                .hero-photo {
+                    border-color: LinkText !important;
+                    box-shadow: none !important;
                 }
             }
 
@@ -664,7 +761,9 @@
                     transform: none !important;
                 }
                 .lang-toggle,
+                .theme-toggle,
                 .hero-links,
+                .availability,
                 #interests,
                 #contact {
                     display: none;
@@ -714,6 +813,10 @@
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" onclick="toggleTheme()">
+            <span id="theme-icon" aria-hidden="true">☀️</span>
+        </button>
+
         <nav class="lang-toggle" aria-label="Language selector">
             <button id="btn-en" class="active" aria-pressed="true" onclick="setLang('en')">EN</button>
             <button id="btn-fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
@@ -721,9 +824,11 @@
 
         <header class="hero">
             <div class="hero-content">
+                <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="120" height="120" loading="eager" />
                 <h1 id="hero-name"></h1>
                 <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
                 <p class="location" data-i18n="location">Saint-Nolff, Brittany, France</p>
+                <div id="availability-badge"></div>
                 <div id="hero-links" class="hero-links"></div>
             </div>
         </header>
@@ -788,12 +893,39 @@
             </div>
         </footer>
 
+        <noscript>
+            <style>.hero-photo, .theme-toggle, .lang-toggle, #availability-badge { display: none; }</style>
+            <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;font-family:monospace;">
+                <h1 style="font-size:2rem;margin-bottom:0.5rem;">Simon <span style="color:#6c63ff;">Brunou</span></h1>
+                <p style="color:#b0b0d0;margin-bottom:0.5rem;">Fullstack Developer</p>
+                <p style="color:#b0b0d0;margin-bottom:1.5rem;">Saint-Nolff, Brittany, France</p>
+                <p style="color:#e0e0f0;line-height:1.8;margin-bottom:2rem;">Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.</p>
+                <p style="margin-bottom:1rem;"><strong>Skills:</strong> <span style="color:#b0b0d0;">Rust, Dart, Kotlin, Swift, Java, JavaScript, TypeScript, Python, C, Flutter, React Native, Android, iOS, React, Electron, Angular, Spring Boot, Node.js, Git, Docker, Proxmox, GitLab CI/CD, Terraform, Figma</span></p>
+                <p><a href="mailto:simon.brunou@proton.me" style="color:#6c63ff;">simon.brunou@proton.me</a> &middot; <a href="https://github.com/simonbrunou" style="color:#6c63ff;">GitHub</a> &middot; <a href="https://www.linkedin.com/in/simon-brunou-a7a5a489" style="color:#6c63ff;">LinkedIn</a> &middot; <a href="/resume/" style="color:#6c63ff;">Resume</a></p>
+            </div>
+        </noscript>
+
         <script src="data.js"></script>
         <script>
             (function () {
                 var D = window.RESUME_DATA;
                 var P = D.personal;
                 var currentLang = "en";
+
+                // Theme toggle
+                function isLight() {
+                    return document.documentElement.classList.contains("light");
+                }
+                function updateThemeIcon() {
+                    document.getElementById("theme-icon").textContent = isLight() ? "\uD83C\uDF19" : "\u2600\uFE0F";
+                }
+                window.toggleTheme = function () {
+                    var light = !isLight();
+                    document.documentElement.classList.toggle("light", light);
+                    try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
+                    updateThemeIcon();
+                };
+                updateThemeIcon();
 
                 // Build translations from shared data
                 function buildTranslations(lang) {
@@ -802,6 +934,9 @@
                         location: P.location[lang],
                         about_text: D.about[lang],
                     });
+                    if (D.availability && D.availability.open) {
+                        t["availability"] = D.availability.label[lang];
+                    }
                     // Skill category labels
                     Object.keys(D.skillCategoryLabels).forEach(function (k) {
                         t["skills_" + k] = D.skillCategoryLabels[k][lang];
@@ -834,6 +969,12 @@
                 // Generate hero
                 var heroName = document.getElementById("hero-name");
                 heroName.innerHTML = P.firstName + ' <span class="accent">' + P.lastName + "</span>";
+
+                // Generate availability badge
+                if (D.availability && D.availability.open) {
+                    document.getElementById("availability-badge").innerHTML =
+                        '<span class="availability" data-i18n="availability">' + D.availability.label.en + '</span>';
+                }
 
                 var heroLinks = document.getElementById("hero-links");
                 heroLinks.innerHTML =
@@ -910,10 +1051,12 @@
                 });
                 document.getElementById("interests-list").innerHTML = intHtml;
 
-                // Generate contact
+                // Generate contact (phone assembled at runtime to deter scrapers)
+                var ph = [P.phone.slice(0, 4), P.phone.slice(4, 7), P.phone.slice(7, 10), P.phone.slice(10)].join("");
+                var phDisplay = P.phoneDisplay[currentLang] || P.phoneDisplay.en;
                 document.getElementById("contact-links").innerHTML =
                     '<a href="mailto:' + P.email + '" class="contact-link" aria-label="Email: ' + P.email + '"><span aria-hidden="true">✉️</span> ' + P.email + "</a>" +
-                    '<a href="tel:' + P.phone + '" class="contact-link" aria-label="Phone: ' + P.phoneDisplay.en + '"><span aria-hidden="true">📞</span> ' + P.phoneDisplay.en + "</a>" +
+                    '<a href="tel:' + ph + '" class="contact-link" aria-label="Phone: ' + phDisplay + '"><span aria-hidden="true">📞</span> ' + phDisplay + "</a>" +
                     '<a href="' + P.githubUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
                     '<a href="' + P.linkedinUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
 
@@ -924,7 +1067,6 @@
                     name: P.name,
                     url: P.websiteUrl,
                     email: P.email,
-                    telephone: P.phone,
                     jobTitle: D.title.en,
                     address: {
                         "@type": "PostalAddress",
@@ -987,6 +1129,13 @@
                     btnFr.classList.toggle("active", lang === "fr");
                     btnEn.setAttribute("aria-pressed", lang === "en" ? "true" : "false");
                     btnFr.setAttribute("aria-pressed", lang === "fr" ? "true" : "false");
+                    // Update phone display for current language
+                    var phLink = document.querySelector('.contact-link[aria-label^="Phone"]');
+                    if (phLink) {
+                        var pd = P.phoneDisplay[lang] || P.phoneDisplay.en;
+                        phLink.setAttribute("aria-label", "Phone: " + pd);
+                        phLink.lastChild.textContent = " " + pd;
+                    }
                     try { localStorage.setItem("lang", lang); } catch (_) {}
                 };
 
