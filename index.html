@@ -173,6 +173,63 @@
                 outline-offset: -2px;
             }
 
+            /* Scroll progress */
+            .scroll-progress {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                z-index: 150;
+                background: linear-gradient(90deg, var(--accent), var(--accent2));
+                transform-origin: 0 50%;
+                transform: scaleX(0);
+                will-change: transform;
+                pointer-events: none;
+            }
+
+            /* Back-to-top button */
+            .back-to-top {
+                position: fixed;
+                bottom: 1.25rem;
+                right: 1.25rem;
+                z-index: 90;
+                width: 2.75rem;
+                height: 2.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--bg2);
+                color: var(--text);
+                border: 1px solid var(--bg3);
+                border-radius: 50%;
+                cursor: pointer;
+                opacity: 0;
+                transform: translateY(8px);
+                pointer-events: none;
+                transition:
+                    opacity var(--transition),
+                    transform var(--transition),
+                    background var(--transition),
+                    border-color var(--transition),
+                    color var(--transition);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            }
+            .back-to-top svg {
+                width: 1.1rem;
+                height: 1.1rem;
+            }
+            .back-to-top.visible {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+            .back-to-top:hover {
+                border-color: var(--accent);
+                color: var(--accent);
+                background: var(--bg3);
+            }
+
             /* Language toggle */
             .lang-toggle {
                 position: fixed;
@@ -436,6 +493,11 @@
             .skill-card:hover .tag {
                 background: var(--accent-glow);
                 color: var(--accent);
+            }
+            .skill-card .tag:hover {
+                background: var(--accent);
+                color: #fff;
+                transform: translateY(-1px);
             }
 
             /* Timeline */
@@ -720,7 +782,8 @@
                 .btn-primary {
                     border: 2px solid LinkText !important;
                 }
-                .theme-toggle {
+                .theme-toggle,
+                .back-to-top {
                     border: 1px solid CanvasText !important;
                 }
                 .availability {
@@ -764,6 +827,8 @@
                 .theme-toggle,
                 .hero-links,
                 .availability,
+                .scroll-progress,
+                .back-to-top,
                 #interests,
                 #contact {
                     display: none;
@@ -810,6 +875,8 @@
     </head>
     <body>
         <a href="#about" class="skip-link" data-i18n="skip_link">Skip to main content</a>
+
+        <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
@@ -893,8 +960,15 @@
             </div>
         </footer>
 
+        <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M12 19V5" />
+                <path d="M5 12l7-7 7 7" />
+            </svg>
+        </button>
+
         <noscript>
-            <style>.hero-photo, .theme-toggle, .lang-toggle, #availability-badge { display: none; }</style>
+            <style>.hero-photo, .theme-toggle, .lang-toggle, #availability-badge, .scroll-progress, .back-to-top { display: none; }</style>
             <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;font-family:monospace;">
                 <h1 style="font-size:2rem;margin-bottom:0.5rem;">Simon <span style="color:#6c63ff;">Brunou</span></h1>
                 <p style="color:#b0b0d0;margin-bottom:0.5rem;">Fullstack Developer</p>
@@ -1122,6 +1196,7 @@
                         var key = el.getAttribute("data-i18n");
                         if (t[key] !== undefined) el.textContent = t[key];
                     });
+                    if (t.back_to_top) backToTop.setAttribute("aria-label", t.back_to_top);
                     document.documentElement.lang = lang;
                     var btnEn = document.getElementById("btn-en");
                     var btnFr = document.getElementById("btn-fr");
@@ -1138,6 +1213,30 @@
                     }
                     try { localStorage.setItem("lang", lang); } catch (_) {}
                 };
+
+                // Scroll progress + back-to-top
+                var progressBar = document.getElementById("scroll-progress");
+                var backToTop = document.getElementById("back-to-top");
+                var ticking = false;
+                function updateScrollUI() {
+                    var h = document.documentElement;
+                    var scrollable = h.scrollHeight - h.clientHeight;
+                    var progress = scrollable > 0 ? h.scrollTop / scrollable : 0;
+                    progressBar.style.transform = "scaleX(" + progress + ")";
+                    backToTop.classList.toggle("visible", h.scrollTop > 600);
+                    ticking = false;
+                }
+                window.addEventListener("scroll", function () {
+                    if (!ticking) {
+                        window.requestAnimationFrame(updateScrollUI);
+                        ticking = true;
+                    }
+                }, { passive: true });
+                updateScrollUI();
+                backToTop.addEventListener("click", function () {
+                    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+                });
 
                 // Fade-in observer
                 var o = new IntersectionObserver(

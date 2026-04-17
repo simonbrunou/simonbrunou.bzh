@@ -266,6 +266,7 @@ window.RESUME_DATA = {
             footer: "© 2026 Simon Brunou — Built with care in Brittany",
             skip_link: "Skip to main content",
             theme_toggle: "Toggle theme",
+            back_to_top: "Back to top",
         },
         fr: {
             cta: "Me Contacter",
@@ -282,6 +283,7 @@ window.RESUME_DATA = {
             footer: "© 2026 Simon Brunou — Fait avec soin en Bretagne",
             skip_link: "Aller au contenu principal",
             theme_toggle: "Changer de thème",
+            back_to_top: "Haut de page",
         },
     },
 };
