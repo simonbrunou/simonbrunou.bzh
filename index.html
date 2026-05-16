@@ -317,145 +317,96 @@
             }
             .lang-toggle button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: -2px; }
 
-            /* Availability badge — reserve space to prevent CLS while JS injects content */
-            #availability-badge {
-                min-height: 2rem;
-                margin-bottom: 1rem;
-            }
-            .availability {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.35rem 0.9rem;
-                border-radius: 2rem;
-                font-size: 0.8rem;
-                font-weight: 600;
-                letter-spacing: 0.03em;
-                background: rgba(46, 204, 113, 0.1);
-                color: #2ecc71;
-                border: 1px solid rgba(46, 204, 113, 0.25);
-            }
-            .availability::before {
-                content: "";
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #2ecc71;
-                animation: pulse-dot 2s ease-out infinite;
-            }
-            /* Halo pulse — dot stays solid, ring radiates outward and fades */
-            @keyframes pulse-dot {
-                0%   { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.55); }
-                70%  { box-shadow: 0 0 0 7px rgba(46, 204, 113, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
-            }
-
-            /* Hero photo */
-            .hero-photo {
-                width: 120px;
-                height: 120px;
-                border-radius: 50%;
-                border: 3px solid var(--accent);
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-                margin-bottom: 1.5rem;
-                object-fit: cover;
-            }
 
             /* Hero */
             .hero {
-                min-height: clamp(560px, 80vh, 760px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 position: relative;
+                text-align: center;
+                padding: 48px 0 64px;
                 overflow: hidden;
             }
-            .hero-content {
-                text-align: center;
-                position: relative;
-                z-index: 1;
-                animation: fadeUp 0.8s ease-out;
+            .hero::before {
+                content: "";
+                position: absolute;
+                inset: -10% -10% 30% -10%;
+                background: var(--gradient-mesh);
+                filter: blur(60px);
+                pointer-events: none;
+                z-index: 0;
             }
-            .hero h1 {
-                font-size: clamp(2.5rem, 6vw, 4rem);
-                font-weight: 800;
-                letter-spacing: -0.02em;
-                margin-bottom: 0.5rem;
+            .hero > * { position: relative; z-index: 1; }
+
+            .hero-photo {
+                width: 96px;
+                height: 96px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin: 0 auto 18px;
+                border: 2px solid var(--border-strong);
+                box-shadow: var(--shadow-soft);
             }
-            .hero h1 .accent {
-                color: var(--accent);
+
+            .eyebrow {
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.18em;
+                color: var(--text-muted);
+                margin-bottom: 12px;
             }
-            .hero .subtitle {
-                font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-                color: var(--text2);
-                margin-bottom: 1rem;
-            }
-            .hero .location {
-                color: var(--text2);
-                font-size: 0.95rem;
-                margin-bottom: 2rem;
+
+            .hero h1 { margin-bottom: 14px; }
+            .hero .role { font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 22px; }
+
+            .status {
                 display: inline-flex;
                 align-items: center;
-                gap: 0.4rem;
+                gap: 7px;
+                padding: 5px 12px;
+                border: 1px solid var(--accent-border);
+                background: var(--accent-soft);
+                border-radius: 100px;
+                font-size: 0.78rem;
+                color: var(--accent-2);
+                margin-bottom: 26px;
             }
-            .hero .location svg {
-                width: 0.95em;
-                height: 0.95em;
-                stroke: currentColor;
-                fill: none;
-                stroke-width: 1.75;
-                opacity: 0.8;
+            .status .dot {
+                width: 6px; height: 6px; border-radius: 50%;
+                background: var(--status-ok);
+                box-shadow: 0 0 8px var(--status-ok);
             }
-            .hero-links {
-                display: flex;
-                gap: 1rem;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            .hero-links a {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.65rem 1.3rem;
-                border-radius: var(--radius);
+
+            .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+            .btn {
+                padding: 11px 20px;
+                border-radius: 10px;
+                font-family: inherit;
+                font-size: 0.86rem;
                 font-weight: 500;
-                font-size: 0.9rem;
-                transition: all var(--transition);
+                cursor: pointer;
+                border: 1px solid transparent;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                            box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                            background 180ms cubic-bezier(0.22, 1, 0.36, 1);
             }
             .btn-primary {
-                background: var(--accent);
-                color: #fff !important;
+                background: var(--gradient-button);
+                color: #fff;
+                border-color: var(--border-strong);
+                box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, var(--shadow-glow);
             }
-            .btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(108, 99, 255, 0.35);
-            }
+            .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 12px 28px rgba(185, 100, 255, 0.30); }
             .btn-secondary {
-                border: 1.5px solid var(--bg3);
-                color: var(--text) !important;
-                background: var(--bg2);
+                background: var(--bg-elev);
+                color: var(--text-primary);
+                border-color: var(--border-strong);
             }
-            .btn-secondary:hover {
-                border-color: var(--accent);
-                background: var(--bg3);
-            }
-            /* Icon-only ghost variant — square, compact, just an SVG inside */
-            .btn-icon {
-                padding: 0.55rem;
-                aspect-ratio: 1 / 1;
-                color: var(--text2) !important;
-            }
-            .btn-icon:hover {
-                color: var(--text) !important;
-            }
-            .btn-icon svg {
-                width: 1.15rem;
-                height: 1.15rem;
-                stroke: currentColor;
-                fill: none;
-                stroke-width: 1.75;
-                display: block;
-            }
+            .btn-secondary:hover { background: var(--bg-elev-strong); }
+            .btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
             /* Sections */
             section {
@@ -794,9 +745,6 @@
                     opacity: 1;
                     transform: none;
                 }
-                .availability::before {
-                    animation: none;
-                }
             }
 
             /* High contrast mode */
@@ -827,7 +775,7 @@
                 .back-to-top {
                     border: 1px solid CanvasText !important;
                 }
-                .availability {
+                .status {
                     border: 1px solid CanvasText !important;
                 }
                 .hero-photo {
@@ -866,8 +814,8 @@
                 }
                 .lang-toggle,
                 .theme-toggle,
-                .hero-links,
-                .availability,
+                .actions,
+                .status,
                 .scroll-progress,
                 .back-to-top,
                 #interests,
@@ -937,14 +885,18 @@
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
-        <header class="hero">
-            <div class="hero-content">
-                <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="120" height="120" loading="eager" />
-                <h1 id="hero-name">Simon <span class="accent">Brunou</span></h1>
-                <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
-                <p class="location"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s8-7.58 8-13a8 8 0 10-16 0c0 5.42 8 13 8 13z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5"/></svg><span data-i18n="location">Saint-Nolff, Brittany, France</span></p>
-                <div id="availability-badge"></div>
-                <div id="hero-links" class="hero-links"></div>
+        <header class="container hero">
+            <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="96" height="96" loading="eager" />
+            <div class="eyebrow" id="hero-eyebrow"></div>
+            <h1>Simon <span class="accent">Brunou</span></h1>
+            <div class="role" id="hero-role"></div>
+            <div class="status" id="hero-status" hidden>
+                <span class="dot" aria-hidden="true"></span>
+                <span id="hero-status-label"></span>
+            </div>
+            <div class="actions">
+                <a class="btn btn-primary" href="#contact" id="hero-cta"></a>
+                <a class="btn btn-secondary" href="/resume/" id="hero-resume-link"></a>
             </div>
         </header>
 
@@ -1016,7 +968,7 @@
         </button>
 
         <noscript>
-            <style>.hero-photo, .theme-toggle, .lang-toggle, #availability-badge, .scroll-progress, .back-to-top { display: none; }</style>
+            <style>.hero-photo, .theme-toggle, .lang-toggle, .status, .actions, .scroll-progress, .back-to-top { display: none; }</style>
             <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;font-family:monospace;">
                 <p style="color:#e0e0f0;line-height:1.8;margin-bottom:2rem;">Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.</p>
                 <p style="margin-bottom:1rem;"><strong>Skills:</strong> <span style="color:#b0b0d0;">Rust, Dart, Kotlin, Swift, Java, JavaScript, TypeScript, Python, C, Flutter, React Native, Android, iOS, React, Electron, Angular, Spring Boot, Node.js, Git, Docker, Proxmox, GitLab CI/CD, Terraform, Figma</span></p>
@@ -1097,22 +1049,20 @@
                     return t;
                 }
 
-                // Hero name is server-rendered in the HTML (LCP).
+                // Hero — wire data.js content via textContent (no innerHTML on data values)
+                var _storedLang; try { _storedLang = localStorage.getItem('lang'); } catch (_) {}
+                var lang = (_storedLang === 'fr') ? 'fr' : 'en';
+                var pick = window.SBRender.pickLang;
 
-                // Generate availability badge
+                document.getElementById('hero-eyebrow').textContent = pick(D.personal.location, lang);
+                document.getElementById('hero-role').textContent = pick(D.title, lang);
+                document.getElementById('hero-cta').textContent = D.ui[lang].cta + ' →';
+                document.getElementById('hero-resume-link').textContent = D.ui[lang].resume_link;
+
                 if (D.availability && D.availability.open) {
-                    document.getElementById("availability-badge").innerHTML =
-                        '<span class="availability" data-i18n="availability">' + D.availability.label.en + '</span>';
+                    document.getElementById('hero-status-label').textContent = pick(D.availability.label, lang);
+                    document.getElementById('hero-status').hidden = false;
                 }
-
-                var heroLinks = document.getElementById("hero-links");
-                var ghIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.5a10.5 10.5 0 00-3.32 20.46c.53.1.72-.23.72-.5v-1.78c-2.92.63-3.54-1.41-3.54-1.41-.48-1.21-1.17-1.53-1.17-1.53-.96-.65.07-.64.07-.64 1.06.07 1.62 1.09 1.62 1.09.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.66-1.4-2.33-.27-4.78-1.16-4.78-5.18 0-1.14.41-2.07 1.08-2.8-.11-.27-.47-1.34.1-2.78 0 0 .88-.28 2.88 1.07a10 10 0 015.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.44.21 2.51.1 2.78a4.04 4.04 0 011.08 2.8c0 4.03-2.46 4.91-4.8 5.17.38.33.72.97.72 1.95v2.9c0 .28.19.61.73.5A10.5 10.5 0 0012 1.5z" fill="currentColor" stroke="none"/></svg>';
-                var liIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.45 20.45h-3.55V14.9c0-1.32-.03-3.03-1.85-3.03-1.85 0-2.13 1.44-2.13 2.93v5.65H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.12 2.06 2.06 0 010 4.12zM7.12 20.45H3.56V9h3.56v11.45z" fill="currentColor" stroke="none"/></svg>';
-                heroLinks.innerHTML =
-                    '<a href="mailto:' + P.email + '" class="btn-primary" data-i18n="cta">Get in Touch</a>' +
-                    '<a href="/resume/" class="btn-secondary" data-i18n="resume_link">Resume</a>' +
-                    '<a href="' + P.githubUrl + '" class="btn-secondary btn-icon" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">' + ghIcon + '</a>' +
-                    '<a href="' + P.linkedinUrl + '" class="btn-secondary btn-icon" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">' + liIcon + '</a>';
 
                 // Generate SR summary
                 var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
