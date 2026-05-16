@@ -1,18 +1,22 @@
 {
   "name": "simonbrunou.bzh",
   "version": "1.0.0",
-  "description": "",
-  "main": "data.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "private": true,
+  "description": "Personal portfolio + résumé site for Simon Brunou. Cloudflare Worker fronts static assets and a Browser Rendering PDF endpoint protected by Turnstile.",
   "repository": {
     "type": "git",
-    "url": "http://local_proxy@127.0.0.1:32985/git/simonbrunou/simonbrunou.bzh"
+    "url": "git+https://github.com/simonbrunou/simonbrunou.bzh.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "homepage": "https://simonbrunou.bzh",
+  "author": "Simon Brunou",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@cloudflare/puppeteer": "^1.0.6"
   }
