@@ -936,6 +936,16 @@
                 // All DOM mutations use textContent / createElement — never innerHTML
                 // with interpolated data values.
                 function render(lang) {
+                    // Page-control labels (skip link text, theme + back-to-top aria-labels)
+                    var skipLink = document.querySelector('.skip-link[data-i18n="skip_link"]');
+                    if (skipLink) skipLink.textContent = D.ui[lang].skip_link;
+
+                    var themeBtn = document.getElementById('theme-toggle');
+                    if (themeBtn) themeBtn.setAttribute('aria-label', D.ui[lang].theme_toggle);
+
+                    var backTop = document.getElementById('back-to-top') || document.querySelector('.back-to-top');
+                    if (backTop) backTop.setAttribute('aria-label', D.ui[lang].back_to_top);
+
                     // Hero
                     document.getElementById('hero-eyebrow').textContent = pick(D.personal.location, lang);
                     document.getElementById('hero-role').textContent = pick(D.title, lang);
