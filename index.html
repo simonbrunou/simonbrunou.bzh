@@ -1040,13 +1040,13 @@
                     // aria-pressed=true means "light theme is the active choice"
                     if (btn) btn.setAttribute("aria-pressed", light ? "true" : "false");
                 }
-                window.toggleTheme = function () {
+                function toggleTheme() {
                     var light = !isLight();
                     document.documentElement.classList.toggle("light", light);
                     try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
                     updateThemeIcon();
                     if (window.__setThemeColor) window.__setThemeColor(light);
-                };
+                }
                 updateThemeIcon();
 
                 // Build translations from shared data
@@ -1187,7 +1187,7 @@
                 SBRender.injectJsonLd(D, currentLang);
 
                 // i18n
-                window.setLang = function (lang) {
+                function setLang(lang) {
                     currentLang = lang;
                     var t = buildTranslations(lang);
                     document.querySelectorAll("[data-i18n]").forEach(function (el) {
@@ -1214,7 +1214,7 @@
                         phLink.lastChild.textContent = " " + pd;
                     }
                     try { localStorage.setItem("lang", lang); } catch (_) {}
-                };
+                }
 
                 // Scroll progress + back-to-top
                 var progressBar = document.getElementById("scroll-progress");
@@ -1256,7 +1256,7 @@
                 document.querySelectorAll(".fade-in").forEach(function (el) { o.observe(el); });
 
                 // Wire up the (no-longer-inline) button handlers so CSP can drop 'unsafe-inline'.
-                document.getElementById("theme-toggle").addEventListener("click", window.toggleTheme);
+                document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
                 document.getElementById("btn-en").addEventListener("click", function () { setLang("en"); });
                 document.getElementById("btn-fr").addEventListener("click", function () { setLang("fr"); });
 

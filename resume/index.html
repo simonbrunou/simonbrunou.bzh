@@ -475,7 +475,20 @@
                 var iconSun = toggle.querySelector(".theme-icon-sun");
                 var iconMoon = toggle.querySelector(".theme-icon-moon");
                 var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-                var stored = localStorage.getItem("resume-theme");
+                // Shared key with the index page so a "light" or "dark" choice
+                // on one page is picked up by the other. One-shot migration
+                // from the legacy "resume-theme" key.
+                var stored = localStorage.getItem("theme");
+                if (!stored) {
+                    var legacy = localStorage.getItem("resume-theme");
+                    if (legacy === "light" || legacy === "dark") {
+                        try {
+                            localStorage.setItem("theme", legacy);
+                            localStorage.removeItem("resume-theme");
+                        } catch (_) {}
+                        stored = legacy;
+                    }
+                }
                 var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
                 function isDark() {
@@ -502,8 +515,8 @@
                 updateIcon();
 
                 toggle.addEventListener("click", function () {
-                    if (isDark()) { root.classList.remove("dark"); root.classList.add("light"); localStorage.setItem("resume-theme", "light"); }
-                    else { root.classList.remove("light"); root.classList.add("dark"); localStorage.setItem("resume-theme", "dark"); }
+                    if (isDark()) { root.classList.remove("dark"); root.classList.add("light"); localStorage.setItem("theme", "light"); }
+                    else { root.classList.remove("light"); root.classList.add("dark"); localStorage.setItem("theme", "dark"); }
                     updateIcon();
                 });
 
@@ -511,7 +524,7 @@
                 // via CSS — but the icon is a JS-set unicode glyph, so it needs to
                 // re-render when the OS theme changes mid-session.
                 prefersDark.addEventListener("change", function () {
-                    if (!localStorage.getItem("resume-theme")) updateIcon();
+                    if (!localStorage.getItem("theme")) updateIcon();
                 });
 
                 // Sentinel for the puppeteer PDF worker — see worker.js.
