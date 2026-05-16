@@ -169,14 +169,33 @@ setInterval(() => {
     for (const [k, v] of rateBuckets) if (v.resetAt < now) rateBuckets.delete(k);
 }, RATE_WINDOW_MS).unref();
 
+// True when the TCP peer of this request is loopback. The PDF endpoint
+// reaches /resume/?pdf=1 from puppeteer inside the same container, so
+// loopback is the only legitimate source of that query — gating CSP
+// relaxations on this prevents a public visitor from disabling
+// upgrade-insecure-requests by appending ?pdf to any URL.
+function isLoopbackPeer(c) {
+    const addr = c.env?.incoming?.socket?.remoteAddress;
+    if (!addr) return false;
+    return (
+        addr === "127.0.0.1" ||
+        addr === "::1" ||
+        addr === "::ffff:127.0.0.1"
+    );
+}
+
 function clientIp(c) {
     if (TRUST_PROXY) {
-        // CF-Connecting-IP wins when Cloudflare is the outermost proxy:
-        // it's the real client even if a downstream reverse proxy rewrites
-        // X-Forwarded-For. Falls back to XFF (leftmost = original client),
-        // then to X-Real-IP, then to the socket peer.
+        // CF-Connecting-IP wins when Cloudflare is the outermost proxy,
+        // but only when the request actually transited CF's edge — `cf-ray`
+        // is set by Cloudflare on every proxied request and is never
+        // legitimately set by anything else, so its presence is a cheap
+        // attestation. Without it, fall back to XFF / X-Real-IP so a
+        // direct-to-origin caller can't spoof `CF-Connecting-IP` to poison
+        // the rate-limit bucket or the Turnstile `remoteip`.
         const cf = c.req.header("cf-connecting-ip");
-        if (cf) return cf.trim();
+        const cfRay = c.req.header("cf-ray");
+        if (cf && cfRay) return cf.trim();
         const xff = c.req.header("x-forwarded-for");
         if (xff) return xff.split(",")[0].trim();
         const real = c.req.header("x-real-ip");
@@ -201,7 +220,11 @@ app.get("/healthz", (c) => c.text("ok"));
 async function serveHtml(c, rel, status = 200) {
     const body = htmlCache.get(rel) || (await loadHtml(rel));
     const nonce = generateNonce();
-    const isPdfRender = c.req.query("pdf") !== undefined;
+    // Only relax UIR for the internal puppeteer render. The query alone
+    // is user-controllable; combining it with a loopback peer ensures the
+    // weaker CSP only ships to the in-container Chromium, never to a
+    // public visitor who appended ?pdf to a URL.
+    const isPdfRender = c.req.query("pdf") !== undefined && isLoopbackPeer(c);
     c.header(
         "Content-Security-Policy",
         cspWithNonce(nonce, { dropUpgradeInsecure: isPdfRender }),
