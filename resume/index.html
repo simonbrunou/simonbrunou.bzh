@@ -496,6 +496,14 @@
                 var turnstileOpts = {
                     sitekey: "0x4AAAAAACvBqO10GT9_Ajun",
                     size: "invisible",
+                    // Defer the challenge until the user clicks the PDF button.
+                    // Without this, Turnstile defaults to execution:"render",
+                    // which runs the challenge immediately when the widget is
+                    // rendered → success callback fires → downloadPDF runs →
+                    // PDF generated on every page visit. With "execute", the
+                    // widget waits for turnstile.execute(widgetId) — called
+                    // from the button click handler below.
+                    execution: "execute",
                     callback: function (token) { downloadPDF(token); },
                     "error-callback": function () { setLoading(false); },
                     "expired-callback": function () { setLoading(false); },
