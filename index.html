@@ -451,47 +451,38 @@
             /* Skills */
             .skills-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-                gap: 1.5rem;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 22px;
+                margin-top: 6px;
             }
-            .skill-card {
-                background: var(--bg2);
-                border: 1px solid var(--bg3);
-                border-radius: var(--radius);
-                padding: 1.5rem;
-                transition: all var(--transition);
+            @media (max-width: 960px) { .skills-grid { grid-template-columns: repeat(2, 1fr); } }
+            @media (max-width: 640px) { .skills-grid { grid-template-columns: 1fr; } }
+
+            .skill-cat {
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 18px 18px 16px;
             }
-            .skill-card:hover {
-                border-color: var(--accent);
-                transform: translateY(-3px);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            }
-            .skill-card h3 {
-                font-size: 1rem;
-                color: var(--text2);
-                margin-bottom: 1rem;
+            .skill-cat-label {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.74rem;
                 text-transform: uppercase;
-                letter-spacing: 0.08em;
-                font-weight: 600;
+                letter-spacing: 0.12em;
+                color: var(--text-muted);
+                margin-bottom: 12px;
             }
-            .skill-tags {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-                list-style: none;
-            }
-            .tag {
-                padding: 0.35rem 0.75rem;
-                background: var(--bg3);
-                border-radius: 8px;
-                font-size: 0.85rem;
-                color: var(--text);
-                transition: all var(--transition);
-            }
-            .skill-card .tag:hover {
-                background: var(--accent-strong);
-                color: #fff;
-                transform: translateY(-1px);
+
+            .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+            .chip-skill {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.78rem;
+                padding: 4px 10px;
+                border-radius: 100px;
+                background: var(--accent-soft);
+                border: 1px solid var(--accent-border);
+                color: var(--accent-2);
+                line-height: 1.4;
             }
 
             /* Timeline */
@@ -917,11 +908,10 @@
                 <p id="about-text"></p>
             </section>
 
-            <section id="skills" aria-labelledby="skills-heading">
-                <div class="container fade-in">
-                    <h2 id="skills-heading" class="section-title" data-i18n="skills_title">Skills</h2>
-                    <div id="skills-grid" class="skills-grid"></div>
-                </div>
+            <section class="container section skills" id="skills" aria-labelledby="skills-heading">
+                <div class="section-label" id="skills-eyebrow"></div>
+                <h2 id="skills-heading"></h2>
+                <div class="skills-grid" id="skills-grid"></div>
             </section>
 
             <section id="experience" aria-labelledby="experience-heading">
@@ -1090,17 +1080,34 @@
                     "<h2>Skills</h2><p>" + allSkills.join(", ") + "</p>" +
                     "<h2>Languages</h2><p>" + langSummary + "</p>";
 
-                // Generate skills
-                var skillsHtml = "";
-                Object.keys(D.skills).forEach(function (cat) {
-                    skillsHtml += '<div class="skill-card"><h3 data-i18n="skills_' + cat + '">' +
-                        D.skillCategoryLabels[cat].en + '</h3><ul class="skill-tags">';
+                // Skills eyebrow + heading
+                document.getElementById('skills-eyebrow').textContent = D.ui[lang].skills_title;
+                document.getElementById('skills-heading').textContent = D.ui[lang].section_heading_skills;
+
+                // Generate skills — DOM construction only (no innerHTML for data values)
+                var grid = document.getElementById('skills-grid');
+                grid.textContent = '';
+                ['languages', 'frameworks', 'tools'].forEach(function (cat) {
+                    var card = document.createElement('div');
+                    card.className = 'skill-cat';
+
+                    var label = document.createElement('div');
+                    label.className = 'skill-cat-label';
+                    label.textContent = '// ' + pick(D.skillCategoryLabels[cat], lang).toLowerCase();
+                    card.appendChild(label);
+
+                    var chips = document.createElement('div');
+                    chips.className = 'chips';
                     D.skills[cat].forEach(function (s) {
-                        skillsHtml += '<li class="tag">' + s + "</li>";
+                        var c = document.createElement('span');
+                        c.className = 'chip-skill';
+                        c.textContent = s;
+                        chips.appendChild(c);
                     });
-                    skillsHtml += "</ul></div>";
+                    card.appendChild(chips);
+
+                    grid.appendChild(card);
                 });
-                document.getElementById("skills-grid").innerHTML = skillsHtml;
 
                 // Generate experience timeline
                 var expHtml = "";
