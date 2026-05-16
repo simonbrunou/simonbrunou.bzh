@@ -486,64 +486,42 @@
             }
 
             /* Timeline */
-            .timeline {
-                position: relative;
-                padding-left: 2rem;
-            }
+            .timeline { position: relative; padding-left: 28px; margin-top: 8px; }
             .timeline::before {
                 content: "";
                 position: absolute;
                 left: 5px;
-                top: 0;
-                bottom: 0;
-                width: 2px;
-                background: linear-gradient(
-                    180deg,
-                    var(--accent),
-                    var(--accent2),
-                    transparent
-                );
+                top: 6px;
+                bottom: 12px;
+                width: 1px;
+                background: linear-gradient(180deg, var(--accent-border), transparent);
             }
-            .timeline-item {
-                position: relative;
-                margin-bottom: 3rem;
-                padding-left: 1.5rem;
-            }
-            .timeline-item::before {
+
+            .tl-item { position: relative; padding-bottom: 32px; }
+            .tl-item::before {
                 content: "";
                 position: absolute;
-                left: -2rem;
-                top: 0.4rem;
-                width: 12px;
-                height: 12px;
+                left: -28px;
+                top: 8px;
+                width: 11px;
+                height: 11px;
                 border-radius: 50%;
-                background: var(--accent);
-                border: 2px solid var(--bg);
-                box-shadow: 0 0 0 3px var(--accent-glow);
+                background: var(--bg-page);
+                border: 2px solid var(--accent-2);
+                box-shadow: 0 0 0 4px var(--accent-soft);
             }
-            .timeline-item h3 {
-                font-size: 1.15rem;
-                font-weight: 700;
-                margin-bottom: 0.25rem;
+
+            .tl-meta {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.78rem;
+                color: var(--accent-2);
+                margin-bottom: 4px;
             }
-            .timeline-item .company {
-                color: var(--accent);
-                font-weight: 500;
-                font-size: 1rem;
-            }
-            .timeline-item .period {
-                color: var(--text2);
-                font-size: 0.85rem;
-                margin-bottom: 0.75rem;
-            }
-            .timeline-item ul {
-                color: var(--text2);
-                padding-left: 1.2rem;
-            }
-            .timeline-item li {
-                margin-bottom: 0.35rem;
-                font-size: 0.95rem;
-            }
+
+            .tl-item h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 4px; }
+            .tl-company { font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 10px; }
+            .tl-item ul { padding-left: 18px; margin: 0; color: var(--text-secondary); }
+            .tl-item li { font-size: 0.95rem; line-height: 1.55; margin-bottom: 4px; }
 
             /* Education */
             .edu-grid {
@@ -712,13 +690,10 @@
                     padding: 3rem 0;
                 }
                 .timeline {
-                    padding-left: 1.5rem;
+                    padding-left: 20px;
                 }
-                .timeline-item {
-                    padding-left: 1rem;
-                }
-                .timeline-item::before {
-                    left: -1.5rem;
+                .tl-item::before {
+                    left: -20px;
                 }
                 .contact {
                     padding: 2rem 1.5rem;
@@ -756,7 +731,7 @@
                 .timeline::before {
                     background: CanvasText !important;
                 }
-                .timeline-item::before {
+                .tl-item::before {
                     background: LinkText !important;
                     border-color: Canvas !important;
                     box-shadow: none !important;
@@ -836,7 +811,7 @@
                 .timeline::before {
                     background: #999 !important;
                 }
-                .timeline-item::before {
+                .tl-item::before {
                     background: #666 !important;
                     box-shadow: none !important;
                 }
@@ -914,11 +889,10 @@
                 <div class="skills-grid" id="skills-grid"></div>
             </section>
 
-            <section id="experience" aria-labelledby="experience-heading">
-                <div class="container fade-in">
-                    <h2 id="experience-heading" class="section-title" data-i18n="exp_title">Experience</h2>
-                    <div id="timeline" class="timeline"></div>
-                </div>
+            <section class="container section experience" id="experience" aria-labelledby="experience-heading">
+                <div class="section-label" id="experience-eyebrow"></div>
+                <h2 id="experience-heading"></h2>
+                <div class="timeline" id="experience-timeline"></div>
             </section>
 
             <section id="education" aria-labelledby="education-heading">
@@ -1109,21 +1083,41 @@
                     grid.appendChild(card);
                 });
 
-                // Generate experience timeline
-                var expHtml = "";
-                D.experience.forEach(function (exp, i) {
-                    var n = i + 1;
-                    expHtml += '<article class="timeline-item">' +
-                        '<h3 data-i18n="exp' + n + '_role">' + exp.role.en + "</h3>" +
-                        '<div class="company" data-i18n="exp' + n + '_company">' + exp.company.en + "</div>" +
-                        '<div class="period"><time datetime="' + exp.startDate + '">' + SBRender.splitPeriod(exp.period.en)[0] +
-                        '</time> — <time datetime="' + exp.endDate + '">' + SBRender.splitPeriod(exp.period.en)[1] + "</time></div><ul>";
-                    exp.description.en.forEach(function (desc, j) {
-                        expHtml += '<li data-i18n="exp' + n + "_li" + (j + 1) + '">' + desc + "</li>";
+                // Experience eyebrow + heading
+                document.getElementById('experience-eyebrow').textContent = D.ui[lang].exp_title;
+                document.getElementById('experience-heading').textContent = D.ui[lang].section_heading_exp;
+
+                // Generate experience timeline — DOM construction only (no innerHTML for data values)
+                var tl = document.getElementById('experience-timeline');
+                tl.textContent = '';
+                D.experience.forEach(function (exp) {
+                    var item = document.createElement('div');
+                    item.className = 'tl-item';
+
+                    var meta = document.createElement('div');
+                    meta.className = 'tl-meta';
+                    meta.textContent = pick(exp.period, lang);
+                    item.appendChild(meta);
+
+                    var role = document.createElement('h3');
+                    role.textContent = pick(exp.role, lang);
+                    item.appendChild(role);
+
+                    var co = document.createElement('div');
+                    co.className = 'tl-company';
+                    co.textContent = pick(exp.company, lang);
+                    item.appendChild(co);
+
+                    var ul = document.createElement('ul');
+                    pick(exp.description, lang).forEach(function (b) {
+                        var li = document.createElement('li');
+                        li.textContent = b;
+                        ul.appendChild(li);
                     });
-                    expHtml += "</ul></article>";
+                    item.appendChild(ul);
+
+                    tl.appendChild(item);
                 });
-                document.getElementById("timeline").innerHTML = expHtml;
 
                 // Generate education
                 var eduHtml = "";
