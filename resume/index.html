@@ -81,6 +81,20 @@
                 border: 0;
             }
 
+            .skip-link {
+                position: absolute;
+                top: -100%;
+                left: 0;
+                background: var(--accent);
+                color: #fff;
+                padding: 12px 20px;
+                font-weight: 600;
+                z-index: 200;
+                text-decoration: none;
+                border-radius: 0 0 8px 0;
+            }
+            .skip-link:focus { top: 0; }
+
             body {
                 font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 line-height: 1.6;
@@ -340,16 +354,18 @@
         </style>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+
         <div class="container">
             <header id="resume-header" class="header"></header>
-            <div class="main-content">
+            <main id="main-content" class="main-content" tabindex="-1">
                 <section class="section" id="profile-section"></section>
                 <section class="section" id="experience-section"></section>
                 <section class="section" id="education-section"></section>
                 <section class="section" id="skills-section"></section>
                 <section class="section" id="languages-section"></section>
                 <section class="section" id="interests-section"></section>
-            </div>
+            </main>
         </div>
 
         <div id="cf-turnstile" style="display:none"></div>

@@ -508,6 +508,7 @@
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0.5rem;
+                list-style: none;
             }
             .tag {
                 padding: 0.35rem 0.75rem;
@@ -911,15 +912,15 @@
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
             <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>
             <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>
         </button>
 
-        <nav class="lang-toggle" aria-label="Language selector">
+        <div class="lang-toggle" role="group" aria-label="Language selector">
             <button id="btn-en" type="button" class="active" aria-pressed="true">EN</button>
             <button id="btn-fr" type="button" aria-pressed="false">FR</button>
-        </nav>
+        </div>
 
         <header class="hero">
             <div class="hero-content">
@@ -1026,14 +1027,18 @@
                 function updateThemeIcon() {
                     var sun = document.getElementById("theme-icon-sun");
                     var moon = document.getElementById("theme-icon-moon");
+                    var btn = document.getElementById("theme-toggle");
                     // Show the icon for the OPPOSITE theme (clicking sun \u2192 goes light, etc.)
-                    if (isLight()) {
+                    var light = isLight();
+                    if (light) {
                         sun.style.display = "none";
                         moon.style.display = "";
                     } else {
                         sun.style.display = "";
                         moon.style.display = "none";
                     }
+                    // aria-pressed=true means "light theme is the active choice"
+                    if (btn) btn.setAttribute("aria-pressed", light ? "true" : "false");
                 }
                 window.toggleTheme = function () {
                     var light = !isLight();
@@ -1116,11 +1121,11 @@
                 var skillsHtml = "";
                 Object.keys(D.skills).forEach(function (cat) {
                     skillsHtml += '<div class="skill-card"><h3 data-i18n="skills_' + cat + '">' +
-                        D.skillCategoryLabels[cat].en + '</h3><div class="skill-tags" role="list">';
+                        D.skillCategoryLabels[cat].en + '</h3><ul class="skill-tags">';
                     D.skills[cat].forEach(function (s) {
-                        skillsHtml += '<span class="tag" role="listitem">' + s + "</span>";
+                        skillsHtml += '<li class="tag">' + s + "</li>";
                     });
-                    skillsHtml += "</div></div>";
+                    skillsHtml += "</ul></div>";
                 });
                 document.getElementById("skills-grid").innerHTML = skillsHtml;
 

@@ -161,8 +161,9 @@
         </style>
     </head>
     <body>
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
-            <span id="theme-icon" aria-hidden="true">☀️</span>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
+            <svg id="theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>
+            <svg id="theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.75" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>
         </button>
 
         <main>
@@ -178,9 +179,17 @@
             var THEME_COLOR_DARK = "#0f0f1a";
             var THEME_COLOR_LIGHT = "#f0f0f8";
             var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+            var toggleBtn = document.getElementById("theme-toggle");
+            var iconSun = document.getElementById("theme-icon-sun");
+            var iconMoon = document.getElementById("theme-icon-moon");
             function isLight() { return document.documentElement.classList.contains("light"); }
             function syncMeta() { if (themeColorMeta) themeColorMeta.content = isLight() ? THEME_COLOR_LIGHT : THEME_COLOR_DARK; }
-            function updateIcon() { document.getElementById("theme-icon").textContent = isLight() ? "\uD83C\uDF19" : "\u2600\uFE0F"; }
+            function updateIcon() {
+                var light = isLight();
+                iconSun.style.display = light ? "none" : "";
+                iconMoon.style.display = light ? "" : "none";
+                toggleBtn.setAttribute("aria-pressed", light ? "true" : "false");
+            }
             function toggleTheme() {
                 var light = !isLight();
                 document.documentElement.classList.toggle("light", light);
@@ -188,16 +197,18 @@
                 updateIcon();
                 syncMeta();
             }
-            document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+            toggleBtn.addEventListener("click", toggleTheme);
             updateIcon();
             syncMeta();
             // Restore saved language
             try {
                 if (localStorage.getItem("lang") === "fr") {
                     document.documentElement.lang = "fr";
+                    document.title = "Page introuvable \u2014 Simon Brunou";
                     document.getElementById("message").textContent = "Cette page n\u2019existe pas. Revenons sur la bonne voie.";
                     document.getElementById("home-link").textContent = "Accueil";
                     document.getElementById("resume-link").textContent = "CV";
+                    toggleBtn.setAttribute("aria-label", "Basculer le th\u00E8me");
                 }
             } catch (_) {}
         </script>
