@@ -51,8 +51,7 @@
         <link rel="canonical" href="https://simonbrunou.bzh" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" onload="this.rel='stylesheet'" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
         <link
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
@@ -898,14 +897,14 @@
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" onclick="toggleTheme()">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
             <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>
             <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>
         </button>
 
         <nav class="lang-toggle" aria-label="Language selector">
-            <button id="btn-en" class="active" aria-pressed="true" onclick="setLang('en')">EN</button>
-            <button id="btn-fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
+            <button id="btn-en" type="button" class="active" aria-pressed="true">EN</button>
+            <button id="btn-fr" type="button" aria-pressed="false">FR</button>
         </nav>
 
         <header class="hero">
@@ -1235,6 +1234,11 @@
                     { threshold: 0.15 }
                 );
                 document.querySelectorAll(".fade-in").forEach(function (el) { o.observe(el); });
+
+                // Wire up the (no-longer-inline) button handlers so CSP can drop 'unsafe-inline'.
+                document.getElementById("theme-toggle").addEventListener("click", window.toggleTheme);
+                document.getElementById("btn-en").addEventListener("click", function () { setLang("en"); });
+                document.getElementById("btn-fr").addEventListener("click", function () { setLang("fr"); });
 
                 // Restore saved language
                 var saved;
