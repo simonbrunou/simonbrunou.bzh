@@ -91,7 +91,7 @@ window.RESUME_DATA = {
             endDate: "2025-07",
             period: {
                 en: "Feb 2025 — Jul 2025",
-                fr: "Février 2025 - Juillet 2025",
+                fr: "Février 2025 — Juillet 2025",
             },
             description: {
                 en: [
@@ -114,7 +114,7 @@ window.RESUME_DATA = {
             endDate: "2025-02",
             period: {
                 en: "Jul 2017 — Feb 2025",
-                fr: "Juillet 2017 - Février 2025",
+                fr: "Juillet 2017 — Février 2025",
             },
             description: {
                 en: [
@@ -155,7 +155,7 @@ window.RESUME_DATA = {
             endDate: "2017-07",
             period: {
                 en: "Jan 2017 — Jul 2017",
-                fr: "Janvier 2017 - Juillet 2017",
+                fr: "Janvier 2017 — Juillet 2017",
             },
             description: {
                 en: [
@@ -179,7 +179,7 @@ window.RESUME_DATA = {
             endDate: "2014-06",
             period: {
                 en: "Mar 2014 — Jun 2014",
-                fr: "Mars 2014 - Juin 2014",
+                fr: "Mars 2014 — Juin 2014",
             },
             description: {
                 en: [

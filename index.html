@@ -47,9 +47,6 @@
             content="Simon Brunou, Fullstack Developer, Rust, Python, Flutter, Kotlin, Swift, React, Angular, Spring Boot, Node.js, DevOps, Brittany, France, Software Engineer"
         />
         <link rel="canonical" href="https://simonbrunou.bzh" />
-        <link rel="alternate" hreflang="en" href="https://simonbrunou.bzh" />
-        <link rel="alternate" hreflang="fr" href="https://simonbrunou.bzh" />
-        <link rel="alternate" hreflang="x-default" href="https://simonbrunou.bzh" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
@@ -74,6 +71,7 @@
                 --text: #e0e0f0;
                 --text2: #b0b0d0;
                 --accent: #6c63ff;
+                --accent-strong: #4f46e5; /* AA-safe vs #fff: ≥6.7:1 */
                 --accent2: #ff6b6b;
                 --accent-glow: rgba(108, 99, 255, 0.15);
                 --radius: 12px;
@@ -87,6 +85,7 @@
                 --text: #1a1a2e;
                 --text2: #4a4a6a;
                 --accent: #5a52e0;
+                --accent-strong: #4338ca; /* darker for light bg */
                 --accent2: #e04040;
                 --accent-glow: rgba(90, 82, 224, 0.1);
             }
@@ -284,7 +283,11 @@
                 background: var(--bg3);
             }
 
-            /* Availability badge */
+            /* Availability badge — reserve space to prevent CLS while JS injects content */
+            #availability-badge {
+                min-height: 2rem;
+                margin-bottom: 1rem;
+            }
             .availability {
                 display: inline-flex;
                 align-items: center;
@@ -294,7 +297,6 @@
                 font-size: 0.8rem;
                 font-weight: 600;
                 letter-spacing: 0.03em;
-                margin-bottom: 1rem;
                 background: rgba(46, 204, 113, 0.1);
                 color: #2ecc71;
                 border: 1px solid rgba(46, 204, 113, 0.25);
@@ -325,28 +327,12 @@
 
             /* Hero */
             .hero {
-                min-height: 100vh;
+                min-height: clamp(560px, 80vh, 760px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 position: relative;
                 overflow: hidden;
-            }
-            .hero::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background:
-                    radial-gradient(
-                        ellipse at 30% 50%,
-                        var(--accent-glow),
-                        transparent 60%
-                    ),
-                    radial-gradient(
-                        ellipse at 70% 50%,
-                        rgba(255, 107, 107, 0.08),
-                        transparent 60%
-                    );
             }
             .hero-content {
                 text-align: center;
@@ -361,14 +347,7 @@
                 margin-bottom: 0.5rem;
             }
             .hero h1 .accent {
-                background: linear-gradient(
-                    135deg,
-                    var(--accent),
-                    var(--accent2)
-                );
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
+                color: var(--accent);
             }
             .hero .subtitle {
                 font-size: clamp(1.1rem, 2.5vw, 1.5rem);
@@ -435,11 +414,7 @@
                 left: 0;
                 width: 50px;
                 height: 3px;
-                background: linear-gradient(
-                    90deg,
-                    var(--accent),
-                    var(--accent2)
-                );
+                background: var(--accent);
                 border-radius: 2px;
             }
 
@@ -490,12 +465,8 @@
                 color: var(--text);
                 transition: all var(--transition);
             }
-            .skill-card:hover .tag {
-                background: var(--accent-glow);
-                color: var(--accent);
-            }
             .skill-card .tag:hover {
-                background: var(--accent);
+                background: var(--accent-strong);
                 color: #fff;
                 transform: translateY(-1px);
             }
@@ -622,7 +593,7 @@
             .contact {
                 background: var(--bg2);
                 border-radius: var(--radius);
-                padding: 3rem;
+                padding: 2rem 2.5rem;
                 border: 1px solid var(--bg3);
                 text-align: center;
             }
@@ -980,6 +951,7 @@
         </noscript>
 
         <script src="data.js"></script>
+        <script src="render.js"></script>
         <script>
             (function () {
                 var D = window.RESUME_DATA;
@@ -1088,8 +1060,8 @@
                     expHtml += '<article class="timeline-item">' +
                         '<h3 data-i18n="exp' + n + '_role">' + exp.role.en + "</h3>" +
                         '<div class="company" data-i18n="exp' + n + '_company">' + exp.company.en + "</div>" +
-                        '<div class="period"><time datetime="' + exp.startDate + '">' + exp.period.en.split(" — ")[0] +
-                        '</time> — <time datetime="' + exp.endDate + '">' + exp.period.en.split(" — ")[1] + "</time></div><ul>";
+                        '<div class="period"><time datetime="' + exp.startDate + '">' + SBRender.splitPeriod(exp.period.en)[0] +
+                        '</time> — <time datetime="' + exp.endDate + '">' + SBRender.splitPeriod(exp.period.en)[1] + "</time></div><ul>";
                     exp.description.en.forEach(function (desc, j) {
                         expHtml += '<li data-i18n="exp' + n + "_li" + (j + 1) + '">' + desc + "</li>";
                     });
@@ -1134,59 +1106,8 @@
                     '<a href="' + P.githubUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
                     '<a href="' + P.linkedinUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
 
-                // Generate JSON-LD
-                var jsonLd = {
-                    "@context": "https://schema.org",
-                    "@type": "Person",
-                    name: P.name,
-                    url: P.websiteUrl,
-                    email: P.email,
-                    jobTitle: D.title.en,
-                    address: {
-                        "@type": "PostalAddress",
-                        addressLocality: "Saint-Nolff",
-                        addressRegion: "Brittany",
-                        addressCountry: "FR",
-                    },
-                    knowsLanguage: D.languages.map(function (l) {
-                        return { "@type": "Language", name: l.name.en, alternateName: l.code };
-                    }),
-                    knowsAbout: allSkills.concat(["Mobile Development", "Fullstack Development", "DevOps"]),
-                    hasOccupation: D.experience.map(function (exp) {
-                        return {
-                            "@type": "Role",
-                            roleName: exp.role.en,
-                            startDate: exp.startDate,
-                            endDate: exp.endDate,
-                            description: exp.description.en.join(". "),
-                            worksFor: { "@type": "Organization", name: exp.company.en },
-                        };
-                    }),
-                    alumniOf: (function () {
-                        var seen = {};
-                        return D.education.filter(function (e) {
-                            if (seen[e.school]) return false;
-                            seen[e.school] = true;
-                            return true;
-                        }).map(function (e) {
-                            return { "@type": "EducationalOrganization", name: e.school };
-                        });
-                    })(),
-                    hasCredential: D.education.map(function (e) {
-                        return {
-                            "@type": "EducationalOccupationalCredential",
-                            credentialCategory: "degree",
-                            name: e.degree.en,
-                            recognizedBy: { "@type": "EducationalOrganization", name: e.school },
-                            dateCreated: e.endYear,
-                        };
-                    }),
-                    sameAs: [P.githubUrl, P.linkedinUrl],
-                };
-                var ldScript = document.createElement("script");
-                ldScript.type = "application/ld+json";
-                ldScript.textContent = JSON.stringify(jsonLd);
-                document.head.appendChild(ldScript);
+                // Generate JSON-LD via shared helper (same shape on both pages)
+                SBRender.injectJsonLd(D, currentLang);
 
                 // i18n
                 window.setLang = function (lang) {
@@ -1197,6 +1118,10 @@
                         if (t[key] !== undefined) el.textContent = t[key];
                     });
                     if (t.back_to_top) backToTop.setAttribute("aria-label", t.back_to_top);
+                    if (t.theme_toggle) {
+                        var tt = document.getElementById("theme-toggle");
+                        if (tt) tt.setAttribute("aria-label", t.theme_toggle);
+                    }
                     document.documentElement.lang = lang;
                     var btnEn = document.getElementById("btn-en");
                     var btnFr = document.getElementById("btn-fr");

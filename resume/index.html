@@ -12,6 +12,27 @@
             content="développeur fullstack, développeur mobile, Android, iOS, Flutter, React Native, Rust, Kotlin, Swift, Java, JavaScript, Python, Spring Boot, Angular, Node.js, Docker, Proxmox, Git, GitLab CI/CD, Terraform"
         />
         <title>CV - Simon Brunou - Développeur Fullstack</title>
+        <link rel="canonical" href="https://simonbrunou.bzh/resume/" />
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content="CV - Simon Brunou - Développeur Fullstack" />
+        <meta
+            property="og:description"
+            content="CV de Simon Brunou - Développeur Fullstack avec expérience en Rust, Flutter, Kotlin, Swift, React Native, Spring Boot. Basé en Bretagne, France."
+        />
+        <meta property="og:url" content="https://simonbrunou.bzh/resume/" />
+        <meta property="og:locale" content="fr_FR" />
+        <meta property="og:site_name" content="Simon Brunou" />
+        <meta property="og:image" content="https://simonbrunou.bzh/resume/photo.png" />
+        <meta property="og:image:alt" content="Simon Brunou" />
+        <meta property="profile:first_name" content="Simon" />
+        <meta property="profile:last_name" content="Brunou" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="CV - Simon Brunou - Développeur Fullstack" />
+        <meta
+            name="twitter:description"
+            content="CV de Simon Brunou - Développeur Fullstack basé en Bretagne, France."
+        />
+        <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -223,7 +244,7 @@
             .education-item h4 { font-weight: 600; font-size: 1.05rem; margin-bottom: 2px; }
 
             .company { font-weight: 600; color: var(--accent); font-size: 0.9rem; margin-bottom: 2px; }
-            .date { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 10px; font-weight: 500; letter-spacing: 0.3px; }
+            .date { color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 10px; font-weight: 500; letter-spacing: 0.3px; }
 
             .job-description { padding-left: 18px; }
             .job-description li { margin-bottom: 6px; font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary); }
@@ -315,6 +336,7 @@
         <div id="cf-turnstile" style="display:none"></div>
 
         <script src="../data.js"></script>
+        <script src="../render.js"></script>
         <script>
             (function () {
                 var D = window.RESUME_DATA;
@@ -352,8 +374,8 @@
                     expHtml += '<article class="experience-item">' +
                         '<h4>' + t(exp.role) + '</h4>' +
                         '<div class="company">' + t(exp.company) + '</div>' +
-                        '<div class="date"><time datetime="' + exp.startDate + '">' + t(exp.period).split(" - ")[0] +
-                        '</time> - <time datetime="' + exp.endDate + '">' + t(exp.period).split(" - ")[1] + '</time></div>' +
+                        '<div class="date"><time datetime="' + exp.startDate + '">' + SBRender.splitPeriod(t(exp.period))[0] +
+                        '</time> — <time datetime="' + exp.endDate + '">' + SBRender.splitPeriod(t(exp.period))[1] + '</time></div>' +
                         '<ul class="job-description">';
                     t(exp.description).forEach(function (desc) {
                         expHtml += '<li>' + desc + '</li>';
@@ -369,7 +391,7 @@
                         '<h4>' + t(edu.degree) + '</h4>' +
                         '<div class="company">' + edu.school + '</div>' +
                         '<div class="date"><time datetime="' + edu.startYear + '">' + edu.startYear +
-                        '</time> - <time datetime="' + edu.endYear + '">' + edu.endYear + '</time></div>' +
+                        '</time> — <time datetime="' + edu.endYear + '">' + edu.endYear + '</time></div>' +
                         '</article>';
                 });
                 document.getElementById("education-section").innerHTML = eduHtml;
@@ -403,25 +425,8 @@
                 intHtml += '</ul>';
                 document.getElementById("interests-section").innerHTML = intHtml;
 
-                // JSON-LD
-                var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
-                var jsonLd = {
-                    "@context": "https://schema.org",
-                    "@type": "Person",
-                    name: P.name,
-                    jobTitle: t(D.title),
-                    telephone: P.phone,
-                    email: P.email,
-                    address: { "@type": "PostalAddress", addressLocality: "Saint-Nolff", addressRegion: "Bretagne", addressCountry: "FR" },
-                    knowsLanguage: D.languages.map(function (l) { return { "@type": "Language", name: t(l.name), alternateName: l.code }; }),
-                    knowsAbout: allSkills,
-                    hasOccupation: D.experience.map(function (exp) { return { "@type": "Role", roleName: t(exp.role), startDate: exp.startDate, endDate: exp.endDate, worksFor: { "@type": "Organization", name: t(exp.company) } }; }),
-                    alumniOf: (function () { var seen = {}; return D.education.filter(function (e) { if (seen[e.school]) return false; seen[e.school] = true; return true; }).map(function (e) { return { "@type": "EducationalOrganization", name: e.school }; }); })(),
-                };
-                var ldScript = document.createElement("script");
-                ldScript.type = "application/ld+json";
-                ldScript.textContent = JSON.stringify(jsonLd);
-                document.head.appendChild(ldScript);
+                // JSON-LD via shared helper (same shape on both pages)
+                SBRender.injectJsonLd(D, lang);
 
                 // Theme toggle
                 var root = document.documentElement;
