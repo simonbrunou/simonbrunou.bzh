@@ -13,6 +13,9 @@ pnpm-debug.log*
 .claude/settings.local.json
 .claude/scheduled_tasks*.lock
 
+# superpowers brainstorming mockups (Visual Companion session data)
+.superpowers/
+
 # misc
 .DS_Store
 *.log
