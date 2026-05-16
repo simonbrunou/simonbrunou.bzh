@@ -15,9 +15,12 @@
         <title>Page Not Found — Simon Brunou</title>
         <meta name="description" content="The page you're looking for doesn't exist. Return to Simon Brunou's portfolio." />
         <meta name="robots" content="noindex, follow" />
-        <meta name="theme-color" content="#0f0f1a" />
+        <meta name="theme-color" content="#0c0a14" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link id="font-inter" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
+        <script>document.getElementById('font-inter').rel='stylesheet';</script>
         <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
         <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
         <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
@@ -26,189 +29,215 @@
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
         />
         <style>
-            *, *::before, *::after {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
             :root {
-                --bg: #0f0f1a;
-                --bg2: #1a1a2e;
-                --bg3: #222240;
-                --text: #e0e0f0;
-                --text2: #b0b0d0;
-                --accent: #6c63ff;
-                --accent2: #ff6b6b;
-                --accent-glow: rgba(108, 99, 255, 0.15);
-                --radius: 12px;
-                --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                --bg-page: #0c0a14;
+                --text-primary: #efe9f5;
+                --text-secondary: rgba(239, 233, 245, 0.75);
+                --text-muted: rgba(239, 233, 245, 0.50);
+                --accent-1: #b964ff;
+                --accent-2: #d98cff;
+                --accent-3: #ff8cb3;
+                --border: rgba(255, 255, 255, 0.10);
+                --gradient-text: linear-gradient(90deg, var(--accent-2), var(--accent-3));
+                --gradient-button: linear-gradient(180deg, var(--accent-1), #a04ce6);
+                --gradient-mesh: radial-gradient(circle at 50% 30%, rgba(217, 140, 255, 0.22), transparent 50%);
+                color-scheme: dark light;
             }
+
             :root.light {
-                --bg: #f0f0f8;
-                --bg2: #ffffff;
-                --bg3: #e0e0ee;
-                --text: #1a1a2e;
-                --text2: #4a4a6a;
-                --accent: #5a52e0;
-                --accent2: #e04040;
-                --accent-glow: rgba(90, 82, 224, 0.1);
+                --bg-page: #fbfaff;
+                --text-primary: #1a1726;
+                --text-secondary: #5f5a6e;
+                --text-muted: #8c879a;
+                --accent-1: #8e3dd1;
+                --accent-2: #a14de3;
+                --accent-3: #c84686;
+                --border: rgba(26, 23, 38, 0.08);
+                --gradient-text: linear-gradient(90deg, var(--accent-1), var(--accent-3));
+                --gradient-button: linear-gradient(180deg, var(--accent-1), #7530b0);
+                --gradient-mesh: radial-gradient(circle at 50% 30%, rgba(142, 61, 209, 0.12), transparent 55%);
             }
+
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
             body {
-                font-family:
-                    "JetBrains Mono", ui-monospace, "Cascadia Code",
-                    "Source Code Pro", Menlo, Consolas, monospace;
-                background: var(--bg);
-                color: var(--text);
+                font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                background: var(--bg-page);
+                color: var(--text-primary);
+                min-height: 100vh;
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-                text-align: center;
-                padding: 2rem;
                 -webkit-font-smoothing: antialiased;
             }
-            h1 {
-                font-size: clamp(4rem, 12vw, 6rem);
-                font-weight: 800;
-                background: linear-gradient(135deg, var(--accent), var(--accent2));
+
+            .topbar { display: flex; justify-content: flex-end; padding: 14px 24px; }
+            .theme-toggle {
+                width: 38px; height: 38px;
+                border-radius: 100px;
+                border: 1px solid var(--border);
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--text-primary);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+            .theme-toggle svg { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.75; }
+
+            main {
+                flex: 1;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 60px 24px;
+                overflow: hidden;
+            }
+            main::before {
+                content: "";
+                position: absolute;
+                inset: -20%;
+                background: var(--gradient-mesh);
+                filter: blur(40px);
+                pointer-events: none;
+            }
+            main > * { position: relative; z-index: 1; }
+
+            .eyebrow {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.18em;
+                color: var(--text-muted);
+                margin-bottom: 16px;
+            }
+
+            .big {
+                font-size: 6rem;
+                font-weight: 600;
+                letter-spacing: -0.04em;
+                line-height: 1;
+                margin-bottom: 18px;
+            }
+            .big .accent {
+                background: var(--gradient-text);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
-                line-height: 1.1;
+                color: var(--accent-2);
             }
-            .message {
-                color: var(--text2);
-                font-size: clamp(1rem, 2.5vw, 1.2rem);
-                margin: 1rem 0 2.5rem;
-                max-width: 400px;
-            }
-            .actions {
-                display: flex;
-                gap: 1rem;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            .actions a {
+
+            #message { font-size: 1.05rem; color: var(--text-secondary); max-width: 360px; margin: 0 auto 28px; }
+
+            .actions { display: flex; gap: 10px; justify-content: center; }
+            .btn {
+                padding: 11px 20px;
+                border-radius: 10px;
+                font-family: inherit;
+                font-size: 0.86rem;
+                font-weight: 500;
+                text-decoration: none;
                 display: inline-flex;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.65rem 1.3rem;
-                border-radius: var(--radius);
-                font-weight: 500;
-                font-size: 0.9rem;
-                text-decoration: none;
-                transition: all var(--transition);
-                font-family: inherit;
             }
             .btn-primary {
+                background: var(--gradient-button);
                 color: #fff;
-                background: var(--accent);
-            }
-            .btn-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(108, 99, 255, 0.35);
+                border: 1px solid var(--border);
+                box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 8px 24px rgba(185, 100, 255, 0.25);
             }
             .btn-secondary {
-                color: var(--text);
-                background: var(--bg2);
-                border: 1.5px solid var(--bg3);
+                background: rgba(255, 255, 255, 0.04);
+                color: var(--text-primary);
+                border: 1px solid var(--border);
             }
-            .btn-secondary:hover {
-                border-color: var(--accent);
-                background: var(--bg3);
-            }
+
             a:focus-visible {
-                outline: 3px solid var(--accent);
+                outline: 2px solid var(--accent-1);
                 outline-offset: 3px;
                 border-radius: 4px;
             }
-            .theme-toggle {
-                position: fixed;
-                top: 1rem;
-                right: 1rem;
-                z-index: 100;
-                background: var(--bg2);
-                border: 1px solid var(--bg3);
-                border-radius: var(--radius);
-                color: var(--text2);
-                padding: 0.45rem 0.65rem;
-                font-size: 1rem;
-                line-height: 1;
-                cursor: pointer;
-                transition: all var(--transition);
+            button:focus-visible {
+                outline: 2px solid var(--accent-1);
+                outline-offset: 3px;
             }
-            .theme-toggle:hover {
-                color: var(--text);
-                background: var(--bg3);
-            }
+
             @media (prefers-reduced-motion: reduce) {
-                * {
-                    transition-duration: 0.01ms !important;
-                }
+                * { transition-duration: 0.01ms !important; }
             }
             @media (forced-colors: active) {
-                .btn-primary {
-                    border: 2px solid LinkText !important;
-                }
-                .btn-secondary {
-                    border: 1px solid CanvasText !important;
-                }
-                .theme-toggle {
-                    border: 1px solid CanvasText !important;
-                }
+                .btn-primary { border: 2px solid LinkText !important; }
+                .btn-secondary { border: 1px solid CanvasText !important; }
+                .theme-toggle { border: 1px solid CanvasText !important; }
             }
         </style>
     </head>
     <body>
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
-            <svg id="theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>
-            <svg id="theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.75" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>
-        </button>
-
+        <nav class="topbar">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
+                <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+                <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" hidden>
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+            </button>
+        </nav>
         <main>
-            <h1>404</h1>
-            <p class="message" id="message">This page doesn't exist. Let's get you back on track.</p>
+            <div class="eyebrow">Error</div>
+            <div class="big">4<span class="accent">0</span>4</div>
+            <p id="message">This page took a wrong turn somewhere in the Breton countryside.</p>
             <div class="actions">
-                <a href="/" class="btn-primary" id="home-link">Back Home</a>
-                <a href="/resume/" class="btn-secondary" id="resume-link">Resume</a>
+                <a href="/" class="btn btn-primary" id="home-link">Back home &rarr;</a>
+                <a href="/resume/" class="btn btn-secondary" id="resume-link">Resume</a>
             </div>
         </main>
 
         <script>
-            var THEME_COLOR_DARK = "#0f0f1a";
-            var THEME_COLOR_LIGHT = "#f0f0f8";
+            var THEME_COLOR_DARK = "#0c0a14";
+            var THEME_COLOR_LIGHT = "#fbfaff";
             var themeColorMeta = document.querySelector('meta[name="theme-color"]');
             var toggleBtn = document.getElementById("theme-toggle");
-            var iconSun = document.getElementById("theme-icon-sun");
-            var iconMoon = document.getElementById("theme-icon-moon");
+
             function isLight() { return document.documentElement.classList.contains("light"); }
-            function syncMeta() { if (themeColorMeta) themeColorMeta.content = isLight() ? THEME_COLOR_LIGHT : THEME_COLOR_DARK; }
-            function updateIcon() {
-                var light = isLight();
-                iconSun.style.display = light ? "none" : "";
-                iconMoon.style.display = light ? "" : "none";
-                toggleBtn.setAttribute("aria-pressed", light ? "true" : "false");
+
+            function syncMeta() {
+                if (themeColorMeta) themeColorMeta.content = isLight() ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
             }
+
+            function updateThemeIcon() {
+                var isLightNow = isLight();
+                if (toggleBtn) toggleBtn.setAttribute("aria-pressed", isLightNow ? "true" : "false");
+                var moon = document.getElementById("theme-icon-moon");
+                var sun  = document.getElementById("theme-icon-sun");
+                if (moon) moon.hidden = isLightNow;   // hide moon when light theme is active
+                if (sun)  sun.hidden  = !isLightNow;  // show sun when light theme is active
+            }
+
             function toggleTheme() {
                 var light = !isLight();
                 document.documentElement.classList.toggle("light", light);
                 try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
-                updateIcon();
+                updateThemeIcon();
                 syncMeta();
             }
-            toggleBtn.addEventListener("click", toggleTheme);
-            updateIcon();
+
+            if (toggleBtn) toggleBtn.addEventListener("click", toggleTheme);
+            updateThemeIcon();
             syncMeta();
+
             // Restore saved language
             try {
                 if (localStorage.getItem("lang") === "fr") {
                     document.documentElement.lang = "fr";
-                    document.title = "Page introuvable \u2014 Simon Brunou";
-                    document.getElementById("message").textContent = "Cette page n\u2019existe pas. Revenons sur la bonne voie.";
+                    document.title = "Page introuvable — Simon Brunou";
+                    document.getElementById("message").textContent = "Cette page n’existe pas. Retour vers la Bretagne.";
                     document.getElementById("home-link").textContent = "Accueil";
                     document.getElementById("resume-link").textContent = "CV";
-                    toggleBtn.setAttribute("aria-label", "Basculer le th\u00E8me");
+                    if (toggleBtn) toggleBtn.setAttribute("aria-label", "Basculer le thème");
                 }
             } catch (_) {}
         </script>
