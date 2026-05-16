@@ -1,8 +1,9 @@
 {
   "name": "simonbrunou.bzh",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Personal portfolio + résumé site for Simon Brunou. Cloudflare Worker fronts static assets and a Browser Rendering PDF endpoint protected by Turnstile.",
+  "type": "module",
+  "description": "Personal portfolio + résumé site for Simon Brunou. Self-hosted on Coolify. Node/Hono server with Puppeteer PDF endpoint protected by Cloudflare Turnstile.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simonbrunou/simonbrunou.bzh.git"
@@ -10,15 +11,17 @@
   "homepage": "https://simonbrunou.bzh",
   "author": "Simon Brunou",
   "license": "UNLICENSED",
+  "main": "server.js",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
-  "devDependencies": {
-    "@cloudflare/puppeteer": "^1.0.6",
-    "wrangler": "^4.92.0"
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.6.14",
+    "puppeteer-core": "^23.10.4"
   }
 }

@@ -1,61 +1,81 @@
 # simonbrunou.bzh
 
-Personal portfolio (`/`) and résumé (`/resume/`) for Simon Brunou. Deployed to
-Cloudflare Workers with Static Assets.
+Personal portfolio (`/`) and résumé (`/resume/`) for Simon Brunou. Self-hosted
+on Coolify; a single Node/Hono service serves the static pages and renders the
+FR CV to PDF via Puppeteer.
 
 ## Stack
 
-- **Static**: `index.html` (EN/FR, bilingual), `resume/index.html` (FR), `404.html`
+- **Static**: `index.html` (EN/FR, bilingual), `resume/index.html` (FR),
+  `404.html`
 - **Data**: `data.js` is the single source of truth for both pages
-- **Shared rendering**: `render.js` exposes helpers (`splitPeriod`, `injectJsonLd`)
-  used by both pages
-- **Worker** (`worker.js`):
-  - Serves static assets via `env.ASSETS.fetch`
-  - Injects a per-response CSP nonce on inline `<script>` tags via
-    `HTMLRewriter`, with `'strict-dynamic'` so render.js can dynamically inject
-    the JSON-LD block. HTML responses are forced to `Cache-Control: private,
-    no-store` so a shared cache doesn't replay one nonce to many users.
-  - Hosts the `POST /resume/simon-brunou-cv.pdf` endpoint: validates Origin,
-    rate-limits by IP, verifies a Turnstile token, and renders the FR CV with
-    `@cloudflare/puppeteer` (Browser Rendering). Waits for an explicit
-    `data-render-complete` sentinel on `<html>` before snapshotting.
+- **Shared rendering**: `render.js` exposes helpers (`splitPeriod`,
+  `injectJsonLd`) used by both pages
+- **Server** (`server.js`):
+  - Hono on Node 22 (`@hono/node-server`)
+  - Per-request CSP nonce stitched into `script-src` and onto every inline
+    `<script>` tag in the served HTML, with `'strict-dynamic'` so `render.js`
+    can inject the JSON-LD block. HTML responses are forced to
+    `Cache-Control: private, no-store` so a shared cache can't replay a nonce
+    to multiple users.
+  - Hosts the `POST /resume/simon-brunou-cv.pdf` endpoint: validates `Origin`,
+    rate-limits in-memory (5 req / 60 s / IP), verifies a Turnstile token, and
+    renders the FR CV with `puppeteer-core` against a local Chromium. Waits
+    for an explicit `data-render-complete` sentinel on `<html>` before
+    snapshotting.
+  - `GET /healthz` for the container healthcheck.
 
 ## Local development
 
+Requires Node ≥ 22 and a Chromium binary on `$CHROMIUM_PATH` if you want to
+exercise the PDF endpoint.
+
 ```sh
+cp .env.example .env       # then set TURNSTILE_SECRET_KEY for PDF tests
 npm install
-npm run dev   # → wrangler dev
+npm run dev                # node --watch server.js
 ```
 
-## Deploy
+Browse [http://localhost:3000](http://localhost:3000).
+
+### Docker
 
 ```sh
-npm run deploy   # → wrangler deploy
+docker build -t simonbrunou-bzh .
+docker run --rm -p 3000:3000 \
+  -e TURNSTILE_SECRET_KEY="$TURNSTILE_SECRET_KEY" \
+  -e ALLOWED_ORIGIN="http://localhost:3000" \
+  simonbrunou-bzh
 ```
 
-## Secrets
+The image bundles Chromium from Alpine. PDF generation drives the in-process
+server (`http://127.0.0.1:${PORT}/resume/?pdf=1`), so no outbound network is
+needed for the render itself — only for Turnstile siteverify.
 
-The PDF endpoint requires a Cloudflare Turnstile secret key. Provision once
-per environment:
+## Coolify deployment
 
-```sh
-wrangler secret put TURNSTILE_SECRET_KEY
-```
+1. **Create an app** of type *Dockerfile* pointing at this Git repo.
+2. **Port**: `3000`.
+3. **Environment variables** — copy from `.env.example`:
+   - `TURNSTILE_SECRET_KEY` — secret, never commit.
+   - `ALLOWED_ORIGIN` — your public URL (e.g. `https://simonbrunou.bzh`).
+   - `PORT`, `HOST`, `CHROMIUM_PATH`, `TRUST_PROXY` keep defaults unless
+     you're customising.
+4. **Healthcheck**: Coolify picks up the Dockerfile `HEALTHCHECK` automatically.
+   Path `/healthz`, port `3000`.
+5. **Domain**: set in Coolify; Traefik handles TLS via Let's Encrypt.
 
-The matching public sitekey is hard-coded in `resume/index.html` (Turnstile
-sitekeys are public). Update both if you rotate the keypair.
-
-## Bindings
-
-Configured in `wrangler.jsonc`:
-
-- `ASSETS` — Static Assets binding for the repo root (see `.assetsignore`
-  for files excluded from public serving)
-- `BROWSER` — Browser Rendering binding for puppeteer
-- `RATE_LIMITER` — 5 requests / 60s per IP, keyed on `CF-Connecting-IP`
+Pushing to `main` (with a Coolify Git webhook configured) triggers a rebuild.
 
 ## Security headers
 
-Baseline headers in `_headers` (CSP, HSTS, X-Frame-Options, Permissions-Policy,
-etc.). The Worker overrides `Cache-Control` and rewrites the CSP `script-src`
-on HTML responses so the nonce is meaningful.
+Baseline headers (CSP, HSTS, X-Frame-Options, Permissions-Policy, COOP, CORP,
+…) are set in `server.js`. CSP `script-src` is rewritten per-response to inject
+the nonce. If Traefik / Coolify also adds headers, deduplicate them — double
+`Strict-Transport-Security` is harmless but double CSP is not.
+
+## Turnstile
+
+The PDF endpoint requires a Cloudflare Turnstile secret key. The matching site
+key is public and lives in `resume/index.html`; update both if you rotate the
+keypair.
