@@ -2,13 +2,23 @@
 <html lang="en">
     <head>
         <script>
-            document.documentElement.classList.add('js');
-            try {
-                var t = localStorage.getItem('theme');
-                if (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-                    document.documentElement.classList.add('light');
-                }
-            } catch (_) {}
+            (function () {
+                var THEME_COLOR_LIGHT = '#eef0f7';
+                var THEME_COLOR_DARK  = '#1a1a2e';
+                document.documentElement.classList.add('js');
+                var light = false;
+                try {
+                    var t = localStorage.getItem('theme');
+                    light = (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches));
+                } catch (_) {}
+                if (light) document.documentElement.classList.add('light');
+                // Expose so the toggle handler later in the page can reuse the same source of truth.
+                window.__setThemeColor = function (isLight) {
+                    var m = document.querySelector('meta[name="theme-color"]');
+                    if (m) m.content = isLight ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
+                };
+                window.__setThemeColor(light);
+            })();
         </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -18,8 +28,7 @@
             content="Simon Brunou — Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
         />
         <meta name="author" content="Simon Brunou" />
-        <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#eef0f7" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1a1a2e" />
         <meta
             property="og:title"
             content="Simon Brunou — Fullstack Developer"
@@ -1031,6 +1040,7 @@
                     document.documentElement.classList.toggle("light", light);
                     try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
                     updateThemeIcon();
+                    if (window.__setThemeColor) window.__setThemeColor(light);
                 };
                 updateThemeIcon();
 
@@ -1245,10 +1255,18 @@
                 document.getElementById("btn-en").addEventListener("click", function () { setLang("en"); });
                 document.getElementById("btn-fr").addEventListener("click", function () { setLang("fr"); });
 
-                // Restore saved language
-                var saved;
-                try { saved = localStorage.getItem("lang"); } catch (_) {}
-                if (saved === "fr") setLang("fr");
+                // Language resolution priority: URL ?lang= (for hreflang
+                // arrivals and shareable French links) > localStorage > default EN.
+                var initLang;
+                try {
+                    var params = new URLSearchParams(window.location.search);
+                    var fromUrl = params.get("lang");
+                    if (fromUrl === "fr" || fromUrl === "en") initLang = fromUrl;
+                } catch (_) {}
+                if (!initLang) {
+                    try { initLang = localStorage.getItem("lang"); } catch (_) {}
+                }
+                if (initLang === "fr") setLang("fr");
             })();
         </script>
     </body>

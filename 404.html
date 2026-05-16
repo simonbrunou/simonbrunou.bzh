@@ -15,8 +15,7 @@
         <title>Page Not Found — Simon Brunou</title>
         <meta name="description" content="The page you're looking for doesn't exist. Return to Simon Brunou's portfolio." />
         <meta name="robots" content="noindex, follow" />
-        <meta name="theme-color" content="#0f0f1a" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#f0f0f8" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0f0f1a" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
@@ -176,16 +175,22 @@
         </main>
 
         <script>
+            var THEME_COLOR_DARK = "#0f0f1a";
+            var THEME_COLOR_LIGHT = "#f0f0f8";
+            var themeColorMeta = document.querySelector('meta[name="theme-color"]');
             function isLight() { return document.documentElement.classList.contains("light"); }
+            function syncMeta() { if (themeColorMeta) themeColorMeta.content = isLight() ? THEME_COLOR_LIGHT : THEME_COLOR_DARK; }
             function updateIcon() { document.getElementById("theme-icon").textContent = isLight() ? "\uD83C\uDF19" : "\u2600\uFE0F"; }
             function toggleTheme() {
                 var light = !isLight();
                 document.documentElement.classList.toggle("light", light);
                 try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
                 updateIcon();
+                syncMeta();
             }
             document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
             updateIcon();
+            syncMeta();
             // Restore saved language
             try {
                 if (localStorage.getItem("lang") === "fr") {

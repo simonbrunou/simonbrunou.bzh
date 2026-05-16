@@ -7,13 +7,9 @@
             name="description"
             content="CV de Simon Brunou - Développeur Fullstack avec expérience en développement mobile (Android, iOS), Flutter, React Native, Rust, Kotlin, Swift, Java, JavaScript. Basé en Bretagne, France."
         />
-        <meta name="theme-color" content="#11111b" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#e6e9ef" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#11111b" />
         <title>CV - Simon Brunou - Développeur Fullstack</title>
         <link rel="canonical" href="https://simonbrunou.bzh/resume/" />
-        <link rel="alternate" hreflang="fr" href="https://simonbrunou.bzh/resume/" />
-        <link rel="alternate" hreflang="en" href="https://simonbrunou.bzh/" />
-        <link rel="alternate" hreflang="x-default" href="https://simonbrunou.bzh/" />
         <meta property="og:type" content="profile" />
         <meta property="og:title" content="CV - Simon Brunou - Développeur Fullstack" />
         <meta
@@ -441,10 +437,13 @@
                 SBRender.injectJsonLd(D, lang);
 
                 // Theme toggle
+                var THEME_COLOR_DARK = "#11111b";
+                var THEME_COLOR_LIGHT = "#e6e9ef";
                 var root = document.documentElement;
                 var toggle = document.querySelector(".theme-toggle");
                 var iconSun = toggle.querySelector(".theme-icon-sun");
                 var iconMoon = toggle.querySelector(".theme-icon-moon");
+                var themeColorMeta = document.querySelector('meta[name="theme-color"]');
                 var stored = localStorage.getItem("resume-theme");
                 var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -456,13 +455,15 @@
 
                 // In dark mode, show the SUN (clicking it switches to light); in light mode, show the MOON.
                 function updateIcon() {
-                    if (isDark()) {
+                    var dark = isDark();
+                    if (dark) {
                         iconSun.style.display = "";
                         iconMoon.style.display = "none";
                     } else {
                         iconSun.style.display = "none";
                         iconMoon.style.display = "";
                     }
+                    if (themeColorMeta) themeColorMeta.content = dark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT;
                 }
 
                 if (stored === "dark") { root.classList.add("dark"); root.classList.remove("light"); }
