@@ -18,6 +18,26 @@
                     if (m) m.content = isLight ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
                 };
                 window.__setThemeColor(light);
+
+                // Safety net: .js .fade-in starts at opacity:0 and relies on
+                // a later IntersectionObserver to reveal sections. If the
+                // main script throws before reaching the observer setup, the
+                // content stays invisible. Schedule a force-reveal pass once
+                // the DOM is parsed; the main IIFE clears this handle as soon
+                // as the observer is wired so we don't erode the fade effect
+                // in the normal path.
+                function scheduleFadeRescue() {
+                    window.__fadeRescueId = setTimeout(function () {
+                        window.__fadeRescueId = null;
+                        var fades = document.querySelectorAll('.fade-in');
+                        for (var i = 0; i < fades.length; i++) fades[i].classList.add('visible');
+                    }, 4000);
+                }
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', scheduleFadeRescue, { once: true });
+                } else {
+                    scheduleFadeRescue();
+                }
             })();
         </script>
         <meta charset="utf-8" />
@@ -1241,19 +1261,36 @@
                     window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
                 });
 
-                // Fade-in observer
-                var o = new IntersectionObserver(
-                    function (entries) {
-                        entries.forEach(function (entry) {
-                            if (entry.isIntersecting) {
-                                entry.target.classList.add("visible");
-                                o.unobserve(entry.target);
-                            }
-                        });
-                    },
-                    { threshold: 0.15 }
-                );
-                document.querySelectorAll(".fade-in").forEach(function (el) { o.observe(el); });
+                // Fade-in observer. Without IntersectionObserver (old browsers
+                // or sandboxed contexts where it's stripped), the .js .fade-in
+                // rule would leave sections invisible forever — reveal them
+                // immediately as a fallback. Use a `for` loop, not
+                // NodeList.forEach, because browsers without IO also tend to
+                // lack NodeList.prototype.forEach.
+                var fadeEls = document.querySelectorAll(".fade-in");
+                if (typeof IntersectionObserver === "function") {
+                    var o = new IntersectionObserver(
+                        function (entries) {
+                            entries.forEach(function (entry) {
+                                if (entry.isIntersecting) {
+                                    entry.target.classList.add("visible");
+                                    o.unobserve(entry.target);
+                                }
+                            });
+                        },
+                        { threshold: 0.15 }
+                    );
+                    for (var i = 0; i < fadeEls.length; i++) o.observe(fadeEls[i]);
+                } else {
+                    for (var j = 0; j < fadeEls.length; j++) fadeEls[j].classList.add("visible");
+                }
+                // Observer is wired (or fallback applied) — cancel the head's
+                // safety-net rescue so it doesn't reveal off-screen sections
+                // prematurely on users who linger above the fold.
+                if (window.__fadeRescueId) {
+                    clearTimeout(window.__fadeRescueId);
+                    window.__fadeRescueId = null;
+                }
 
                 // Wire up the (no-longer-inline) button handlers so CSP can drop 'unsafe-inline'.
                 document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
