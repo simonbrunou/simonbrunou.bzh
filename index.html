@@ -526,60 +526,62 @@
             /* Education */
             .edu-grid {
                 display: grid;
-                gap: 1.25rem;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+                margin-top: 6px;
             }
+            @media (max-width: 640px) { .edu-grid { grid-template-columns: 1fr; } }
             .edu-card {
-                background: var(--bg2);
-                border: 1px solid var(--bg3);
-                border-radius: var(--radius);
-                padding: 1.25rem 1.5rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-                transition: all var(--transition);
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 16px 18px;
             }
-            .edu-card:hover {
-                border-color: var(--accent);
+            .edu-card .degree { font-weight: 600; font-size: 0.96rem; margin-bottom: 4px; }
+            .edu-card .school { font-size: 0.86rem; color: var(--text-secondary); }
+            .edu-card .year { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.78rem; color: var(--accent-2); margin-top: 8px; }
+
+            /* Languages */
+            .lang-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+                margin-top: 6px;
             }
-            .edu-card h3 {
-                font-size: 1.05rem;
-                font-weight: 600;
+            @media (max-width: 640px) { .lang-grid { grid-template-columns: 1fr; } }
+            .lang-card {
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 16px 18px;
             }
-            .edu-card .school {
-                color: var(--text2);
-                font-size: 0.9rem;
-            }
-            .edu-card .year {
-                color: var(--accent);
-                font-size: 0.9rem;
-                font-weight: 500;
-                white-space: nowrap;
+            .lang-card .name { font-weight: 600; font-size: 0.96rem; }
+            .lang-card .level { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+            .lang-card .level::before {
+                content: "";
+                display: inline-block;
+                width: 6px; height: 6px;
+                border-radius: 50%;
+                background: var(--accent-2);
+                margin-right: 7px;
+                vertical-align: middle;
+                opacity: 0.7;
             }
 
             /* Interests */
-            .interests {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 1rem;
-                margin-top: 1rem;
-            }
+            .interests-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
             .interest {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
-                gap: 0.5rem;
-                padding: 0.6rem 1.2rem;
-                background: var(--bg2);
-                border: 1px solid var(--bg3);
-                border-radius: var(--radius);
-                font-size: 0.95rem;
-                transition: all var(--transition);
+                gap: 8px;
+                padding: 8px 14px;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 100px;
+                font-size: 0.88rem;
+                transition: border-color 180ms, background 180ms;
             }
-            .interest:hover {
-                border-color: var(--accent);
-                transform: translateY(-2px);
-            }
+            .interest:hover { border-color: var(--accent-border); background: var(--bg-elev-strong); }
 
             /* Contact */
             .contact {
@@ -625,31 +627,6 @@
                 fill: none;
                 stroke-width: 1.75;
                 opacity: 0.85;
-            }
-
-            /* Languages */
-            .lang-list {
-                display: flex;
-                gap: 1.5rem;
-                flex-wrap: wrap;
-            }
-            .lang-item {
-                background: var(--bg2);
-                border: 1px solid var(--bg3);
-                border-radius: var(--radius);
-                padding: 0.5rem 0.85rem;
-                transition: all var(--transition);
-            }
-            .lang-item:hover {
-                border-color: var(--accent);
-            }
-            .lang-item strong {
-                display: block;
-                margin-bottom: 0.25rem;
-            }
-            .lang-item span {
-                color: var(--text2);
-                font-size: 0.9rem;
             }
 
             /* Footer */
@@ -895,25 +872,22 @@
                 <div class="timeline" id="experience-timeline"></div>
             </section>
 
-            <section id="education" aria-labelledby="education-heading">
-                <div class="container fade-in">
-                    <h2 id="education-heading" class="section-title" data-i18n="edu_title">Education</h2>
-                    <div id="edu-grid" class="edu-grid"></div>
-                </div>
+            <section class="container section education" id="education" aria-labelledby="education-heading">
+                <div class="section-label" id="education-eyebrow"></div>
+                <h2 id="education-heading"></h2>
+                <div class="edu-grid" id="education-grid"></div>
             </section>
 
-            <section id="languages" aria-labelledby="languages-heading">
-                <div class="container fade-in">
-                    <h2 id="languages-heading" class="section-title" data-i18n="lang_title">Languages</h2>
-                    <div id="lang-list" class="lang-list"></div>
-                </div>
+            <section class="container section languages" id="languages" aria-labelledby="languages-heading">
+                <div class="section-label" id="languages-eyebrow"></div>
+                <h2 id="languages-heading"></h2>
+                <div class="lang-grid" id="languages-grid"></div>
             </section>
 
-            <section id="interests" aria-labelledby="interests-heading">
-                <div class="container fade-in">
-                    <h2 id="interests-heading" class="section-title" data-i18n="interests_title">Interests</h2>
-                    <div id="interests-list" class="interests"></div>
-                </div>
+            <section class="container section interests" id="interests" aria-labelledby="interests-heading">
+                <div class="section-label" id="interests-eyebrow"></div>
+                <h2 id="interests-heading"></h2>
+                <div class="interests-row" id="interests-row"></div>
             </section>
 
             <section id="contact" aria-labelledby="contact-heading">
@@ -1119,33 +1093,63 @@
                     tl.appendChild(item);
                 });
 
-                // Generate education
-                var eduHtml = "";
-                D.education.forEach(function (edu, i) {
-                    eduHtml += '<div class="edu-card"><div>' +
-                        '<h3 data-i18n="edu' + (i + 1) + '_degree">' + edu.degree.en + "</h3>" +
-                        '<div class="school">' + edu.school + "</div></div>" +
-                        '<div class="year"><time datetime="' + edu.startYear + '">' + edu.startYear +
-                        '</time> — <time datetime="' + edu.endYear + '">' + edu.endYear + "</time></div></div>";
-                });
-                document.getElementById("edu-grid").innerHTML = eduHtml;
+                // Education
+                document.getElementById('education-eyebrow').textContent = D.ui[lang].edu_title;
+                document.getElementById('education-heading').textContent = D.ui[lang].section_heading_edu;
+                var eduGrid = document.getElementById('education-grid');
+                eduGrid.textContent = '';
+                D.education.forEach(function (e) {
+                    var card = document.createElement('div');
+                    card.className = 'edu-card';
 
-                // Generate languages
-                var langHtml = "";
-                D.languages.forEach(function (l, i) {
-                    langHtml += '<div class="lang-item">' +
-                        '<strong data-i18n="lang' + i + '_name">' + l.name.en + "</strong>" +
-                        '<span data-i18n="lang' + i + '_level">' + l.level.en + "</span></div>";
-                });
-                document.getElementById("lang-list").innerHTML = langHtml;
+                    var degree = document.createElement('div');
+                    degree.className = 'degree';
+                    degree.textContent = pick(e.degree, lang);
+                    card.appendChild(degree);
 
-                // Generate interests
-                var intHtml = "";
-                D.interests.forEach(function (item, i) {
-                    intHtml += '<div class="interest"><span aria-hidden="true">' + item.emoji +
-                        '</span> <span data-i18n="interest' + i + '">' + item.label.en + "</span></div>";
+                    var school = document.createElement('div');
+                    school.className = 'school';
+                    school.textContent = e.school;
+                    card.appendChild(school);
+
+                    var year = document.createElement('div');
+                    year.className = 'year';
+                    year.textContent = e.startYear + ' — ' + e.endYear;
+                    card.appendChild(year);
+
+                    eduGrid.appendChild(card);
                 });
-                document.getElementById("interests-list").innerHTML = intHtml;
+
+                // Languages
+                document.getElementById('languages-eyebrow').textContent = D.ui[lang].lang_title;
+                document.getElementById('languages-heading').textContent = D.ui[lang].section_heading_lang;
+                var langGrid = document.getElementById('languages-grid');
+                langGrid.textContent = '';
+                D.languages.forEach(function (l) {
+                    var card = document.createElement('div');
+                    card.className = 'lang-card';
+                    var name = document.createElement('div');
+                    name.className = 'name';
+                    name.textContent = pick(l.name, lang);
+                    card.appendChild(name);
+                    var level = document.createElement('div');
+                    level.className = 'level';
+                    level.textContent = pick(l.level, lang);
+                    card.appendChild(level);
+                    langGrid.appendChild(card);
+                });
+
+                // Interests
+                document.getElementById('interests-eyebrow').textContent = D.ui[lang].interests_title;
+                document.getElementById('interests-heading').textContent = D.ui[lang].section_heading_interests;
+                var iRow = document.getElementById('interests-row');
+                iRow.textContent = '';
+                D.interests.forEach(function (i) {
+                    var s = document.createElement('span');
+                    s.className = 'interest';
+                    s.textContent = i.emoji + ' ' + pick(i.label, lang);
+                    iRow.appendChild(s);
+                });
 
                 // Generate contact
                 var phDisplay = P.phoneDisplay[currentLang] || P.phoneDisplay.en;
