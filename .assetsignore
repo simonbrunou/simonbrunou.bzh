@@ -1,0 +1,23 @@
+# Files in the project root that must NOT be served as public assets.
+# Uses .gitignore-style syntax. Resolved relative to assets.directory.
+
+# Worker source and Cloudflare config
+worker.js
+wrangler.jsonc
+
+# Node tooling
+package.json
+package-lock.json
+node_modules/
+
+# Local dev / VCS
+.git/
+.gitignore
+.assetsignore
+.wrangler/
+.dev.vars*
+.env*
+
+# Repo docs (none today, future-proofing)
+README*
+LICENSE*
