@@ -98,12 +98,22 @@ function generateNonce() {
     return randomBytes(16).toString("base64");
 }
 
-function cspWithNonce(nonce) {
-    return BASE_CSP.replace(
+function cspWithNonce(nonce, { dropUpgradeInsecure = false } = {}) {
+    let csp = BASE_CSP.replace(
         /script-src ([^;]+)/,
         (_, parts) =>
             `script-src ${parts.trim()} 'nonce-${nonce}' 'strict-dynamic'`,
     );
+    // Drop upgrade-insecure-requests on the PDF-render path: puppeteer
+    // drives the page from http://127.0.0.1, and UIR would otherwise
+    // upgrade every relative sub-resource fetch (data.js, render.js,
+    // photo.png) to https://127.0.0.1 — which the server doesn't listen
+    // on — leaving render.js unloaded and the data-render-complete
+    // sentinel never fired, so the PDF render times out.
+    if (dropUpgradeInsecure) {
+        csp = csp.replace(/;\s*upgrade-insecure-requests\b/, "");
+    }
+    return csp;
 }
 
 // Match <script when followed by whitespace or '>' so we don't mangle
@@ -138,8 +148,8 @@ await Promise.all([
 ]);
 
 // Fixed-window rate limit: up to RATE_LIMIT requests per IP within each
-// rolling RATE_WINDOW_MS window. The window resets on the first request
-// after it expires; no token refill / burst capacity.
+// RATE_WINDOW_MS window. The window is seeded on the first request after
+// it expires; no token refill / burst capacity.
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 60_000;
 const rateBuckets = new Map();
@@ -161,6 +171,12 @@ setInterval(() => {
 
 function clientIp(c) {
     if (TRUST_PROXY) {
+        // CF-Connecting-IP wins when Cloudflare is the outermost proxy:
+        // it's the real client even if a downstream reverse proxy rewrites
+        // X-Forwarded-For. Falls back to XFF (leftmost = original client),
+        // then to X-Real-IP, then to the socket peer.
+        const cf = c.req.header("cf-connecting-ip");
+        if (cf) return cf.trim();
         const xff = c.req.header("x-forwarded-for");
         if (xff) return xff.split(",")[0].trim();
         const real = c.req.header("x-real-ip");
@@ -185,7 +201,11 @@ app.get("/healthz", (c) => c.text("ok"));
 async function serveHtml(c, rel, status = 200) {
     const body = htmlCache.get(rel) || (await loadHtml(rel));
     const nonce = generateNonce();
-    c.header("Content-Security-Policy", cspWithNonce(nonce));
+    const isPdfRender = c.req.query("pdf") !== undefined;
+    c.header(
+        "Content-Security-Policy",
+        cspWithNonce(nonce, { dropUpgradeInsecure: isPdfRender }),
+    );
     c.header("Cache-Control", "private, no-store");
     c.header("Content-Type", "text/html; charset=utf-8");
     return c.body(injectNonce(body, nonce), status);
