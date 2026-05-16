@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# Claude Code PostToolUse hook for Bash. Three responsibilities:
-#   1) After ANY operation that advanced the PR-branch's tip (whether
-#      that branch is still checked out or we've since switched away),
-#      ask Claude to run /code-review before pushing. Pure state-based
-#      via the PreToolUse snapshot of HEAD + branch name.
-#   2) Tripwire — if the new commit is now reachable via ANY remote
-#      tracking ref AND the command contained `git push`, a push was
-#      chained into the same Bash call.
-#   3) Don't false-fire on `git pull --ff-only` (which also leaves a
-#      remote ref pointing at HEAD without the user pushing) — we
-#      require the command text to include `git push`.
+# Claude Code PostToolUse hook for Bash. Detects locally-created
+# commits on PR branches and asks Claude to run /code-review before
+# pushing — even when the commit landed on a branch we switched TO,
+# or on a branch we switched AWAY from. Distinguishes locally-created
+# commits from pull/fetch-imported commits, and chained-push from a
+# normal pull-and-push.
 
 input=$(cat 2>/dev/null) || exit 0
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || exit 0
@@ -20,55 +15,82 @@ printf '%s' "$input" | jq -e '.tool_response.success == false' >/dev/null 2>&1 &
 command -v git >/dev/null 2>&1 || exit 0
 command -v gh  >/dev/null 2>&1 || exit 0
 
-# Read the pre-command snapshot.
 session=$(printf '%s' "$input" | jq -r '.session_id // "default"' 2>/dev/null)
-prefile_head="/tmp/claude-bash-prehead-${session}.txt"
 prefile_branch="/tmp/claude-bash-prebranch-${session}.txt"
-pre_head=$(cat "$prefile_head" 2>/dev/null)
-pre_branch=$(cat "$prefile_branch" 2>/dev/null)
-rm -f "$prefile_head" "$prefile_branch"
-post_head=$(git rev-parse HEAD 2>/dev/null) || exit 0
-post_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+prefile_branches="/tmp/claude-bash-prebranches-${session}.txt"
+prefile_remote_shas="/tmp/claude-bash-preremoteshas-${session}.txt"
 
-# Determine which branch the commit landed on (could be the current
-# branch, OR pre_branch if the same Bash call did `git commit && git
-# switch other`).
-if [ -n "$pre_branch" ] && [ "$pre_branch" != "$post_branch" ]; then
-  # Branch changed during the call. Did the original PR branch's tip advance?
-  target_tip=$(git rev-parse "refs/heads/$pre_branch" 2>/dev/null) || exit 0
-  if [ -z "$pre_head" ] || [ "$target_tip" = "$pre_head" ]; then
-    exit 0  # original branch didn't advance, just a switch
-  fi
-  target_branch="$pre_branch"
-  target_sha="$target_tip"
-else
-  # Same branch — standard case
-  if [ -z "$pre_head" ] || [ "$pre_head" = "$post_head" ]; then
-    exit 0  # no HEAD movement (covers --dry-run, --no-edit, status, fetch, etc.)
-  fi
+cleanup() {
+  rm -f "$prefile_branch" "$prefile_branches" "$prefile_remote_shas"
+}
+
+post_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || { cleanup; exit 0; }
+pre_branch=$(cat "$prefile_branch" 2>/dev/null)
+
+# Decide which branch the commit (if any) landed on.
+#   - If the *current* branch's tip moved since pre-snapshot, that's
+#     where the commit went (covers both same-branch and switched-TO
+#     cases like `git switch feature && git commit`).
+#   - Else if a *previous* branch's tip moved (we switched away after
+#     committing), fire the reminder against that one.
+target_branch=""
+target_sha=""
+
+post_branch_now=$(git rev-parse HEAD 2>/dev/null)
+post_branch_pre=$(grep "^${post_branch} " "$prefile_branches" 2>/dev/null | awk '{print $2}')
+if [ -n "$post_branch_pre" ] && [ -n "$post_branch_now" ] && [ "$post_branch_pre" != "$post_branch_now" ]; then
   target_branch="$post_branch"
-  target_sha="$post_head"
+  target_sha="$post_branch_now"
+elif [ -n "$pre_branch" ] && [ "$pre_branch" != "$post_branch" ]; then
+  pre_branch_pre=$(grep "^${pre_branch} " "$prefile_branches" 2>/dev/null | awk '{print $2}')
+  pre_branch_now=$(git rev-parse "refs/heads/${pre_branch}" 2>/dev/null)
+  if [ -n "$pre_branch_pre" ] && [ -n "$pre_branch_now" ] && [ "$pre_branch_pre" != "$pre_branch_now" ]; then
+    target_branch="$pre_branch"
+    target_sha="$pre_branch_now"
+  fi
 fi
 
-case "$target_branch" in ""|main|master|HEAD) exit 0 ;; esac
+if [ -z "$target_branch" ]; then
+  cleanup; exit 0
+fi
 
-# Resolve PR for the target branch. For the same-branch case use the
-# default (no-arg) resolver so `gh pr checkout --branch <local>` setups
-# work; for the cross-branch case pass the branch name explicitly.
+case "$target_branch" in ""|main|master|HEAD) cleanup; exit 0 ;; esac
+
+# Was target_sha already reachable via a remote ref BEFORE this Bash
+# call? If so, the "advance" came from `git pull`/`fetch`, not a local
+# commit. Skip silently.
+if [ -f "$prefile_remote_shas" ] && grep -qx "$target_sha" "$prefile_remote_shas"; then
+  cleanup; exit 0
+fi
+
+cleanup
+
+# Resolve PR for target_branch. Use gh's default (no-arg) resolver
+# when target_branch IS the current branch — it reads tracking metadata
+# and handles `gh pr checkout 123 --branch <local>` correctly. For the
+# switched-away case, fall back to the configured upstream's branch
+# name if available, then to the local branch name.
+pr_number=""
 if [ "$target_branch" = "$post_branch" ]; then
-  pr_number=$(gh pr view --json number --jq '.number' 2>/dev/null) || exit 0
+  pr_number=$(gh pr view --json number --jq '.number' 2>/dev/null)
 else
-  pr_number=$(gh pr view "$target_branch" --json number --jq '.number' 2>/dev/null) || exit 0
+  upstream=$(git config --get "branch.${target_branch}.merge" 2>/dev/null | sed 's|^refs/heads/||')
+  if [ -n "$upstream" ]; then
+    pr_number=$(gh pr view "$upstream" --json number --jq '.number' 2>/dev/null)
+  fi
+  if [ -z "$pr_number" ]; then
+    pr_number=$(gh pr view "$target_branch" --json number --jq '.number' 2>/dev/null)
+  fi
 fi
 [ -z "$pr_number" ] && exit 0
 
 target_sha_short=$(git rev-parse --short "$target_sha" 2>/dev/null) || exit 0
 
-# Tripwire — require BOTH (a) a remote tracking ref pointing at the new
-# commit AND (b) `git push` actually appearing in the command. Without
-# (b), `git pull --ff-only` would falsely fire (it advances HEAD AND
-# updates the remote ref at the same time). Quoted message values are
-# stripped first so `commit -m "fix git push race"` doesn't false-trip.
+# Tripwire — fire only if BOTH (a) the command actually mentions
+# `git push` (after stripping message values, so commit messages can't
+# false-trip) AND (b) some remote ref now points at target_sha. Without
+# (a), `git pull --ff-only && git push` would alarm even though the
+# user pushed nothing new.
 stripped=$(printf '%s' "$cmd" | sed -E "
   s/-m[[:space:]]+'[^']*'//g
   s/-m[[:space:]]+\"[^\"]*\"//g

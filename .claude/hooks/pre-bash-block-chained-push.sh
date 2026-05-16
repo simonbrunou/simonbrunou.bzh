@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 # Claude Code PreToolUse hook for Bash. Two jobs:
-#   1) Snapshot HEAD AND the current branch name into per-session temp
-#      files so PostToolUse can detect commits that advance the same
-#      branch's tip (vs. branch switches, which also change HEAD), and
-#      handle commits that landed on a now-switched-away branch.
+#   1) Snapshot enough state for PostToolUse to reason about commits:
+#        - current branch name
+#        - tip of every local branch (so commits on a SWITCHED-TO PR
+#          branch are detectable)
+#        - every remote ref SHA (so commits that came in via pull/fetch
+#          are distinguishable from locally-created ones)
 #   2) Deny chaining a HEAD-advancing git operation with `git push` in
 #      a single Bash call on a PR branch — so the post-commit hook can
-#      ask Claude to run /code-review BETWEEN the commit-creating
-#      operation and the push. Recognised operations: commit, revert,
-#      cherry-pick, merge, rebase, am.
+#      ask Claude to run /code-review BETWEEN the change and the push.
 
 input=$(cat 2>/dev/null) || exit 0
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || exit 0
 
-# (1) Snapshot HEAD + branch. Per-session keyed; overwritten every Bash call.
+# (1) Snapshots — per-session keyed; overwritten on every Bash call.
 session=$(printf '%s' "$input" | jq -r '.session_id // "default"' 2>/dev/null)
-prefile_head="/tmp/claude-bash-prehead-${session}.txt"
 prefile_branch="/tmp/claude-bash-prebranch-${session}.txt"
-git rev-parse HEAD 2>/dev/null > "$prefile_head" || rm -f "$prefile_head"
+prefile_branches="/tmp/claude-bash-prebranches-${session}.txt"
+prefile_remote_shas="/tmp/claude-bash-preremoteshas-${session}.txt"
+
 git rev-parse --abbrev-ref HEAD 2>/dev/null > "$prefile_branch" || rm -f "$prefile_branch"
+git for-each-ref refs/heads/ --format='%(refname:short) %(objectname)' 2>/dev/null > "$prefile_branches" || rm -f "$prefile_branches"
+git for-each-ref refs/remotes/ --format='%(objectname)' 2>/dev/null | sort -u > "$prefile_remote_shas" || rm -f "$prefile_remote_shas"
 
 [ -z "$cmd" ] && exit 0
 
@@ -27,7 +30,7 @@ command -v git >/dev/null 2>&1 || exit 0
 command -v gh  >/dev/null 2>&1 || exit 0
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
 case "$branch" in ""|main|master|HEAD) exit 0 ;; esac
-# Use gh pr view's default resolution (current branch) — handles
+# Use gh's default resolution (current branch) — handles
 # `gh pr checkout 123 --branch review-123` correctly because gh reads
 # the branch's tracking metadata, not just the local name.
 gh pr view --json number >/dev/null 2>&1 || exit 0
