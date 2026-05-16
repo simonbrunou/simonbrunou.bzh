@@ -68,6 +68,19 @@
 
             *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+            .sr-only {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                clip-path: inset(50%);
+                white-space: nowrap;
+                border: 0;
+            }
+
             body {
                 font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                 line-height: 1.6;
@@ -123,6 +136,7 @@
 
             .header-action:hover { background: rgba(255, 255, 255, 0.3); }
             .header-action:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+            .header-action.pdf-error { background: rgba(220, 80, 80, 0.35); border-color: rgba(255, 200, 200, 0.5); }
 
             .theme-toggle { width: 38px; padding: 0; justify-content: center; border-radius: 50%; }
             .theme-toggle svg {
@@ -339,6 +353,7 @@
         </div>
 
         <div id="cf-turnstile" style="display:none"></div>
+        <div id="pdf-status" role="status" aria-live="polite" class="sr-only"></div>
 
         <script src="../data.js"></script>
         <script src="../render.js"></script>
@@ -360,7 +375,7 @@
                             '<svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>' +
                         '</button>' +
                     '</div>' +
-                    '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
+                    '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" decoding="async" /></div>' +
                     '<h1 class="name">' + P.name + '</h1>' +
                     '<p class="title">' + t(D.title) + '</p>' +
                     '<ul class="contact-info">' +
@@ -482,6 +497,22 @@
                 prefersDark.addEventListener("change", function () {
                     if (!localStorage.getItem("resume-theme")) updateIcon();
                 });
+
+                // Sentinel for the puppeteer PDF worker — see worker.js.
+                // Wait for in-document images to finish loading so the
+                // generated PDF doesn't race past the profile photo.
+                var imgs = Array.prototype.slice.call(document.images);
+                Promise.all(imgs.map(function (img) {
+                    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                    return new Promise(function (resolve) {
+                        // resolve on success OR failure — a missing image
+                        // shouldn't strand the PDF worker.
+                        img.addEventListener("load", resolve, { once: true });
+                        img.addEventListener("error", resolve, { once: true });
+                    });
+                })).then(function () {
+                    document.documentElement.setAttribute("data-render-complete", "");
+                });
             })();
         </script>
         <script>
@@ -492,26 +523,68 @@
                 // Skip Turnstile when the page is loaded by Puppeteer for PDF generation
                 if (new URLSearchParams(window.location.search).get("pdf")) return;
 
+                // 30s — generous for a cold browser rendering worker but well
+                // under the 60s default rate-limit window.
+                var PDF_TIMEOUT_MS = 30000;
                 var pdfBtnInner = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF';
                 var widgetId;
 
                 function getBtn() { return document.getElementById("pdf-download-btn"); }
+                function getStatus() { return document.getElementById("pdf-status"); }
 
                 function setLoading(loading) {
                     var btn = getBtn();
-                    if (!btn) return;
-                    btn.disabled = loading;
-                    btn.innerHTML = loading ? pdfBtnInner.replace("PDF", "…") : pdfBtnInner;
+                    if (btn) {
+                        btn.disabled = loading;
+                        btn.setAttribute("aria-busy", loading ? "true" : "false");
+                        // existing pattern: pdfBtnInner is a constant SVG string controlled by this file.
+                        btn.innerHTML = loading ? pdfBtnInner.replace("PDF", "…") : pdfBtnInner;
+                    }
+                    var s = getStatus();
+                    if (s && loading) s.textContent = "Génération du PDF…";
+                }
+
+                function setError(msg) {
+                    var btn = getBtn();
+                    if (btn) {
+                        btn.title = msg;
+                        btn.classList.add("pdf-error");
+                    }
+                    var s = getStatus();
+                    if (s) s.textContent = msg;
+                }
+
+                function clearError() {
+                    var btn = getBtn();
+                    if (btn) {
+                        btn.title = "Télécharger en PDF";
+                        btn.classList.remove("pdf-error");
+                    }
+                }
+
+                function messageForStatus(status) {
+                    if (status === 429) return "Trop de demandes. Réessayez dans une minute.";
+                    if (status === 403) return "Vérification échouée. Rechargez la page et réessayez.";
+                    if (status === 503) return "Service indisponible. Réessayez plus tard.";
+                    return "Échec du téléchargement (" + status + "). Réessayez.";
                 }
 
                 function downloadPDF(token) {
+                    clearError();
+                    var controller = new AbortController();
+                    var timer = setTimeout(function () { controller.abort(); }, PDF_TIMEOUT_MS);
                     fetch("/resume/simon-brunou-cv.pdf", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ token: token }),
+                        signal: controller.signal,
                     })
                         .then(function (r) {
-                            if (!r.ok) throw new Error("Failed: " + r.status);
+                            if (!r.ok) {
+                                var err = new Error("status_" + r.status);
+                                err.status = r.status;
+                                throw err;
+                            }
                             return r.blob();
                         })
                         .then(function (blob) {
@@ -523,9 +596,20 @@
                             a.click();
                             document.body.removeChild(a);
                             URL.revokeObjectURL(blobUrl);
+                            var s = getStatus();
+                            if (s) s.textContent = "PDF téléchargé.";
                         })
-                        .catch(function (err) { console.error(err); })
+                        .catch(function (err) {
+                            if (err && err.name === "AbortError") {
+                                setError("La génération du PDF a expiré. Réessayez.");
+                            } else if (err && typeof err.status === "number") {
+                                setError(messageForStatus(err.status));
+                            } else {
+                                setError("Échec du téléchargement. Vérifiez votre connexion.");
+                            }
+                        })
                         .finally(function () {
+                            clearTimeout(timer);
                             setLoading(false);
                             if (widgetId !== undefined) turnstile.reset(widgetId);
                         });
