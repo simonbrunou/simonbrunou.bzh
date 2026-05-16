@@ -817,7 +817,7 @@
 
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
-        <header class="container hero">
+        <header class="container hero fade-in">
             <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="96" height="96" loading="eager" />
             <div class="eyebrow" id="hero-eyebrow"></div>
             <h1>Simon <span class="accent">Brunou</span></h1>
@@ -833,43 +833,43 @@
         </header>
 
         <main id="main-content" tabindex="-1">
-            <section class="container section about" id="about" aria-labelledby="about-heading">
+            <section class="container section fade-in about" id="about" aria-labelledby="about-heading">
                 <div class="section-label" id="about-eyebrow"></div>
                 <h2 id="about-heading"></h2>
                 <p id="about-text"></p>
             </section>
 
-            <section class="container section skills" id="skills" aria-labelledby="skills-heading">
+            <section class="container section fade-in skills" id="skills" aria-labelledby="skills-heading">
                 <div class="section-label" id="skills-eyebrow"></div>
                 <h2 id="skills-heading"></h2>
                 <div class="skills-grid" id="skills-grid"></div>
             </section>
 
-            <section class="container section experience" id="experience" aria-labelledby="experience-heading">
+            <section class="container section fade-in experience" id="experience" aria-labelledby="experience-heading">
                 <div class="section-label" id="experience-eyebrow"></div>
                 <h2 id="experience-heading"></h2>
                 <div class="timeline" id="experience-timeline"></div>
             </section>
 
-            <section class="container section education" id="education" aria-labelledby="education-heading">
+            <section class="container section fade-in education" id="education" aria-labelledby="education-heading">
                 <div class="section-label" id="education-eyebrow"></div>
                 <h2 id="education-heading"></h2>
                 <div class="edu-grid" id="education-grid"></div>
             </section>
 
-            <section class="container section languages" id="languages" aria-labelledby="languages-heading">
+            <section class="container section fade-in languages" id="languages" aria-labelledby="languages-heading">
                 <div class="section-label" id="languages-eyebrow"></div>
                 <h2 id="languages-heading"></h2>
                 <div class="lang-grid" id="languages-grid"></div>
             </section>
 
-            <section class="container section interests" id="interests" aria-labelledby="interests-heading">
+            <section class="container section fade-in interests" id="interests" aria-labelledby="interests-heading">
                 <div class="section-label" id="interests-eyebrow"></div>
                 <h2 id="interests-heading"></h2>
                 <div class="interests-row" id="interests-row"></div>
             </section>
 
-            <section class="container section contact" id="contact" aria-labelledby="contact-heading">
+            <section class="container section fade-in contact" id="contact" aria-labelledby="contact-heading">
                 <div class="contact-card">
                     <div class="section-label" id="contact-eyebrow"></div>
                     <h2 id="contact-heading"><span class="accent" id="contact-heading-text"></span></h2>
@@ -905,9 +905,7 @@
             (function () {
                 var D = window.RESUME_DATA;
                 var P = D.personal;
-                var currentLang = "en";
-                // Look up backToTop early so setLang (defined below) can safely reference it
-                // regardless of where setLang is invoked in the IIFE.
+                var pick = window.SBRender.pickLang;
                 var backToTop = document.getElementById("back-to-top");
 
                 // Theme toggle
@@ -933,245 +931,239 @@
                 }
                 updateThemeIcon();
 
-                // Build translations from shared data
-                function buildTranslations(lang) {
-                    var t = Object.assign({}, D.ui[lang], {
-                        subtitle: D.title[lang],
-                        location: P.location[lang],
-                        about_text: D.about[lang],
-                    });
+                // Render all bilingual content for the given lang.
+                // Called once at startup and again on every language toggle.
+                // All DOM mutations use textContent / createElement — never innerHTML
+                // with interpolated data values.
+                function render(lang) {
+                    // Hero
+                    document.getElementById('hero-eyebrow').textContent = pick(D.personal.location, lang);
+                    document.getElementById('hero-role').textContent = pick(D.title, lang);
+                    document.getElementById('hero-cta').textContent = D.ui[lang].cta + ' →';
+                    document.getElementById('hero-resume-link').textContent = D.ui[lang].resume_link;
+
                     if (D.availability && D.availability.open) {
-                        t["availability"] = D.availability.label[lang];
+                        document.getElementById('hero-status-label').textContent = pick(D.availability.label, lang);
+                        document.getElementById('hero-status').hidden = false;
                     }
-                    // Skill category labels
-                    Object.keys(D.skillCategoryLabels).forEach(function (k) {
-                        t["skills_" + k] = D.skillCategoryLabels[k][lang];
-                    });
-                    // Experience
-                    D.experience.forEach(function (exp, i) {
-                        var n = i + 1;
-                        t["exp" + n + "_role"] = exp.role[lang];
-                        t["exp" + n + "_company"] = exp.company[lang];
-                        exp.description[lang].forEach(function (desc, j) {
-                            t["exp" + n + "_li" + (j + 1)] = desc;
+
+                    // About
+                    document.getElementById('about-eyebrow').textContent = D.ui[lang].about_title;
+                    document.getElementById('about-heading').textContent = D.ui[lang].section_heading_about;
+                    document.getElementById('about-text').textContent = pick(D.about, lang);
+
+                    // Skills eyebrow + heading
+                    document.getElementById('skills-eyebrow').textContent = D.ui[lang].skills_title;
+                    document.getElementById('skills-heading').textContent = D.ui[lang].section_heading_skills;
+
+                    // Generate skills — DOM construction only (no innerHTML for data values)
+                    var grid = document.getElementById('skills-grid');
+                    grid.textContent = '';
+                    ['languages', 'frameworks', 'tools'].forEach(function (cat) {
+                        var card = document.createElement('div');
+                        card.className = 'skill-cat';
+
+                        var catLabel = document.createElement('div');
+                        catLabel.className = 'skill-cat-label';
+                        catLabel.textContent = '// ' + pick(D.skillCategoryLabels[cat], lang).toLowerCase();
+                        card.appendChild(catLabel);
+
+                        var chips = document.createElement('div');
+                        chips.className = 'chips';
+                        D.skills[cat].forEach(function (s) {
+                            var c = document.createElement('span');
+                            c.className = 'chip-skill';
+                            c.textContent = s;
+                            chips.appendChild(c);
                         });
+                        card.appendChild(chips);
+
+                        grid.appendChild(card);
                     });
+
+                    // Experience eyebrow + heading
+                    document.getElementById('experience-eyebrow').textContent = D.ui[lang].exp_title;
+                    document.getElementById('experience-heading').textContent = D.ui[lang].section_heading_exp;
+
+                    // Generate experience timeline — DOM construction only (no innerHTML for data values)
+                    var tl = document.getElementById('experience-timeline');
+                    tl.textContent = '';
+                    D.experience.forEach(function (exp) {
+                        var item = document.createElement('div');
+                        item.className = 'tl-item';
+
+                        var meta = document.createElement('div');
+                        meta.className = 'tl-meta';
+                        meta.textContent = pick(exp.period, lang);
+                        item.appendChild(meta);
+
+                        var role = document.createElement('h3');
+                        role.textContent = pick(exp.role, lang);
+                        item.appendChild(role);
+
+                        var co = document.createElement('div');
+                        co.className = 'tl-company';
+                        co.textContent = pick(exp.company, lang);
+                        item.appendChild(co);
+
+                        var ul = document.createElement('ul');
+                        pick(exp.description, lang).forEach(function (b) {
+                            var li = document.createElement('li');
+                            li.textContent = b;
+                            ul.appendChild(li);
+                        });
+                        item.appendChild(ul);
+
+                        tl.appendChild(item);
+                    });
+
                     // Education
-                    D.education.forEach(function (edu, i) {
-                        t["edu" + (i + 1) + "_degree"] = edu.degree[lang];
+                    document.getElementById('education-eyebrow').textContent = D.ui[lang].edu_title;
+                    document.getElementById('education-heading').textContent = D.ui[lang].section_heading_edu;
+                    var eduGrid = document.getElementById('education-grid');
+                    eduGrid.textContent = '';
+                    D.education.forEach(function (e) {
+                        var card = document.createElement('div');
+                        card.className = 'edu-card';
+
+                        var degree = document.createElement('div');
+                        degree.className = 'degree';
+                        degree.textContent = pick(e.degree, lang);
+                        card.appendChild(degree);
+
+                        var school = document.createElement('div');
+                        school.className = 'school';
+                        school.textContent = e.school;
+                        card.appendChild(school);
+
+                        var year = document.createElement('div');
+                        year.className = 'year';
+                        year.textContent = e.startYear + ' — ' + e.endYear;
+                        card.appendChild(year);
+
+                        eduGrid.appendChild(card);
                     });
+
                     // Languages
-                    D.languages.forEach(function (l, i) {
-                        t["lang" + i + "_name"] = l.name[lang];
-                        t["lang" + i + "_level"] = l.level[lang];
+                    document.getElementById('languages-eyebrow').textContent = D.ui[lang].lang_title;
+                    document.getElementById('languages-heading').textContent = D.ui[lang].section_heading_lang;
+                    var langGrid = document.getElementById('languages-grid');
+                    langGrid.textContent = '';
+                    D.languages.forEach(function (l) {
+                        var card = document.createElement('div');
+                        card.className = 'lang-card';
+                        var name = document.createElement('div');
+                        name.className = 'name';
+                        name.textContent = pick(l.name, lang);
+                        card.appendChild(name);
+                        var level = document.createElement('div');
+                        level.className = 'level';
+                        level.textContent = pick(l.level, lang);
+                        card.appendChild(level);
+                        langGrid.appendChild(card);
                     });
+
                     // Interests
-                    D.interests.forEach(function (item, i) {
-                        t["interest" + i] = item.label[lang];
+                    document.getElementById('interests-eyebrow').textContent = D.ui[lang].interests_title;
+                    document.getElementById('interests-heading').textContent = D.ui[lang].section_heading_interests;
+                    var iRow = document.getElementById('interests-row');
+                    iRow.textContent = '';
+                    D.interests.forEach(function (interest) {
+                        var s = document.createElement('span');
+                        s.className = 'interest';
+                        s.textContent = interest.emoji + ' ' + pick(interest.label, lang);
+                        iRow.appendChild(s);
                     });
-                    return t;
+
+                    // Contact
+                    document.getElementById('contact-eyebrow').textContent = D.ui[lang].contact_title;
+                    document.getElementById('contact-heading-text').textContent = D.ui[lang].section_heading_contact;
+                    document.getElementById('contact-text').textContent = D.ui[lang].contact_text;
+
+                    var cLinks = document.getElementById('contact-links');
+                    cLinks.textContent = '';
+                    [
+                        { href: 'mailto:' + D.personal.email, label: D.personal.email, external: false },
+                        { href: D.personal.githubUrl, label: D.personal.githubDisplay, external: true },
+                        { href: D.personal.linkedinUrl, label: D.personal.linkedinDisplay, external: true },
+                    ].forEach(function (l) {
+                        var a = document.createElement('a');
+                        a.className = 'contact-link';
+                        a.href = l.href;
+                        a.textContent = l.label;
+                        if (l.external) { a.rel = 'me noopener'; a.target = '_blank'; }
+                        cLinks.appendChild(a);
+                    });
+
+                    // Footer
+                    document.getElementById('footer-text').textContent = D.ui[lang].footer;
                 }
 
-                // Hero — wire data.js content via textContent (no innerHTML on data values)
-                var _storedLang; try { _storedLang = localStorage.getItem('lang'); } catch (_) {}
-                var lang = (_storedLang === 'fr') ? 'fr' : 'en';
-                var pick = window.SBRender.pickLang;
-
-                document.getElementById('hero-eyebrow').textContent = pick(D.personal.location, lang);
-                document.getElementById('hero-role').textContent = pick(D.title, lang);
-                document.getElementById('hero-cta').textContent = D.ui[lang].cta + ' →';
-                document.getElementById('hero-resume-link').textContent = D.ui[lang].resume_link;
-
-                if (D.availability && D.availability.open) {
-                    document.getElementById('hero-status-label').textContent = pick(D.availability.label, lang);
-                    document.getElementById('hero-status').hidden = false;
+                // Update aria-current on language toggle buttons.
+                function syncLangButtons(activeLang) {
+                    document.querySelectorAll('.lang-toggle button[data-lang]').forEach(function (b) {
+                        b.setAttribute('aria-current', b.getAttribute('data-lang') === activeLang ? 'true' : 'false');
+                    });
                 }
 
-                // About
-                document.getElementById('about-eyebrow').textContent = D.ui[lang].about_title;
-                document.getElementById('about-heading').textContent = D.ui[lang].section_heading_about;
-                document.getElementById('about-text').textContent = pick(D.about, lang);
+                // Generate SR summary via DOM construction (language-neutral, English only).
+                // Uses createElement + textContent throughout — no innerHTML on data values.
+                (function buildSrSummary() {
+                    var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
+                    var langSummary = D.languages.map(function (l) { return l.name.en + ' (' + l.level.en + ')'; }).join(', ');
+                    var sr = document.getElementById('sr-summary');
+                    sr.textContent = '';
 
-                // Generate SR summary
-                var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
-                var langSummary = D.languages.map(function (l) { return l.name.en + " (" + l.level.en + ")"; }).join(", ");
-                document.getElementById("sr-summary").innerHTML =
-                    "<h1>" + P.name + " — " + D.title.en + "</h1>" +
-                    "<p>Email: " + P.email + " | Phone: " + P.phoneDisplay.en + "</p>" +
-                    "<p>Location: " + P.location.en + "</p>" +
-                    "<p>GitHub: " + P.githubUrl + " | LinkedIn: " + P.linkedinUrl + "</p>" +
-                    "<h2>Summary</h2><p>" + D.about.en + "</p>" +
-                    "<h2>Skills</h2><p>" + allSkills.join(", ") + "</p>" +
-                    "<h2>Languages</h2><p>" + langSummary + "</p>";
-
-                // Skills eyebrow + heading
-                document.getElementById('skills-eyebrow').textContent = D.ui[lang].skills_title;
-                document.getElementById('skills-heading').textContent = D.ui[lang].section_heading_skills;
-
-                // Generate skills — DOM construction only (no innerHTML for data values)
-                var grid = document.getElementById('skills-grid');
-                grid.textContent = '';
-                ['languages', 'frameworks', 'tools'].forEach(function (cat) {
-                    var card = document.createElement('div');
-                    card.className = 'skill-cat';
-
-                    var label = document.createElement('div');
-                    label.className = 'skill-cat-label';
-                    label.textContent = '// ' + pick(D.skillCategoryLabels[cat], lang).toLowerCase();
-                    card.appendChild(label);
-
-                    var chips = document.createElement('div');
-                    chips.className = 'chips';
-                    D.skills[cat].forEach(function (s) {
-                        var c = document.createElement('span');
-                        c.className = 'chip-skill';
-                        c.textContent = s;
-                        chips.appendChild(c);
-                    });
-                    card.appendChild(chips);
-
-                    grid.appendChild(card);
-                });
-
-                // Experience eyebrow + heading
-                document.getElementById('experience-eyebrow').textContent = D.ui[lang].exp_title;
-                document.getElementById('experience-heading').textContent = D.ui[lang].section_heading_exp;
-
-                // Generate experience timeline — DOM construction only (no innerHTML for data values)
-                var tl = document.getElementById('experience-timeline');
-                tl.textContent = '';
-                D.experience.forEach(function (exp) {
-                    var item = document.createElement('div');
-                    item.className = 'tl-item';
-
-                    var meta = document.createElement('div');
-                    meta.className = 'tl-meta';
-                    meta.textContent = pick(exp.period, lang);
-                    item.appendChild(meta);
-
-                    var role = document.createElement('h3');
-                    role.textContent = pick(exp.role, lang);
-                    item.appendChild(role);
-
-                    var co = document.createElement('div');
-                    co.className = 'tl-company';
-                    co.textContent = pick(exp.company, lang);
-                    item.appendChild(co);
-
-                    var ul = document.createElement('ul');
-                    pick(exp.description, lang).forEach(function (b) {
-                        var li = document.createElement('li');
-                        li.textContent = b;
-                        ul.appendChild(li);
-                    });
-                    item.appendChild(ul);
-
-                    tl.appendChild(item);
-                });
-
-                // Education
-                document.getElementById('education-eyebrow').textContent = D.ui[lang].edu_title;
-                document.getElementById('education-heading').textContent = D.ui[lang].section_heading_edu;
-                var eduGrid = document.getElementById('education-grid');
-                eduGrid.textContent = '';
-                D.education.forEach(function (e) {
-                    var card = document.createElement('div');
-                    card.className = 'edu-card';
-
-                    var degree = document.createElement('div');
-                    degree.className = 'degree';
-                    degree.textContent = pick(e.degree, lang);
-                    card.appendChild(degree);
-
-                    var school = document.createElement('div');
-                    school.className = 'school';
-                    school.textContent = e.school;
-                    card.appendChild(school);
-
-                    var year = document.createElement('div');
-                    year.className = 'year';
-                    year.textContent = e.startYear + ' — ' + e.endYear;
-                    card.appendChild(year);
-
-                    eduGrid.appendChild(card);
-                });
-
-                // Languages
-                document.getElementById('languages-eyebrow').textContent = D.ui[lang].lang_title;
-                document.getElementById('languages-heading').textContent = D.ui[lang].section_heading_lang;
-                var langGrid = document.getElementById('languages-grid');
-                langGrid.textContent = '';
-                D.languages.forEach(function (l) {
-                    var card = document.createElement('div');
-                    card.className = 'lang-card';
-                    var name = document.createElement('div');
-                    name.className = 'name';
-                    name.textContent = pick(l.name, lang);
-                    card.appendChild(name);
-                    var level = document.createElement('div');
-                    level.className = 'level';
-                    level.textContent = pick(l.level, lang);
-                    card.appendChild(level);
-                    langGrid.appendChild(card);
-                });
-
-                // Interests
-                document.getElementById('interests-eyebrow').textContent = D.ui[lang].interests_title;
-                document.getElementById('interests-heading').textContent = D.ui[lang].section_heading_interests;
-                var iRow = document.getElementById('interests-row');
-                iRow.textContent = '';
-                D.interests.forEach(function (i) {
-                    var s = document.createElement('span');
-                    s.className = 'interest';
-                    s.textContent = i.emoji + ' ' + pick(i.label, lang);
-                    iRow.appendChild(s);
-                });
-
-                // Contact
-                document.getElementById('contact-eyebrow').textContent = D.ui[lang].contact_title;
-                document.getElementById('contact-heading-text').textContent = D.ui[lang].section_heading_contact;
-                document.getElementById('contact-text').textContent = D.ui[lang].contact_text;
-
-                var cLinks = document.getElementById('contact-links');
-                cLinks.textContent = '';
-                [
-                    { href: 'mailto:' + D.personal.email, label: D.personal.email, external: false },
-                    { href: D.personal.githubUrl, label: D.personal.githubDisplay, external: true },
-                    { href: D.personal.linkedinUrl, label: D.personal.linkedinDisplay, external: true },
-                ].forEach(function (l) {
-                    var a = document.createElement('a');
-                    a.className = 'contact-link';
-                    a.href = l.href;
-                    a.textContent = l.label;
-                    if (l.external) { a.rel = 'me noopener'; a.target = '_blank'; }
-                    cLinks.appendChild(a);
-                });
-
-                document.getElementById('footer-text').textContent = D.ui[lang].footer;
-
-                // Generate JSON-LD via shared helper (same shape on both pages)
-                SBRender.injectJsonLd(D, currentLang);
-
-                // i18n
-                function setLang(lang) {
-                    currentLang = lang;
-                    var t = buildTranslations(lang);
-                    document.querySelectorAll("[data-i18n]").forEach(function (el) {
-                        var key = el.getAttribute("data-i18n");
-                        if (t[key] !== undefined) el.textContent = t[key];
-                    });
-                    if (t.back_to_top) backToTop.setAttribute("aria-label", t.back_to_top);
-                    if (t.theme_toggle) {
-                        var tt = document.getElementById("theme-toggle");
-                        if (tt) tt.setAttribute("aria-label", t.theme_toggle);
+                    function addEl(tag, text) {
+                        var el = document.createElement(tag);
+                        el.textContent = text;
+                        sr.appendChild(el);
                     }
-                    document.documentElement.lang = lang;
-                    var btnEn = document.getElementById("btn-en");
-                    var btnFr = document.getElementById("btn-fr");
-                    btnEn.setAttribute("aria-current", lang === "en" ? "true" : "false");
-                    btnFr.setAttribute("aria-current", lang === "fr" ? "true" : "false");
-                    try { localStorage.setItem("lang", lang); } catch (_) {}
+
+                    addEl('h1', P.name + ' — ' + D.title.en);
+                    addEl('p', 'Email: ' + P.email + ' | Phone: ' + P.phoneDisplay.en);
+                    addEl('p', 'Location: ' + P.location.en);
+                    addEl('p', 'GitHub: ' + P.githubUrl + ' | LinkedIn: ' + P.linkedinUrl);
+                    addEl('h2', 'Summary');
+                    addEl('p', D.about.en);
+                    addEl('h2', 'Skills');
+                    addEl('p', allSkills.join(', '));
+                    addEl('h2', 'Languages');
+                    addEl('p', langSummary);
+                })();
+
+                // Language resolution priority: URL ?lang= (for hreflang
+                // arrivals and shareable French links) > localStorage > default EN.
+                var initialLang = 'en';
+                try {
+                    var params = new URLSearchParams(window.location.search);
+                    var fromUrl = params.get('lang');
+                    if (fromUrl === 'fr' || fromUrl === 'en') { initialLang = fromUrl; }
+                } catch (_) {}
+                if (initialLang === 'en') {
+                    try {
+                        var stored = localStorage.getItem('lang');
+                        if (stored === 'fr') { initialLang = 'fr'; }
+                    } catch (_) {}
                 }
+
+                document.documentElement.lang = initialLang;
+                render(initialLang);
+                syncLangButtons(initialLang);
+
+                // Generate JSON-LD via shared helper once at startup
+                SBRender.injectJsonLd(D, initialLang);
+
+                // EN/FR toggle handlers — call render() so all new sections update live
+                document.querySelectorAll('.lang-toggle button[data-lang]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var newLang = btn.getAttribute('data-lang');
+                        try { localStorage.setItem('lang', newLang); } catch (_) {}
+                        document.documentElement.lang = newLang;
+                        syncLangButtons(newLang);
+                        render(newLang);
+                    });
+                });
 
                 // Scroll progress + back-to-top
                 var progressBar = document.getElementById("scroll-progress");
@@ -1229,23 +1221,8 @@
                     window.__fadeRescueId = null;
                 }
 
-                // Wire up the (no-longer-inline) button handlers so CSP can drop 'unsafe-inline'.
+                // Wire up theme toggle
                 document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
-                document.getElementById("btn-en").addEventListener("click", function () { setLang("en"); });
-                document.getElementById("btn-fr").addEventListener("click", function () { setLang("fr"); });
-
-                // Language resolution priority: URL ?lang= (for hreflang
-                // arrivals and shareable French links) > localStorage > default EN.
-                var initLang;
-                try {
-                    var params = new URLSearchParams(window.location.search);
-                    var fromUrl = params.get("lang");
-                    if (fromUrl === "fr" || fromUrl === "en") initLang = fromUrl;
-                } catch (_) {}
-                if (!initLang) {
-                    try { initLang = localStorage.getItem("lang"); } catch (_) {}
-                }
-                if (initLang === "fr") setLang("fr");
             })();
         </script>
     </body>
