@@ -35,8 +35,8 @@
         <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" onload="this.rel='stylesheet'" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" /></noscript>
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.rel='stylesheet'" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
@@ -452,8 +452,12 @@
                     updateIcon();
                 });
 
-                // OS theme changes are handled by CSS (@media prefers-color-scheme);
-                // when no explicit choice is stored, the icon will already be correct.
+                // When no explicit choice is stored, the page colors follow the OS
+                // via CSS — but the icon is a JS-set unicode glyph, so it needs to
+                // re-render when the OS theme changes mid-session.
+                prefersDark.addEventListener("change", function () {
+                    if (!localStorage.getItem("resume-theme")) updateIcon();
+                });
             })();
         </script>
         <script>
