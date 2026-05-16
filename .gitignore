@@ -7,3 +7,6 @@
 
 # node
 node_modules/
+
+# claude code — per-clone overrides
+.claude/settings.local.json
