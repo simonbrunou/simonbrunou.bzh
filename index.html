@@ -919,7 +919,13 @@
 
         <nav class="container topbar" aria-label="Page controls">
             <button id="theme-toggle" class="chip theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+                <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" hidden>
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
             </button>
             <div class="chip lang-toggle" role="group" aria-label="Language">
                 <button id="btn-en" type="button" data-lang="en" aria-current="true">EN</button>
@@ -1034,9 +1040,14 @@
                     return document.documentElement.classList.contains("light");
                 }
                 function updateThemeIcon() {
+                    var isLightNow = isLight();
                     var btn = document.getElementById("theme-toggle");
                     // aria-pressed=true means "light theme is the active choice"
-                    if (btn) btn.setAttribute("aria-pressed", isLight() ? "true" : "false");
+                    if (btn) btn.setAttribute("aria-pressed", isLightNow ? "true" : "false");
+                    var moon = document.getElementById("theme-icon-moon");
+                    var sun  = document.getElementById("theme-icon-sun");
+                    if (moon) moon.hidden = isLightNow;   // hide moon when light theme is active
+                    if (sun)  sun.hidden  = !isLightNow;  // show sun when light theme is active
                 }
                 function toggleTheme() {
                     var light = !isLight();
