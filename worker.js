@@ -183,9 +183,13 @@ export default {
             ]);
 
             const resumeUrl = new URL("/resume/?pdf=1", url.origin);
-            await page.goto(resumeUrl.toString(), {
-                waitUntil: "networkidle2",
-            });
+            // domcontentloaded + an explicit readiness sentinel is more
+            // deterministic than networkidle, which is famously flaky in
+            // headless when long-poll connections or analytics beacons
+            // stay open. render.js sets data-render-complete on <html>
+            // after it finishes injecting the CV markup.
+            await page.goto(resumeUrl.toString(), { waitUntil: "domcontentloaded" });
+            await page.waitForSelector("html[data-render-complete]", { timeout: 10000 });
 
             const pdf = await page.pdf({
                 format: "A4",
