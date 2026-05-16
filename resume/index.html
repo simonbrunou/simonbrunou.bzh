@@ -35,8 +35,7 @@
         <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" onload="this.rel='stylesheet'" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
@@ -104,7 +103,6 @@
 
             .header-action {
                 background: rgba(255, 255, 255, 0.15);
-                backdrop-filter: blur(8px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 color: white;
                 height: 38px;
@@ -118,13 +116,20 @@
                 align-items: center;
                 gap: 6px;
                 text-decoration: none;
+                transition: background 200ms cubic-bezier(0.22, 1, 0.36, 1);
             }
 
             .header-action:hover { background: rgba(255, 255, 255, 0.3); }
             .header-action:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 
             .theme-toggle { width: 38px; padding: 0; justify-content: center; border-radius: 50%; }
-            .theme-toggle .theme-icon { font-size: 1.1rem; }
+            .theme-toggle svg {
+                width: 1rem;
+                height: 1rem;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.75;
+            }
 
             .photo-wrapper {
                 width: 110px;
@@ -146,8 +151,7 @@
                 font-size: 1.6rem;
                 font-weight: 300;
                 margin-bottom: 4px;
-                letter-spacing: 3px;
-                text-transform: uppercase;
+                letter-spacing: 0.5px;
                 opacity: 0.9;
             }
 
@@ -349,7 +353,10 @@
                     '<div class="header-actions">' +
                         '<a href="/" class="header-action" title="Voir le site complet"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8a7 7 0 1114 0A7 7 0 011 8z"/><path d="M1 8h14"/><path d="M8 1a10.5 10.5 0 013 7 10.5 10.5 0 01-3 7 10.5 10.5 0 01-3-7 10.5 10.5 0 013-7z"/></svg>Site</a>' +
                         '<button type="button" id="pdf-download-btn" class="header-action" title="Télécharger en PDF"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF</button>' +
-                        '<button class="header-action theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème"><span class="theme-icon"></span></button>' +
+                        '<button class="header-action theme-toggle" aria-label="Basculer le thème sombre" title="Basculer le thème">' +
+                            '<svg class="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>' +
+                            '<svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>' +
+                        '</button>' +
                     '</div>' +
                     '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
                     '<h1 class="name">' + P.name + '</h1>' +
@@ -430,7 +437,8 @@
                 // Theme toggle
                 var root = document.documentElement;
                 var toggle = document.querySelector(".theme-toggle");
-                var icon = toggle.querySelector(".theme-icon");
+                var iconSun = toggle.querySelector(".theme-icon-sun");
+                var iconMoon = toggle.querySelector(".theme-icon-moon");
                 var stored = localStorage.getItem("resume-theme");
                 var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -440,7 +448,16 @@
                     return prefersDark.matches;
                 }
 
-                function updateIcon() { icon.textContent = isDark() ? "\u2600\uFE0F" : "\uD83C\uDF19"; }
+                // In dark mode, show the SUN (clicking it switches to light); in light mode, show the MOON.
+                function updateIcon() {
+                    if (isDark()) {
+                        iconSun.style.display = "";
+                        iconMoon.style.display = "none";
+                    } else {
+                        iconSun.style.display = "none";
+                        iconMoon.style.display = "";
+                    }
+                }
 
                 if (stored === "dark") { root.classList.add("dark"); root.classList.remove("light"); }
                 else if (stored === "light") { root.classList.add("light"); root.classList.remove("dark"); }
