@@ -58,7 +58,11 @@ needed for the render itself — only for Turnstile siteverify.
 2. **Port**: `3000`.
 3. **Environment variables** — copy from `.env.example`:
    - `TURNSTILE_SECRET_KEY` — secret, never commit.
-   - `ALLOWED_ORIGIN` — your public URL (e.g. `https://simonbrunou.bzh`).
+   - `ALLOWED_ORIGIN` — leave unset on Coolify. The server reads
+     `$COOLIFY_URL` (injected per deploy) and rewrites `http://` →
+     `https://` so production and PR preview deploys each get their own
+     correct Origin/CSRF gate. Set `ALLOWED_ORIGIN` explicitly only if you
+     need to override that.
    - `PORT`, `HOST`, `CHROMIUM_PATH`, `TRUST_PROXY` keep defaults unless
      you're customising.
 4. **Healthcheck**: Coolify picks up the Dockerfile `HEALTHCHECK` automatically.

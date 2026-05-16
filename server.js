@@ -10,7 +10,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "https://simonbrunou.bzh";
+
+// Coolify injects COOLIFY_URL=http://<deploy-hostname> per deploy (prod and
+// PR previews alike). Traefik terminates TLS in front of us, so rewrite the
+// scheme to https. This means each preview deploy's Origin/CSRF gate
+// matches its own hostname instead of being stuck on the canonical prod URL.
+// Falls back to an explicit ALLOWED_ORIGIN override, then the prod default.
+const COOLIFY_URL = process.env.COOLIFY_URL;
+const ALLOWED_ORIGIN =
+    (COOLIFY_URL && COOLIFY_URL.replace(/^http:/, "https:")) ||
+    process.env.ALLOWED_ORIGIN ||
+    "https://simonbrunou.bzh";
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 const CHROMIUM_PATH =
     process.env.CHROMIUM_PATH || "/usr/bin/chromium-browser";
@@ -318,7 +328,12 @@ app.post(PDF_PATH, async (c) => {
 app.notFound((c) => serveHtml(c, NOT_FOUND_HTML, 404));
 
 serve({ fetch: app.fetch, port: PORT, hostname: HOST }, (info) => {
-    log("server_started", { port: info.port, host: HOST });
+    log("server_started", {
+        port: info.port,
+        host: HOST,
+        allowedOrigin: ALLOWED_ORIGIN,
+        coolifyUrl: COOLIFY_URL || null,
+    });
 });
 
 function shutdown(signal) {
