@@ -438,6 +438,16 @@
                 line-height: 1.7;
             }
 
+            .section { padding: 56px 0 0; }
+            .section h2 { margin: 0 0 24px; font-size: 1.8rem; font-weight: 600; }
+
+            .about p {
+                font-size: 1.05rem;
+                line-height: 1.65;
+                color: var(--text-secondary);
+                max-width: 640px;
+            }
+
             /* Skills */
             .skills-grid {
                 display: grid;
@@ -901,11 +911,10 @@
         </header>
 
         <main id="main-content" tabindex="-1">
-            <section id="about" aria-labelledby="about-heading">
-                <div class="container">
-                    <h2 id="about-heading" class="section-title" data-i18n="about_title">About</h2>
-                    <p class="about-text" data-i18n="about_text"></p>
-                </div>
+            <section class="container section about" id="about" aria-labelledby="about-heading">
+                <div class="section-label" id="about-eyebrow"></div>
+                <h2 id="about-heading"></h2>
+                <p id="about-text"></p>
             </section>
 
             <section id="skills" aria-labelledby="skills-heading">
@@ -1063,6 +1072,11 @@
                     document.getElementById('hero-status-label').textContent = pick(D.availability.label, lang);
                     document.getElementById('hero-status').hidden = false;
                 }
+
+                // About
+                document.getElementById('about-eyebrow').textContent = D.ui[lang].about_title;
+                document.getElementById('about-heading').textContent = D.ui[lang].section_heading_about;
+                document.getElementById('about-text').textContent = pick(D.about, lang);
 
                 // Generate SR summary
                 var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
