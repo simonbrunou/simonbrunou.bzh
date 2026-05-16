@@ -18,8 +18,12 @@ function generateCspNonce() {
     return btoa(str);
 }
 
-// Strip 'unsafe-inline' from script-src/style-src and append the nonce.
-// Falls back to the original CSP if neither directive is present.
+// Rewrite script-src: replace 'unsafe-inline' with the nonce and
+// 'strict-dynamic'. style-src is left alone — inline `style="..."`
+// attributes can't be nonced, so stripping 'unsafe-inline' there would
+// break the page. 'strict-dynamic' lets nonced scripts (e.g. render.js)
+// inject further scripts (e.g. the JSON-LD block) without each needing
+// its own nonce.
 function injectNonceIntoCsp(csp, nonce) {
     if (!csp) return csp;
     const nonceTok = `'nonce-${nonce}'`;
@@ -28,17 +32,13 @@ function injectNonceIntoCsp(csp, nonce) {
         .map((raw) => {
             const part = raw.trim();
             if (!part) return null;
-            if (
-                part.startsWith("script-src ") ||
-                part.startsWith("style-src ")
-            ) {
+            if (part.startsWith("script-src ")) {
                 return (
                     part
                         .replace(/\s*'unsafe-inline'\s*/g, " ")
                         .replace(/\s+/g, " ")
                         .trim() +
-                    " " +
-                    nonceTok
+                    ` ${nonceTok} 'strict-dynamic'`
                 );
             }
             return part;
@@ -47,12 +47,6 @@ function injectNonceIntoCsp(csp, nonce) {
         .join("; ");
 }
 
-// Serve a static asset; if it's HTML, generate a per-response nonce,
-// add it to every inline <script>/<style> via HTMLRewriter, and rewrite
-// the CSP header to use the nonce (dropping 'unsafe-inline'). Any
-// failure in the nonce pipeline falls back to the upstream response
-// untouched — losing CSP hardening is strictly better than serving a
-// broken page.
 async function serveStaticWithNonce(request, env) {
     const upstream = await env.ASSETS.fetch(request);
     const contentType = upstream.headers.get("Content-Type") || "";
@@ -64,9 +58,6 @@ async function serveStaticWithNonce(request, env) {
         const nonce = generateCspNonce();
         const existingCsp = upstream.headers.get("Content-Security-Policy");
 
-        // Build a fresh response wrapping the upstream body stream.
-        // ResponseInit-style init (not the upstream Response itself) avoids
-        // any browser/runtime quirks around passing a Response as init.
         const headers = new Headers(upstream.headers);
         if (existingCsp) {
             headers.set(
@@ -74,6 +65,10 @@ async function serveStaticWithNonce(request, env) {
                 injectNonceIntoCsp(existingCsp, nonce),
             );
         }
+        // Per-response nonce is meaningless if a shared cache (CDN,
+        // proxy) replays the same body to many users.
+        headers.set("Cache-Control", "private, no-store");
+
         const response = new Response(upstream.body, {
             status: upstream.status,
             statusText: upstream.statusText,
@@ -82,14 +77,6 @@ async function serveStaticWithNonce(request, env) {
 
         return new HTMLRewriter()
             .on("script", {
-                element(el) {
-                    // Only inline scripts (no `src` attribute).
-                    if (!el.hasAttribute("src")) {
-                        el.setAttribute("nonce", nonce);
-                    }
-                },
-            })
-            .on("style", {
                 element(el) {
                     el.setAttribute("nonce", nonce);
                 },
