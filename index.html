@@ -18,7 +18,8 @@
             content="Simon Brunou — Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
         />
         <meta name="author" content="Simon Brunou" />
-        <meta name="theme-color" content="#1a1a2e" />
+        <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#eef0f7" media="(prefers-color-scheme: light)" />
         <meta
             property="og:title"
             content="Simon Brunou — Fullstack Developer"
@@ -33,6 +34,9 @@
         <meta property="og:locale:alternate" content="fr_FR" />
         <meta property="og:site_name" content="Simon Brunou" />
         <meta property="og:image" content="https://simonbrunou.bzh/resume/photo.png" />
+        <meta property="og:image:width" content="76" />
+        <meta property="og:image:height" content="76" />
+        <meta property="og:image:type" content="image/png" />
         <meta property="og:image:alt" content="Simon Brunou" />
         <meta property="profile:first_name" content="Simon" />
         <meta property="profile:last_name" content="Brunou" />
@@ -44,14 +48,15 @@
         />
         <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <meta name="robots" content="index, follow" />
-        <meta
-            name="keywords"
-            content="Simon Brunou, Fullstack Developer, Rust, Python, Flutter, Kotlin, Swift, React, Angular, Spring Boot, Node.js, DevOps, Brittany, France, Software Engineer"
-        />
-        <link rel="canonical" href="https://simonbrunou.bzh" />
+        <link rel="canonical" href="https://simonbrunou.bzh/" />
+        <link rel="alternate" hreflang="en" href="https://simonbrunou.bzh/" />
+        <link rel="alternate" hreflang="fr" href="https://simonbrunou.bzh/?lang=fr" />
+        <link rel="alternate" hreflang="x-default" href="https://simonbrunou.bzh/" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
+        <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
+        <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
         <link
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"

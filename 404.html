@@ -15,9 +15,13 @@
         <title>Page Not Found — Simon Brunou</title>
         <meta name="description" content="The page you're looking for doesn't exist. Return to Simon Brunou's portfolio." />
         <meta name="robots" content="noindex, follow" />
+        <meta name="theme-color" content="#0f0f1a" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#f0f0f8" media="(prefers-color-scheme: light)" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+        <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
+        <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
         <link
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
