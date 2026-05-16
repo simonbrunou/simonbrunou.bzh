@@ -1,12 +1,13 @@
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
-.env*
-!.env.example
-
 # node
 node_modules/
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log*
+
+# env
+.env
+.env.*
+!.env.example
 
 # claude code — per-clone overrides + runtime state
 .claude/settings.local.json
@@ -14,3 +15,7 @@ node_modules/
 
 # superpowers brainstorming mockups (Visual Companion session data)
 .superpowers/
+
+# misc
+.DS_Store
+*.log

@@ -395,7 +395,8 @@
         <script>
             // Cloudflare Turnstile — protects the PDF generation endpoint
             // Replace the sitekey with your own from the Cloudflare Dashboard.
-            // Set the secret key with: wrangler secret put TURNSTILE_SECRET_KEY
+            // The matching secret is provisioned server-side via the
+            // TURNSTILE_SECRET_KEY env var (see .env.example / Coolify env tab).
             (function () {
                 // Skip Turnstile when the page is loaded by Puppeteer for PDF generation
                 if (new URLSearchParams(window.location.search).get("pdf")) return;
