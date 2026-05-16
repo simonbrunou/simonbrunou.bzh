@@ -137,7 +137,9 @@ await Promise.all([
     }),
 ]);
 
-// Token-bucket rate limit: RATE_LIMIT requests per RATE_WINDOW_MS per IP.
+// Fixed-window rate limit: up to RATE_LIMIT requests per IP within each
+// rolling RATE_WINDOW_MS window. The window resets on the first request
+// after it expires; no token refill / burst capacity.
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 60_000;
 const rateBuckets = new Map();
