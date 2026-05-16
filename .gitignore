@@ -11,3 +11,6 @@ node_modules/
 # claude code — per-clone overrides + runtime state
 .claude/settings.local.json
 .claude/scheduled_tasks*.lock
+
+# superpowers brainstorming mockups (Visual Companion session data)
+.superpowers/
