@@ -2,7 +2,8 @@
 # Claude Code PreToolUse hook for Bash. Two jobs:
 #   1) Snapshot HEAD AND the current branch name into per-session temp
 #      files so PostToolUse can detect commits that advance the same
-#      branch's tip (vs. branch switches, which also change HEAD).
+#      branch's tip (vs. branch switches, which also change HEAD), and
+#      handle commits that landed on a now-switched-away branch.
 #   2) Deny chaining a HEAD-advancing git operation with `git push` in
 #      a single Bash call on a PR branch — so the post-commit hook can
 #      ask Claude to run /code-review BETWEEN the commit-creating
@@ -26,7 +27,10 @@ command -v git >/dev/null 2>&1 || exit 0
 command -v gh  >/dev/null 2>&1 || exit 0
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
 case "$branch" in ""|main|master|HEAD) exit 0 ;; esac
-gh pr view "$branch" --json number >/dev/null 2>&1 || exit 0
+# Use gh pr view's default resolution (current branch) — handles
+# `gh pr checkout 123 --branch review-123` correctly because gh reads
+# the branch's tracking metadata, not just the local name.
+gh pr view --json number >/dev/null 2>&1 || exit 0
 
 # Strip ONLY message-/file-flag values so a literal "git push" inside a
 # commit message doesn't trip the detector. Both `=`-form and
