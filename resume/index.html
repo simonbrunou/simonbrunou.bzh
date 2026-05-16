@@ -7,10 +7,7 @@
             name="description"
             content="CV de Simon Brunou - Développeur Fullstack avec expérience en développement mobile (Android, iOS), Flutter, React Native, Rust, Kotlin, Swift, Java, JavaScript. Basé en Bretagne, France."
         />
-        <meta
-            name="keywords"
-            content="développeur fullstack, développeur mobile, Android, iOS, Flutter, React Native, Rust, Kotlin, Swift, Java, JavaScript, Python, Spring Boot, Angular, Node.js, Docker, Proxmox, Git, GitLab CI/CD, Terraform"
-        />
+        <meta name="theme-color" content="#11111b" />
         <title>CV - Simon Brunou - Développeur Fullstack</title>
         <link rel="canonical" href="https://simonbrunou.bzh/resume/" />
         <meta property="og:type" content="profile" />
@@ -23,6 +20,9 @@
         <meta property="og:locale" content="fr_FR" />
         <meta property="og:site_name" content="Simon Brunou" />
         <meta property="og:image" content="https://simonbrunou.bzh/resume/photo.png" />
+        <meta property="og:image:width" content="76" />
+        <meta property="og:image:height" content="76" />
+        <meta property="og:image:type" content="image/png" />
         <meta property="og:image:alt" content="Simon Brunou" />
         <meta property="profile:first_name" content="Simon" />
         <meta property="profile:last_name" content="Brunou" />
@@ -35,7 +35,9 @@
         <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+        <link id="font-inter" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
+        <script>document.getElementById('font-inter').rel='stylesheet';</script>
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
@@ -435,10 +437,13 @@
                 SBRender.injectJsonLd(D, lang);
 
                 // Theme toggle
+                var THEME_COLOR_DARK = "#11111b";
+                var THEME_COLOR_LIGHT = "#e6e9ef";
                 var root = document.documentElement;
                 var toggle = document.querySelector(".theme-toggle");
                 var iconSun = toggle.querySelector(".theme-icon-sun");
                 var iconMoon = toggle.querySelector(".theme-icon-moon");
+                var themeColorMeta = document.querySelector('meta[name="theme-color"]');
                 var stored = localStorage.getItem("resume-theme");
                 var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -450,13 +455,15 @@
 
                 // In dark mode, show the SUN (clicking it switches to light); in light mode, show the MOON.
                 function updateIcon() {
-                    if (isDark()) {
+                    var dark = isDark();
+                    if (dark) {
                         iconSun.style.display = "";
                         iconMoon.style.display = "none";
                     } else {
                         iconSun.style.display = "none";
                         iconMoon.style.display = "";
                     }
+                    if (themeColorMeta) themeColorMeta.content = dark ? THEME_COLOR_DARK : THEME_COLOR_LIGHT;
                 }
 
                 if (stored === "dark") { root.classList.add("dark"); root.classList.remove("light"); }
