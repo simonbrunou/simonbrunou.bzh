@@ -11,15 +11,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 
-// Coolify injects COOLIFY_URL=http://<deploy-hostname> per deploy (prod and
-// PR previews alike). Traefik terminates TLS in front of us, so rewrite the
-// scheme to https. This means each preview deploy's Origin/CSRF gate
-// matches its own hostname instead of being stuck on the canonical prod URL.
-// Falls back to an explicit ALLOWED_ORIGIN override, then the prod default.
+// Origin/CSRF gate resolution, in priority order:
+//   1. ALLOWED_ORIGIN — explicit override always wins (operator intent).
+//   2. COOLIFY_URL — injected by Coolify per deploy (prod and PR previews
+//      alike). Traefik terminates TLS in front of us, so rewrite http→https.
+//      This is how PR preview deploys get their own correct Origin gate
+//      without manual env config.
+//   3. Hardcoded prod default.
 const COOLIFY_URL = process.env.COOLIFY_URL;
 const ALLOWED_ORIGIN =
-    (COOLIFY_URL && COOLIFY_URL.replace(/^http:/, "https:")) ||
     process.env.ALLOWED_ORIGIN ||
+    (COOLIFY_URL && COOLIFY_URL.replace(/^http:/, "https:")) ||
     "https://simonbrunou.bzh";
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 const CHROMIUM_PATH =
