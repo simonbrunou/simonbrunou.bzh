@@ -27,13 +27,15 @@
             property="og:description"
             content="Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
         />
-        <meta property="og:type" content="website" />
+        <meta property="og:type" content="profile" />
         <meta property="og:url" content="https://simonbrunou.bzh" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:locale:alternate" content="fr_FR" />
         <meta property="og:site_name" content="Simon Brunou" />
         <meta property="og:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <meta property="og:image:alt" content="Simon Brunou" />
+        <meta property="profile:first_name" content="Simon" />
+        <meta property="profile:last_name" content="Brunou" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Simon Brunou — Fullstack Developer" />
         <meta
@@ -75,13 +77,15 @@
                 --accent2: #ff6b6b;
                 --accent-glow: rgba(108, 99, 255, 0.15);
                 --radius: 12px;
-                --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                --easing: cubic-bezier(0.22, 1, 0.36, 1);
+                --transition: 250ms var(--easing);
+                --transition-fast: 150ms var(--easing);
             }
-            /* Light theme */
+            /* Light theme — bumped --bg to give cards visible separation, darker --bg3 for clear borders */
             :root.light {
-                --bg: #f0f0f8;
+                --bg: #eef0f7;
                 --bg2: #ffffff;
-                --bg3: #e0e0ee;
+                --bg3: #d8dae6;
                 --text: #1a1a2e;
                 --text2: #4a4a6a;
                 --accent: #5a52e0;
@@ -272,15 +276,23 @@
                 border: 1px solid var(--bg3);
                 border-radius: var(--radius);
                 color: var(--text2);
-                padding: 0.45rem 0.65rem;
-                font-size: 1rem;
-                line-height: 1;
+                padding: 0.45rem 0.55rem;
                 cursor: pointer;
                 transition: all var(--transition);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
             .theme-toggle:hover {
                 color: var(--text);
                 background: var(--bg3);
+            }
+            .theme-toggle svg {
+                width: 1.05rem;
+                height: 1.05rem;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.75;
             }
 
             /* Availability badge — reserve space to prevent CLS while JS injects content */
@@ -307,11 +319,13 @@
                 height: 8px;
                 border-radius: 50%;
                 background: #2ecc71;
-                animation: pulse-dot 2s ease-in-out infinite;
+                animation: pulse-dot 2s ease-out infinite;
             }
+            /* Halo pulse — dot stays solid, ring radiates outward and fades */
             @keyframes pulse-dot {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.4; }
+                0%   { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.55); }
+                70%  { box-shadow: 0 0 0 7px rgba(46, 204, 113, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
             }
 
             /* Hero photo */
@@ -358,9 +372,17 @@
                 color: var(--text2);
                 font-size: 0.95rem;
                 margin-bottom: 2rem;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
             }
-            .hero .location::before {
-                content: "📍 ";
+            .hero .location svg {
+                width: 0.95em;
+                height: 0.95em;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.75;
+                opacity: 0.8;
             }
             .hero-links {
                 display: flex;
@@ -395,13 +417,30 @@
                 border-color: var(--accent);
                 background: var(--bg3);
             }
+            /* Icon-only ghost variant — square, compact, just an SVG inside */
+            .btn-icon {
+                padding: 0.55rem;
+                aspect-ratio: 1 / 1;
+                color: var(--text2) !important;
+            }
+            .btn-icon:hover {
+                color: var(--text) !important;
+            }
+            .btn-icon svg {
+                width: 1.15rem;
+                height: 1.15rem;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.75;
+                display: block;
+            }
 
             /* Sections */
             section {
                 padding: 5rem 0;
             }
             .section-title {
-                font-size: 1.8rem;
+                font-size: 2rem;
                 font-weight: 700;
                 margin-bottom: 2.5rem;
                 position: relative;
@@ -422,8 +461,8 @@
             .about-text {
                 font-size: 1.1rem;
                 color: var(--text2);
-                max-width: 700px;
-                line-height: 1.8;
+                max-width: 60ch;
+                line-height: 1.7;
             }
 
             /* Skills */
@@ -626,6 +665,14 @@
                 border-color: var(--accent);
                 background: var(--accent-glow);
             }
+            .contact-link .contact-icon {
+                width: 1rem;
+                height: 1rem;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 1.75;
+                opacity: 0.85;
+            }
 
             /* Languages */
             .lang-list {
@@ -637,7 +684,7 @@
                 background: var(--bg2);
                 border: 1px solid var(--bg3);
                 border-radius: var(--radius);
-                padding: 1rem 1.5rem;
+                padding: 0.5rem 0.85rem;
                 transition: all var(--transition);
             }
             .lang-item:hover {
@@ -852,7 +899,8 @@
         <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
 
         <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" onclick="toggleTheme()">
-            <span id="theme-icon" aria-hidden="true">☀️</span>
+            <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke-linecap="round"/></svg>
+            <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>
         </button>
 
         <nav class="lang-toggle" aria-label="Language selector">
@@ -865,7 +913,7 @@
                 <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="120" height="120" loading="eager" />
                 <h1 id="hero-name">Simon <span class="accent">Brunou</span></h1>
                 <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
-                <p class="location" data-i18n="location">Saint-Nolff, Brittany, France</p>
+                <p class="location"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s8-7.58 8-13a8 8 0 10-16 0c0 5.42 8 13 8 13z" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5"/></svg><span data-i18n="location">Saint-Nolff, Brittany, France</span></p>
                 <div id="availability-badge"></div>
                 <div id="hero-links" class="hero-links"></div>
             </div>
@@ -963,7 +1011,16 @@
                     return document.documentElement.classList.contains("light");
                 }
                 function updateThemeIcon() {
-                    document.getElementById("theme-icon").textContent = isLight() ? "\uD83C\uDF19" : "\u2600\uFE0F";
+                    var sun = document.getElementById("theme-icon-sun");
+                    var moon = document.getElementById("theme-icon-moon");
+                    // Show the icon for the OPPOSITE theme (clicking sun \u2192 goes light, etc.)
+                    if (isLight()) {
+                        sun.style.display = "none";
+                        moon.style.display = "";
+                    } else {
+                        sun.style.display = "";
+                        moon.style.display = "none";
+                    }
                 }
                 window.toggleTheme = function () {
                     var light = !isLight();
@@ -1021,11 +1078,13 @@
                 }
 
                 var heroLinks = document.getElementById("hero-links");
+                var ghIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.5a10.5 10.5 0 00-3.32 20.46c.53.1.72-.23.72-.5v-1.78c-2.92.63-3.54-1.41-3.54-1.41-.48-1.21-1.17-1.53-1.17-1.53-.96-.65.07-.64.07-.64 1.06.07 1.62 1.09 1.62 1.09.94 1.6 2.46 1.14 3.06.87.1-.68.37-1.14.66-1.4-2.33-.27-4.78-1.16-4.78-5.18 0-1.14.41-2.07 1.08-2.8-.11-.27-.47-1.34.1-2.78 0 0 .88-.28 2.88 1.07a10 10 0 015.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.44.21 2.51.1 2.78a4.04 4.04 0 011.08 2.8c0 4.03-2.46 4.91-4.8 5.17.38.33.72.97.72 1.95v2.9c0 .28.19.61.73.5A10.5 10.5 0 0012 1.5z" fill="currentColor" stroke="none"/></svg>';
+                var liIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.45 20.45h-3.55V14.9c0-1.32-.03-3.03-1.85-3.03-1.85 0-2.13 1.44-2.13 2.93v5.65H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.12 2.06 2.06 0 010 4.12zM7.12 20.45H3.56V9h3.56v11.45z" fill="currentColor" stroke="none"/></svg>';
                 heroLinks.innerHTML =
                     '<a href="mailto:' + P.email + '" class="btn-primary" data-i18n="cta">Get in Touch</a>' +
                     '<a href="/resume/" class="btn-secondary" data-i18n="resume_link">Resume</a>' +
-                    '<a href="' + P.githubUrl + '" class="btn-secondary" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
-                    '<a href="' + P.linkedinUrl + '" class="btn-secondary" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
+                    '<a href="' + P.githubUrl + '" class="btn-secondary btn-icon" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">' + ghIcon + '</a>' +
+                    '<a href="' + P.linkedinUrl + '" class="btn-secondary btn-icon" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">' + liIcon + '</a>';
 
                 // Generate SR summary
                 var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
@@ -1097,9 +1156,11 @@
 
                 // Generate contact
                 var phDisplay = P.phoneDisplay[currentLang] || P.phoneDisplay.en;
+                var emailIcon = '<svg viewBox="0 0 24 24" class="contact-icon" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                var phoneIcon = '<svg viewBox="0 0 24 24" class="contact-icon" aria-hidden="true" focusable="false"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 005 5L14 13l5 2v3a2 2 0 01-2 2A15 15 0 013 6a2 2 0 012-2z" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 document.getElementById("contact-links").innerHTML =
-                    '<a href="mailto:' + P.email + '" class="contact-link" aria-label="Email: ' + P.email + '"><span aria-hidden="true">✉️</span> ' + P.email + "</a>" +
-                    '<a href="tel:' + P.phone + '" class="contact-link" aria-label="Phone: ' + phDisplay + '"><span aria-hidden="true">📞</span> ' + phDisplay + "</a>" +
+                    '<a href="mailto:' + P.email + '" class="contact-link" aria-label="Email: ' + P.email + '">' + emailIcon + P.email + "</a>" +
+                    '<a href="tel:' + P.phone + '" class="contact-link" aria-label="Phone: ' + phDisplay + '">' + phoneIcon + phDisplay + "</a>" +
                     '<a href="' + P.githubUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
                     '<a href="' + P.linkedinUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
 
