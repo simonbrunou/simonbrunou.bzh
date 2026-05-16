@@ -375,7 +375,7 @@
                             '<svg class="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" stroke-linejoin="round"/></svg>' +
                         '</button>' +
                     '</div>' +
-                    '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
+                    '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" decoding="async" /></div>' +
                     '<h1 class="name">' + P.name + '</h1>' +
                     '<p class="title">' + t(D.title) + '</p>' +
                     '<ul class="contact-info">' +
@@ -499,7 +499,20 @@
                 });
 
                 // Sentinel for the puppeteer PDF worker — see worker.js.
-                document.documentElement.setAttribute("data-render-complete", "");
+                // Wait for in-document images to finish loading so the
+                // generated PDF doesn't race past the profile photo.
+                var imgs = Array.prototype.slice.call(document.images);
+                Promise.all(imgs.map(function (img) {
+                    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                    return new Promise(function (resolve) {
+                        // resolve on success OR failure — a missing image
+                        // shouldn't strand the PDF worker.
+                        img.addEventListener("load", resolve, { once: true });
+                        img.addEventListener("error", resolve, { once: true });
+                    });
+                })).then(function () {
+                    document.documentElement.setAttribute("data-render-complete", "");
+                });
             })();
         </script>
         <script>
