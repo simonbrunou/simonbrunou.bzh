@@ -9,87 +9,12 @@ function log(event, fields) {
     console.log(JSON.stringify({ event, ...fields }));
 }
 
-// Generate a 128-bit random nonce, base64-encoded.
-function generateCspNonce() {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    let str = "";
-    for (const b of bytes) str += String.fromCharCode(b);
-    return btoa(str);
-}
-
-// Strip 'unsafe-inline' from script-src/style-src and append the nonce.
-// Falls back to the original CSP if neither directive is present.
-function injectNonceIntoCsp(csp, nonce) {
-    if (!csp) return csp;
-    const nonceTok = `'nonce-${nonce}'`;
-    return csp
-        .split(";")
-        .map((raw) => {
-            const part = raw.trim();
-            if (!part) return null;
-            if (
-                part.startsWith("script-src ") ||
-                part.startsWith("style-src ")
-            ) {
-                return (
-                    part
-                        .replace(/\s*'unsafe-inline'\s*/g, " ")
-                        .replace(/\s+/g, " ")
-                        .trim() +
-                    " " +
-                    nonceTok
-                );
-            }
-            return part;
-        })
-        .filter(Boolean)
-        .join("; ");
-}
-
-// Serve a static asset; if it's HTML, generate a per-response nonce,
-// add it to every inline <script>/<style> via HTMLRewriter, and rewrite
-// the CSP header to use the nonce (dropping 'unsafe-inline').
-async function serveStaticWithNonce(request, env) {
-    const upstream = await env.ASSETS.fetch(request);
-    const contentType = upstream.headers.get("Content-Type") || "";
-    if (!contentType.includes("text/html")) {
-        return upstream;
-    }
-
-    const nonce = generateCspNonce();
-    const response = new Response(upstream.body, upstream);
-    const existingCsp = response.headers.get("Content-Security-Policy");
-    if (existingCsp) {
-        response.headers.set(
-            "Content-Security-Policy",
-            injectNonceIntoCsp(existingCsp, nonce),
-        );
-    }
-
-    return new HTMLRewriter()
-        .on("script", {
-            element(el) {
-                // Only inline scripts (no `src` attribute).
-                if (!el.hasAttribute("src")) {
-                    el.setAttribute("nonce", nonce);
-                }
-            },
-        })
-        .on("style", {
-            element(el) {
-                el.setAttribute("nonce", nonce);
-            },
-        })
-        .transform(response);
-}
-
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
 
         if (url.pathname !== PDF_PATH) {
-            return serveStaticWithNonce(request, env);
+            return env.ASSETS.fetch(request);
         }
 
         if (request.method !== "POST") {
