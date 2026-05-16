@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Claude Code PreToolUse hook for Bash. Two jobs:
-#   1) Snapshot HEAD into a per-session temp file so PostToolUse can
-#      detect HEAD-advancing operations and silence no-ops.
+#   1) Snapshot HEAD AND the current branch name into per-session temp
+#      files so PostToolUse can detect commits that advance the same
+#      branch's tip (vs. branch switches, which also change HEAD).
 #   2) Deny chaining a HEAD-advancing git operation with `git push` in
 #      a single Bash call on a PR branch — so the post-commit hook can
 #      ask Claude to run /code-review BETWEEN the commit-creating
@@ -11,10 +12,12 @@
 input=$(cat 2>/dev/null) || exit 0
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || exit 0
 
-# (1) Snapshot HEAD. Per-session keyed; overwritten on every Bash call.
+# (1) Snapshot HEAD + branch. Per-session keyed; overwritten every Bash call.
 session=$(printf '%s' "$input" | jq -r '.session_id // "default"' 2>/dev/null)
-prefile="/tmp/claude-bash-prehead-${session}.txt"
-git rev-parse HEAD 2>/dev/null > "$prefile" || rm -f "$prefile"
+prefile_head="/tmp/claude-bash-prehead-${session}.txt"
+prefile_branch="/tmp/claude-bash-prebranch-${session}.txt"
+git rev-parse HEAD 2>/dev/null > "$prefile_head" || rm -f "$prefile_head"
+git rev-parse --abbrev-ref HEAD 2>/dev/null > "$prefile_branch" || rm -f "$prefile_branch"
 
 [ -z "$cmd" ] && exit 0
 
