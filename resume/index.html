@@ -35,10 +35,8 @@
         <meta name="twitter:image" content="https://simonbrunou.bzh/resume/photo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-            rel="stylesheet"
-        />
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" onload="this.rel='stylesheet'" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" /></noscript>
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
@@ -123,6 +121,7 @@
             }
 
             .header-action:hover { background: rgba(255, 255, 255, 0.3); }
+            .header-action:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 
             .theme-toggle { width: 38px; padding: 0; justify-content: center; border-radius: 50%; }
             .theme-toggle .theme-icon { font-size: 1.1rem; }
@@ -240,8 +239,8 @@
             .experience-item:last-child,
             .education-item:last-child { margin-bottom: 0; }
 
-            .experience-item h4,
-            .education-item h4 { font-weight: 600; font-size: 1.05rem; margin-bottom: 2px; }
+            .experience-item h3,
+            .education-item h3 { font-weight: 600; font-size: 1.05rem; margin-bottom: 2px; }
 
             .company { font-weight: 600; color: var(--accent); font-size: 0.9rem; margin-bottom: 2px; }
             .date { color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 10px; font-weight: 500; letter-spacing: 0.3px; }
@@ -252,7 +251,7 @@
 
             /* Skills */
             .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-            .skill-category h4 { font-weight: 600; margin-bottom: 10px; font-size: 0.9rem; }
+            .skill-category h3 { font-weight: 600; margin-bottom: 10px; font-size: 0.9rem; }
             .skill-list { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
 
             .skill-tag {
@@ -308,7 +307,7 @@
                 .profile-text { background: rgba(114,135,253,0.06) !important; padding: 6px 12px; font-size: 0.82rem; line-height: 1.4; }
                 .experience-item, .education-item { border-left-color: #ccd0da; margin-bottom: 8px; padding-left: 14px; break-inside: avoid; }
                 .experience-item::before, .education-item::before { border-color: #7287fd; background: white !important; }
-                .experience-item h4, .education-item h4 { font-size: 0.95rem; }
+                .experience-item h3, .education-item h3 { font-size: 0.95rem; }
                 .company { color: #7287fd; }
                 .date { font-size: 0.76rem; margin-bottom: 3px; }
                 .job-description li { font-size: 0.78rem; margin-bottom: 1px; line-height: 1.3; }
@@ -354,7 +353,7 @@
                     '</div>' +
                     '<div class="photo-wrapper"><img src="./photo.png" alt="Photo de profil de ' + P.name + '" class="profile-photo" width="76" height="76" loading="lazy" /></div>' +
                     '<h1 class="name">' + P.name + '</h1>' +
-                    '<h2 class="title">' + t(D.title) + '</h2>' +
+                    '<p class="title">' + t(D.title) + '</p>' +
                     '<ul class="contact-info">' +
                         '<li class="contact-item"><span class="contact-label">Tél :</span> <a href="tel:' + P.phone + '">' + t(P.phoneDisplay) + '</a></li>' +
                         '<li class="contact-item"><span class="contact-label">Email :</span> <a href="mailto:' + P.email + '">' + P.email + '</a></li>' +
@@ -365,14 +364,14 @@
 
                 // Profile
                 document.getElementById("profile-section").innerHTML =
-                    '<h3 class="section-title">Profil</h3>' +
+                    '<h2 class="section-title">Profil</h2>' +
                     '<p class="profile-text">' + t(D.about) + '</p>';
 
                 // Experience
-                var expHtml = '<h3 class="section-title">' + D.ui[lang].exp_title + '</h3>';
+                var expHtml = '<h2 class="section-title">' + D.ui[lang].exp_title + '</h2>';
                 D.experience.forEach(function (exp) {
                     expHtml += '<article class="experience-item">' +
-                        '<h4>' + t(exp.role) + '</h4>' +
+                        '<h3>' + t(exp.role) + '</h3>' +
                         '<div class="company">' + t(exp.company) + '</div>' +
                         '<div class="date"><time datetime="' + exp.startDate + '">' + SBRender.splitPeriod(t(exp.period))[0] +
                         '</time> — <time datetime="' + exp.endDate + '">' + SBRender.splitPeriod(t(exp.period))[1] + '</time></div>' +
@@ -385,10 +384,10 @@
                 document.getElementById("experience-section").innerHTML = expHtml;
 
                 // Education
-                var eduHtml = '<h3 class="section-title">' + D.ui[lang].edu_title + '</h3>';
+                var eduHtml = '<h2 class="section-title">' + D.ui[lang].edu_title + '</h2>';
                 D.education.forEach(function (edu) {
                     eduHtml += '<article class="education-item">' +
-                        '<h4>' + t(edu.degree) + '</h4>' +
+                        '<h3>' + t(edu.degree) + '</h3>' +
                         '<div class="company">' + edu.school + '</div>' +
                         '<div class="date"><time datetime="' + edu.startYear + '">' + edu.startYear +
                         '</time> — <time datetime="' + edu.endYear + '">' + edu.endYear + '</time></div>' +
@@ -397,9 +396,9 @@
                 document.getElementById("education-section").innerHTML = eduHtml;
 
                 // Skills
-                var skillsHtml = '<h3 class="section-title">' + D.ui[lang].skills_title + '</h3><div class="skills-grid">';
+                var skillsHtml = '<h2 class="section-title">' + D.ui[lang].skills_title + '</h2><div class="skills-grid">';
                 Object.keys(D.skills).forEach(function (cat) {
-                    skillsHtml += '<div class="skill-category"><h4>' + t(D.skillCategoryLabels[cat]) + '</h4><ul class="skill-list">';
+                    skillsHtml += '<div class="skill-category"><h3>' + t(D.skillCategoryLabels[cat]) + '</h3><ul class="skill-list">';
                     D.skills[cat].forEach(function (s) {
                         skillsHtml += '<li class="skill-tag">' + s + '</li>';
                     });
@@ -409,7 +408,7 @@
                 document.getElementById("skills-section").innerHTML = skillsHtml;
 
                 // Languages
-                var langHtml = '<h3 class="section-title">' + D.ui[lang].lang_title + '</h3><ul class="languages-list">';
+                var langHtml = '<h2 class="section-title">' + D.ui[lang].lang_title + '</h2><ul class="languages-list">';
                 D.languages.forEach(function (l) {
                     langHtml += '<li class="language-item"><span class="language-name">' + t(l.name) +
                         '</span><span class="language-level">' + t(l.level) + '</span></li>';
@@ -418,7 +417,7 @@
                 document.getElementById("languages-section").innerHTML = langHtml;
 
                 // Interests
-                var intHtml = '<h3 class="section-title">' + D.ui[lang].interests_title + '</h3><ul class="skill-list">';
+                var intHtml = '<h2 class="section-title">' + D.ui[lang].interests_title + '</h2><ul class="skill-list">';
                 D.interests.forEach(function (item) {
                     intHtml += '<li class="skill-tag">' + t(item.label) + '</li>';
                 });
@@ -453,7 +452,8 @@
                     updateIcon();
                 });
 
-                prefersDark.addEventListener("change", function () { if (!localStorage.getItem("resume-theme")) updateIcon(); });
+                // OS theme changes are handled by CSS (@media prefers-color-scheme);
+                // when no explicit choice is stored, the icon will already be correct.
             })();
         </script>
         <script>

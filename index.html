@@ -49,8 +49,8 @@
         <link rel="canonical" href="https://simonbrunou.bzh" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
-        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" onload="this.rel='stylesheet'" />
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
         <link
             rel="icon"
             href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
@@ -845,7 +845,7 @@
         </style>
     </head>
     <body>
-        <a href="#about" class="skip-link" data-i18n="skip_link">Skip to main content</a>
+        <a href="#main-content" class="skip-link" data-i18n="skip_link">Skip to main content</a>
 
         <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
 
@@ -863,7 +863,7 @@
         <header class="hero">
             <div class="hero-content">
                 <img src="/resume/photo.png" alt="Simon Brunou" class="hero-photo" width="120" height="120" loading="eager" />
-                <h1 id="hero-name"></h1>
+                <h1 id="hero-name">Simon <span class="accent">Brunou</span></h1>
                 <p class="subtitle" data-i18n="subtitle">Fullstack Developer</p>
                 <p class="location" data-i18n="location">Saint-Nolff, Brittany, France</p>
                 <div id="availability-badge"></div>
@@ -871,7 +871,7 @@
             </div>
         </header>
 
-        <main>
+        <main id="main-content" tabindex="-1">
             <section id="about" aria-labelledby="about-heading">
                 <div class="container fade-in">
                     <h2 id="about-heading" class="section-title" data-i18n="about_title">About</h2>
@@ -957,6 +957,9 @@
                 var D = window.RESUME_DATA;
                 var P = D.personal;
                 var currentLang = "en";
+                // Look up backToTop early so setLang (defined below) can safely reference it
+                // regardless of where setLang is invoked in the IIFE.
+                var backToTop = document.getElementById("back-to-top");
 
                 // Theme toggle
                 function isLight() {
@@ -1012,9 +1015,7 @@
                     return t;
                 }
 
-                // Generate hero
-                var heroName = document.getElementById("hero-name");
-                heroName.innerHTML = P.firstName + ' <span class="accent">' + P.lastName + "</span>";
+                // Hero name is server-rendered in the HTML (LCP).
 
                 // Generate availability badge
                 if (D.availability && D.availability.open) {
@@ -1097,12 +1098,11 @@
                 });
                 document.getElementById("interests-list").innerHTML = intHtml;
 
-                // Generate contact (phone assembled at runtime to deter scrapers)
-                var ph = [P.phone.slice(0, 4), P.phone.slice(4, 7), P.phone.slice(7, 10), P.phone.slice(10)].join("");
+                // Generate contact
                 var phDisplay = P.phoneDisplay[currentLang] || P.phoneDisplay.en;
                 document.getElementById("contact-links").innerHTML =
                     '<a href="mailto:' + P.email + '" class="contact-link" aria-label="Email: ' + P.email + '"><span aria-hidden="true">✉️</span> ' + P.email + "</a>" +
-                    '<a href="tel:' + ph + '" class="contact-link" aria-label="Phone: ' + phDisplay + '"><span aria-hidden="true">📞</span> ' + phDisplay + "</a>" +
+                    '<a href="tel:' + P.phone + '" class="contact-link" aria-label="Phone: ' + phDisplay + '"><span aria-hidden="true">📞</span> ' + phDisplay + "</a>" +
                     '<a href="' + P.githubUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="GitHub (opens in new tab)">GitHub<span class="sr-only"> (opens in new tab)</span></a>' +
                     '<a href="' + P.linkedinUrl + '" class="contact-link" target="_blank" rel="noopener" aria-label="LinkedIn (opens in new tab)">LinkedIn<span class="sr-only"> (opens in new tab)</span></a>';
 
@@ -1141,7 +1141,6 @@
 
                 // Scroll progress + back-to-top
                 var progressBar = document.getElementById("scroll-progress");
-                var backToTop = document.getElementById("back-to-top");
                 var ticking = false;
                 function updateScrollUI() {
                     var h = document.documentElement;
@@ -1151,12 +1150,14 @@
                     backToTop.classList.toggle("visible", h.scrollTop > 600);
                     ticking = false;
                 }
-                window.addEventListener("scroll", function () {
+                function onScrollOrResize() {
                     if (!ticking) {
                         window.requestAnimationFrame(updateScrollUI);
                         ticking = true;
                     }
-                }, { passive: true });
+                }
+                window.addEventListener("scroll", onScrollOrResize, { passive: true });
+                window.addEventListener("resize", onScrollOrResize, { passive: true });
                 updateScrollUI();
                 backToTop.addEventListener("click", function () {
                     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
