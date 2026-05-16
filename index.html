@@ -1143,14 +1143,21 @@
                 })();
 
                 // Language resolution priority: URL ?lang= (for hreflang
-                // arrivals and shareable French links) > localStorage > default EN.
+                // arrivals and shareable English / French links) > localStorage
+                // > default EN. An explicit URL value wins even if it matches
+                // the default — `?lang=en` must force English when localStorage
+                // would otherwise restore a previous French session.
                 var initialLang = 'en';
+                var hadExplicitLang = false;
                 try {
                     var params = new URLSearchParams(window.location.search);
                     var fromUrl = params.get('lang');
-                    if (fromUrl === 'fr' || fromUrl === 'en') { initialLang = fromUrl; }
+                    if (fromUrl === 'fr' || fromUrl === 'en') {
+                        initialLang = fromUrl;
+                        hadExplicitLang = true;
+                    }
                 } catch (_) {}
-                if (initialLang === 'en') {
+                if (!hadExplicitLang) {
                     try {
                         var stored = localStorage.getItem('lang');
                         if (stored === 'fr') { initialLang = 'fr'; }
