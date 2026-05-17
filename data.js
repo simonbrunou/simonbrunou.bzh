@@ -256,6 +256,62 @@ window.RESUME_DATA = {
                 "Docker",
             ],
         },
+        {
+            name: "Sutom",
+            repoUrl: "https://github.com/simonbrunou/sutom",
+            period: { en: "2026", fr: "2026" },
+            tagline: {
+                en: "Daily French word game in the Motus tradition",
+                fr: "Jeu de mots quotidien en français, dans l'esprit de Motus",
+            },
+            description: {
+                en: [
+                    "Daily French puzzle: first letter revealed, six attempts to guess the word, share-friendly result grid",
+                    "Built on SvelteKit with Svelte 5 runes and an `adapter-static` output — deployable as plain files anywhere",
+                    "Unit-tested game logic (Vitest), accessible keyboard, stats and streaks persisted client-side, no telemetry",
+                ],
+                fr: [
+                    "Énigme quotidienne en français : première lettre révélée, six essais pour trouver le mot, grille de résultat partageable",
+                    "SvelteKit avec Svelte 5 runes et adapter-static — déployable en fichiers statiques partout",
+                    "Logique de jeu testée (Vitest), clavier accessible, stats et séries en localStorage, sans télémétrie",
+                ],
+            },
+            stack: [
+                "SvelteKit",
+                "Svelte 5",
+                "TypeScript",
+                "Vite",
+                "Vitest",
+            ],
+        },
+        {
+            name: "Parcel Tracker",
+            repoUrl: "https://github.com/simonbrunou/parcel-tracker",
+            period: { en: "2026", fr: "2026" },
+            tagline: {
+                en: "Self-hosted parcel tracking dashboard for multiple carriers",
+                fr: "Suivi de colis multi-transporteurs, auto-hébergé",
+            },
+            description: {
+                en: [
+                    "Aggregates La Poste, Colissimo, Chronopost, Mondial Relay, GLS, DPD, Colis Privé and Relais Colis in a single dashboard",
+                    "Single-binary Go app with embedded SQLite, background refresh, web push notifications and JWT-based single-user auth",
+                    "Zero external dependencies, Docker image published from CI, deployable in seconds on any homelab",
+                ],
+                fr: [
+                    "Centralise La Poste, Colissimo, Chronopost, Mondial Relay, GLS, DPD, Colis Privé et Relais Colis dans un seul tableau de bord",
+                    "Application Go en binaire unique avec SQLite embarqué, rafraîchissement en arrière-plan, notifications web push et authentification JWT mono-utilisateur",
+                    "Sans dépendance externe, image Docker publiée en CI, déployable en quelques secondes sur n'importe quel homelab",
+                ],
+            },
+            stack: [
+                "Go",
+                "chi",
+                "SQLite",
+                "Web Push",
+                "Docker",
+            ],
+        },
     ],
 
     education: [
