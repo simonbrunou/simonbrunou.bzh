@@ -35,7 +35,7 @@ window.RESUME_DATA = {
 
     about: {
         en: "Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.",
-        fr: "Développeur Fullstack impliqué, motivé et sérieux avec de l'expérience dans le développement d'applications mobiles, la gestion de projets, la communication client et la livraison régulière de produits. Basé en Bretagne, je conçois des applications robustes sur l'ensemble de la stack — du mobile et desktop au backend et middleware — avec une passion pour Rust et la programmation système.",
+        fr: "Développeur Fullstack investi et rigoureux, fort d'une expérience en développement d'applications mobiles, en gestion de projet, en relation client et en livraison continue. Basé en Bretagne, je conçois des applications robustes sur toute la stack — du mobile au backend, en passant par le desktop et le middleware — avec une passion pour Rust et la programmation système.",
     },
 
     skills: {
@@ -99,7 +99,7 @@ window.RESUME_DATA = {
                     "Developed Rust libraries for low-level communication with a connected device",
                 ],
                 fr: [
-                    "Développement d'une application mobile compagnon (POC) en Dart et Flutter : interaction avec l'objet connecté, gestion de compte utilisateur et consommation de web services",
+                    "Développement d'une application mobile compagnon (POC) en Dart et Flutter : interaction avec un objet connecté, gestion de compte utilisateur et consommation d'API",
                     "Développement de bibliothèques en Rust pour la communication bas niveau avec un objet connecté",
                 ],
             },
@@ -133,13 +133,13 @@ window.RESUME_DATA = {
                 fr: [
                     "Application de signature de PDF : développement d'applications mobiles Android (Kotlin) et iOS (Swift), puis Flutter (Dart), permettant la signature de documents PDF via un tampon connecté en Bluetooth",
                     "Application de signature de PDF : développement d'applications desktop Windows, macOS et Linux avec React et Electron",
-                    "Gestion de l'objet connecté : développement des parcours d'onboarding, d'appairage Bluetooth, de mise à jour firmware (OTA) et de configuration du tampon connecté sur mobile et desktop",
-                    "Développement et maintenance du backend (web-services) en Java/Kotlin avec Spring Boot, puis migration vers Rust : gestion des comptes, des documents et des signatures",
-                    "Développement de middleware en Rust et C pour la communication bas niveau avec le tampon connecté",
-                    "Développement, documentation et livraison continue de bibliothèques (SDK) en Swift, Kotlin, Rust, JavaScript, TypeScript et C pour l'intégration du tampon connecté par des partenaires",
+                    "Gestion de l'objet connecté : développement des parcours d'onboarding, d'appairage Bluetooth, de mises à jour firmware (OTA) et de configuration du tampon connecté sur mobile et desktop",
+                    "Développement et maintenance du backend (web services) en Java/Kotlin avec Spring Boot, puis migration vers Rust : gestion des comptes, des documents et des signatures",
+                    "Développement de middleware en Rust et C pour la communication de bas niveau avec le tampon connecté",
+                    "Développement, documentation et livraison continue de bibliothèques (SDK) en Swift, Kotlin, Rust, JavaScript, TypeScript et C destinées à l'intégration du tampon connecté par des partenaires tiers",
                     "Développement et maintenance d'applications de démonstration d'intégration du SDK en Flutter, Xamarin, React Native, Kotlin et Swift",
                     "DevOps : mise en place de CI/CD (GitLab CI/CD), conteneurisation avec Docker, gestion d'infrastructure avec Proxmox et Terraform, automatisation des déploiements et livraisons",
-                    "Observabilité : intégration de Sentry sur l'ensemble des applications (mobile, desktop, backend, SDK) pour le suivi des erreurs, la surveillance des performances et le reporting des crashes",
+                    "Observabilité : intégration de Sentry sur l'ensemble des applications (mobile, desktop, backend, SDK) pour le suivi des erreurs, le suivi des performances et le signalement des plantages",
                     "Encadrement d'alternants en tant que maître d'apprentissage",
                     "Interventions à l'IUT de Vannes : présentation de parcours et accompagnement d'étudiants",
                 ],
@@ -166,9 +166,9 @@ window.RESUME_DATA = {
                 ],
                 fr: [
                     "Développement d'applications mobiles Android en Java/Kotlin et iOS en Objective-C/Swift",
-                    "Maintenance et amélioration de web-services en Java Spring Boot",
+                    "Maintenance et amélioration de web services en Java Spring Boot",
                     "Maintenance et amélioration de sites web en Angular",
-                    "Mise en place d'outils de Business Intelligence et d'une CRM",
+                    "Mise en place d'outils de Business Intelligence et d'un CRM",
                 ],
             },
         },
@@ -187,7 +187,7 @@ window.RESUME_DATA = {
                     "PHP backend development",
                 ],
                 fr: [
-                    "Maintenance et évolution d'une application Android native de présentation de l'IUT pour les salons et portes ouvertes",
+                    "Maintenance et évolution d'une application Android native de présentation de l'IUT pour les salons et journées portes ouvertes",
                     "Backend en PHP",
                 ],
             },
@@ -212,7 +212,7 @@ window.RESUME_DATA = {
                 ],
                 fr: [
                     "PWA bilingue (FR/EN) pour suivre la diversification d'un bébé : journal des aliments testés, 14 allergènes prioritaires et partage avec un co-parent",
-                    "Authentification maison : sessions hachées en Argon2id et passkeys WebAuthn",
+                    "Authentification maison : Argon2id pour les sessions, passkeys WebAuthn",
                     "Auto-hébergeable dans un seul conteneur Docker ; conforme RGPD (export, suppression, rétention)",
                 ],
             },
@@ -244,7 +244,7 @@ window.RESUME_DATA = {
                 ],
                 fr: [
                     "Site statique bilingue (FR/EN) qui propose des tisanes adaptées au besoin (stress, sommeil, concentration, rhume, digestion…)",
-                    "Approche content-first : ~25 plantes et ~12 besoins en JSON validé par Zod, régénérés à chaque build",
+                    "Approche content-first : ~25 plantes et ~12 besoins en JSON validé par Zod ; pages régénérées à chaque build",
                     "Astro 5 avec des îlots React pour le sélecteur de besoin, la recherche floue et le minuteur d'infusion ; déployé sur Cloudflare Pages",
                 ],
             },
@@ -297,7 +297,7 @@ window.RESUME_DATA = {
         },
         {
             name: { en: "English", fr: "Anglais" },
-            level: { en: "Fluent", fr: "Fluent" },
+            level: { en: "Fluent", fr: "Courant" },
             code: "en",
         },
         {
@@ -361,10 +361,10 @@ window.RESUME_DATA = {
             skip_link: "Aller au contenu principal",
             theme_toggle: "Changer de thème",
             back_to_top: "Haut de page",
-            section_heading_about: "Construire de bout en bout, du capteur au backend.",
-            section_heading_skills: "Ce avec quoi je travaille",
+            section_heading_about: "Construire de bout en bout, de l'objet connecté au backend.",
+            section_heading_skills: "Mes outils du quotidien",
             section_heading_exp: "Sélection de réalisations",
-            section_heading_projects: "Construit et publié en open source",
+            section_heading_projects: "Mes projets en open source",
             section_heading_edu: "Parcours académique",
             section_heading_lang: "Langues parlées",
             section_heading_interests: "Hors-clavier",
