@@ -1,0 +1,66 @@
+{
+  "/home/sbrn/Projects/simonbrunou.bzh/app.js": {
+    "mtime": 1778998546.9529324,
+    "hash": "4cb3cc172f77f6dac00aa106010f3f4d"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/data.js": {
+    "mtime": 1779029527.597205,
+    "hash": "701cb0e8f70055f220f6b97b0793ba55"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/server.js": {
+    "mtime": 1779036919.5081983,
+    "hash": "f15b58b2e345391ab5f696ca2cf4357e"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/render.js": {
+    "mtime": 1779036974.9575508,
+    "hash": "0ca4245f2498a9971ec464f082533a90"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/pdf-template/app.js": {
+    "mtime": 1779037714.5805812,
+    "hash": "935c95b8b35588755e74cd947d5f6754"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/scripts/build-pdf.js": {
+    "mtime": 1779036863.1468506,
+    "hash": "de5dfdae226b7640e4f2f2d31e224757"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/index.html": {
+    "mtime": 1779036949.646847,
+    "hash": "b93efd9a503f55e7a95c774285cf9fb2"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/404.html": {
+    "mtime": 1779036957.0717604,
+    "hash": "cce20a64dd6cc87c807a59a79aa412fc"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/robots.txt": {
+    "mtime": 1779036969.321617,
+    "hash": "4192fc7bc0c2d59e4a7798b05f059b4a"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/README.md": {
+    "mtime": 1779037013.4450984,
+    "hash": "16808a95b13a3722c2f827f39391edae"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/CLAUDE.md": {
+    "mtime": 1779038001.528016,
+    "hash": "52391375311ac51b98a22fb8c91b34b3"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/docs/superpowers/plans/2026-05-16-iris-redesign.md": {
+    "mtime": 1778971407.3481383,
+    "hash": "3a343298b9088ff287550e97d83647f5"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/docs/superpowers/specs/2026-05-16-engineering-elegant-redesign-design.md": {
+    "mtime": 1778971407.3481383,
+    "hash": "d9536978f22f938e5940521fdde8e31b"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/pdf-template/index.html": {
+    "mtime": 1779036764.0879807,
+    "hash": "b0245f1dca02ed4b60dc59d05970e664"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/simon-brunou-cv.pdf": {
+    "mtime": 1779037720.3005104,
+    "hash": "4b6918aee0e3ec3c204b842d54d6be17"
+  },
+  "/home/sbrn/Projects/simonbrunou.bzh/photo.png": {
+    "mtime": 1778906476.49597,
+    "hash": "11e44a313161fbbe1ce1d0dc9240bc2f"
+  }
+}
