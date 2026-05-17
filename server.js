@@ -67,6 +67,26 @@ const STATIC_ASSETS = {
         type: "application/javascript; charset=utf-8",
         cache: "public, max-age=0, must-revalidate",
     },
+    "/app.js": {
+        file: "app.js",
+        type: "application/javascript; charset=utf-8",
+        cache: "public, max-age=0, must-revalidate",
+    },
+    "/styles.css": {
+        file: "styles.css",
+        type: "text/css; charset=utf-8",
+        cache: "public, max-age=0, must-revalidate",
+    },
+    "/resume/app.js": {
+        file: "resume/app.js",
+        type: "application/javascript; charset=utf-8",
+        cache: "public, max-age=0, must-revalidate",
+    },
+    "/resume/styles.css": {
+        file: "resume/styles.css",
+        type: "text/css; charset=utf-8",
+        cache: "public, max-age=0, must-revalidate",
+    },
     "/resume/photo.png": {
         file: "resume/photo.png",
         type: "image/png",
