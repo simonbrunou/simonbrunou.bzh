@@ -245,7 +245,7 @@ window.RESUME_DATA = {
                 fr: [
                     "Site statique bilingue (FR/EN) qui propose des tisanes adaptées au besoin (stress, sommeil, concentration, rhume, digestion…)",
                     "Approche content-first : ~25 plantes et ~12 besoins en JSON validé par Zod ; pages régénérées à chaque build",
-                    "Astro 5 avec des îlots React pour le sélecteur de besoin, la recherche floue et le minuteur d'infusion ; déployé sur Cloudflare Pages",
+                    "Astro 5 avec des îlots React pour le sélecteur de besoin, la recherche approximative et le minuteur d'infusion ; déployé sur Cloudflare Pages",
                 ],
             },
             stack: [
