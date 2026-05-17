@@ -41,6 +41,10 @@
         <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" />
         <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" /></noscript>
         <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
+        />
 
         <!-- JSON-LD structured data is generated dynamically from data.js -->
 
@@ -495,7 +499,15 @@
 
                 var turnstileOpts = {
                     sitekey: "0x4AAAAAACvBqO10GT9_Ajun",
-                    size: "invisible",
+                    // Keep the widget out of the layout in Managed and
+                    // Non-Interactive sitekey modes too — "interaction-only"
+                    // hides the box unless an interactive challenge is
+                    // genuinely required, so the PDF flow stays silent for
+                    // the vast majority of visitors. (The old `size:
+                    // "invisible"` was removed by Cloudflare; invisibility
+                    // is now driven by the sitekey mode in the dashboard
+                    // plus this appearance setting.)
+                    appearance: "interaction-only",
                     // Defer the challenge until the user clicks the PDF button.
                     // Without this, Turnstile defaults to execution:"render",
                     // which runs the challenge immediately when the widget is
