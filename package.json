@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Personal portfolio + résumé site for Simon Brunou. Self-hosted on Coolify. Node/Hono server with Puppeteer PDF endpoint protected by Cloudflare Turnstile.",
+  "description": "Personal portfolio + résumé site for Simon Brunou. Self-hosted on Coolify. Node/Hono server; CV PDF is built ahead of time with Puppeteer.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/simonbrunou/simonbrunou.bzh.git"
@@ -14,14 +14,17 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build:pdf": "node scripts/build-pdf.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
-    "hono": "^4.6.14",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
     "puppeteer-core": "^23.10.4"
   }
 }

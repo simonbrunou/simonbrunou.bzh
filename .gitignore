@@ -16,6 +16,10 @@ pnpm-debug.log*
 # superpowers brainstorming mockups (Visual Companion session data)
 .superpowers/
 
+# graphify per-clone runtime state (interpreter path, scan root)
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+
 # misc
 .DS_Store
 *.log
