@@ -239,12 +239,12 @@ window.RESUME_DATA = {
                 en: [
                     "Bilingual (FR/EN) recommender: surfaces herbal infusions matching what the user needs (sleep, focus, digestion…) via a scoring engine",
                     "Content-as-data architecture: ~25 plants and ~12 needs as Zod-validated JSON, both languages generated at build time",
-                    "Astro 5 with minimal React islands, deployed on Cloudflare Pages, no telemetry by default",
+                    "Astro 5 with minimal React islands, self-hosted as a single Docker container, no telemetry by default",
                 ],
                 fr: [
                     "Recommandation bilingue (FR/EN) : propose les tisanes adaptées au besoin (sommeil, concentration, digestion…) via un moteur de scoring",
                     "Architecture content-as-data : ~25 plantes et ~12 besoins en JSON validé par Zod, génération des deux langues au build",
-                    "Astro 5 avec des îlots React minimalistes, déployé sur Cloudflare Pages, sans télémétrie par défaut",
+                    "Astro 5 avec des îlots React minimalistes, auto-hébergé en un conteneur Docker, sans télémétrie par défaut",
                 ],
             },
             stack: [
@@ -253,7 +253,7 @@ window.RESUME_DATA = {
                 "TypeScript",
                 "Tailwind",
                 "Zod",
-                "Cloudflare Pages",
+                "Docker",
             ],
         },
     ],
