@@ -164,16 +164,23 @@
 
     SBRender.injectJsonLd(D, lang);
 
-    // build-pdf.js waits on html[data-render-complete] before snapshotting so
-    // the PDF can't race past the profile photo.
+    // build-pdf.js waits on html[data-render-complete] before snapshotting,
+    // so the sentinel must gate on every resource the rendered PDF depends on:
+    //   - images: document.images load events
+    //   - webfonts: document.fonts.ready (the @font-face files Google Fonts
+    //     pulls in are downloaded lazily, so DOMContentLoaded alone is not
+    //     enough — without this, the PDF can snapshot with system fallback
+    //     glyphs instead of Inter / JetBrains Mono).
     var imgs = Array.prototype.slice.call(document.images);
-    Promise.all(imgs.map(function (img) {
+    var imgsReady = Promise.all(imgs.map(function (img) {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise(function (resolve) {
             img.addEventListener('load', resolve, { once: true });
             img.addEventListener('error', resolve, { once: true });
         });
-    })).then(function () {
+    }));
+    var fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
+    Promise.all([imgsReady, fontsReady]).then(function () {
         document.documentElement.setAttribute('data-render-complete', '');
     });
 })();
