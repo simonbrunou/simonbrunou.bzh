@@ -194,6 +194,71 @@ window.RESUME_DATA = {
         },
     ],
 
+    projects: [
+        {
+            name: "Diversif",
+            url: "https://diversif.app",
+            repoUrl: "https://github.com/simonbrunou/diversif",
+            period: { en: "2025 — present", fr: "2025 — présent" },
+            tagline: {
+                en: "Baby food diversification tracker with co-parent sharing",
+                fr: "Suivi de la diversification alimentaire d'un bébé, avec partage entre parents",
+            },
+            description: {
+                en: [
+                    "Bilingual (FR/EN) PWA to log a baby's food introductions, follow 14 priority allergens, and share the log with a co-parent or caregiver",
+                    "In-house authentication: Argon2id session hashing and WebAuthn passkeys",
+                    "Self-hostable in a single Docker container; RGPD-compliant (data export, account deletion, retention task)",
+                ],
+                fr: [
+                    "PWA bilingue (FR/EN) pour suivre la diversification d'un bébé : journal des aliments testés, 14 allergènes prioritaires et partage avec un co-parent",
+                    "Authentification maison : sessions hachées en Argon2id et passkeys WebAuthn",
+                    "Auto-hébergeable dans un seul conteneur Docker ; conforme RGPD (export, suppression, rétention)",
+                ],
+            },
+            stack: [
+                "SvelteKit",
+                "Svelte 5",
+                "TypeScript",
+                "Postgres",
+                "Drizzle",
+                "Tailwind",
+                "WebAuthn",
+                "Docker",
+            ],
+        },
+        {
+            name: "Tisanerie",
+            url: "https://tisanerie.app",
+            repoUrl: "https://github.com/simonbrunou/tisanerie",
+            period: { en: "2025", fr: "2025" },
+            tagline: {
+                en: "Herbal infusion recommender by need — sleep, focus, digestion…",
+                fr: "Recommandation de tisanes selon le besoin — sommeil, concentration, digestion…",
+            },
+            description: {
+                en: [
+                    "Bilingual (FR/EN) static site that scores herbal infusions against what the user needs (stress, sleep, focus, cold, digestion…)",
+                    "Content-first: ~25 plants and ~12 needs stored as Zod-validated JSON, regenerated at build time",
+                    "Astro 5 with React islands for the need picker, fuzzy search, and brewing timer; deployed on Cloudflare Pages",
+                ],
+                fr: [
+                    "Site statique bilingue (FR/EN) qui propose des tisanes adaptées au besoin (stress, sommeil, concentration, rhume, digestion…)",
+                    "Approche content-first : ~25 plantes et ~12 besoins en JSON validé par Zod, régénérés à chaque build",
+                    "Astro 5 avec des îlots React pour le sélecteur de besoin, la recherche floue et le minuteur d'infusion ; déployé sur Cloudflare Pages",
+                ],
+            },
+            stack: [
+                "Astro",
+                "React",
+                "TypeScript",
+                "Tailwind",
+                "Zod",
+                "Cloudflare Pages",
+            ],
+        },
+    ],
+
     education: [
         {
             degree: {
@@ -257,6 +322,7 @@ window.RESUME_DATA = {
             about_title: "About",
             skills_title: "Skills",
             exp_title: "Experience",
+            projects_title: "Open Source",
             edu_title: "Education",
             lang_title: "Languages",
             interests_title: "Interests",
@@ -270,10 +336,13 @@ window.RESUME_DATA = {
             section_heading_about: "Building end-to-end, from connected device to backend.",
             section_heading_skills: "What I work with",
             section_heading_exp: "Selected work",
+            section_heading_projects: "Built and shipped in the open",
             section_heading_edu: "Studied at",
             section_heading_lang: "Spoken tongues",
             section_heading_interests: "Off-keyboard",
             section_heading_contact: "Let's connect",
+            projects_visit: "Visit",
+            projects_source: "Source",
         },
         fr: {
             cta: "Me Contacter",
@@ -281,6 +350,7 @@ window.RESUME_DATA = {
             about_title: "À propos",
             skills_title: "Compétences",
             exp_title: "Expérience",
+            projects_title: "Open Source",
             edu_title: "Formation",
             lang_title: "Langues",
             interests_title: "Centres d'intérêt",
@@ -294,10 +364,13 @@ window.RESUME_DATA = {
             section_heading_about: "Construire de bout en bout, du capteur au backend.",
             section_heading_skills: "Ce avec quoi je travaille",
             section_heading_exp: "Sélection de réalisations",
+            section_heading_projects: "Construit et publié en open source",
             section_heading_edu: "Parcours académique",
             section_heading_lang: "Langues parlées",
             section_heading_interests: "Hors-clavier",
             section_heading_contact: "Restons en contact",
+            projects_visit: "Visiter",
+            projects_source: "Code source",
         },
     },
 };
