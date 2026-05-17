@@ -1,4 +1,4 @@
-// Shared rendering helpers for index.html and resume/index.html.
+// Shared rendering helpers for index.html and pdf-template/index.html.
 // Loaded after data.js. Exposes window.SBRender.
 //
 // The two pages render different DOM (different visual designs), so this

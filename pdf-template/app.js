@@ -162,13 +162,10 @@
         ints.appendChild(s);
     });
 
-    // JSON-LD via shared helper (same shape on both pages)
     SBRender.injectJsonLd(D, lang);
 
-    // MUST stay verbatim: image-load barrier + data-render-complete sentinel.
-    // The PDF render path (Puppeteer) waits on html[data-render-complete] before
-    // snapshotting. Don't fire it before in-document images finish loading or the
-    // PDF can race past the profile photo.
+    // build-pdf.js waits on html[data-render-complete] before snapshotting so
+    // the PDF can't race past the profile photo.
     var imgs = Array.prototype.slice.call(document.images);
     Promise.all(imgs.map(function (img) {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
@@ -178,150 +175,5 @@
         });
     })).then(function () {
         document.documentElement.setAttribute('data-render-complete', '');
-    });
-})();
-
-// Cloudflare Turnstile — protects the PDF generation endpoint
-// Replace the sitekey with your own from the Cloudflare Dashboard.
-// The matching secret is provisioned server-side via the
-// TURNSTILE_SECRET_KEY env var (see .env.example / Coolify env tab).
-(function () {
-    // Skip Turnstile when the page is loaded by Puppeteer for PDF generation
-    if (new URLSearchParams(window.location.search).get("pdf")) return;
-
-    // 30s — generous for a cold browser rendering worker but well
-    // under the 60s default rate-limit window.
-    var PDF_TIMEOUT_MS = 30000;
-    var pdfBtnInner = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>PDF';
-    var widgetId;
-
-    function getBtn() { return document.getElementById("download-pdf"); }
-    function getStatus() { return document.getElementById("pdf-status"); }
-
-    function setLoading(loading) {
-        var btn = getBtn();
-        if (btn) {
-            btn.disabled = loading;
-            btn.setAttribute("aria-busy", loading ? "true" : "false");
-            // existing pattern: pdfBtnInner is a constant SVG string controlled by this file.
-            btn.innerHTML = loading ? pdfBtnInner.replace("PDF", "…") : pdfBtnInner;
-        }
-        var s = getStatus();
-        if (s && loading) s.textContent = "Génération du PDF…";
-    }
-
-    function setError(msg) {
-        var btn = getBtn();
-        if (btn) {
-            btn.title = msg;
-            btn.classList.add("pdf-error");
-        }
-        var s = getStatus();
-        if (s) s.textContent = msg;
-    }
-
-    function clearError() {
-        var btn = getBtn();
-        if (btn) {
-            btn.title = "Télécharger en PDF";
-            btn.classList.remove("pdf-error");
-        }
-    }
-
-    function messageForStatus(status) {
-        if (status === 429) return "Trop de demandes. Réessayez dans une minute.";
-        if (status === 403) return "Vérification échouée. Rechargez la page et réessayez.";
-        if (status === 503) return "Service indisponible. Réessayez plus tard.";
-        return "Échec du téléchargement (" + status + "). Réessayez.";
-    }
-
-    function downloadPDF(token) {
-        clearError();
-        var controller = new AbortController();
-        var timer = setTimeout(function () { controller.abort(); }, PDF_TIMEOUT_MS);
-        fetch("/resume/simon-brunou-cv.pdf", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: token }),
-            signal: controller.signal,
-        })
-            .then(function (r) {
-                if (!r.ok) {
-                    var err = new Error("status_" + r.status);
-                    err.status = r.status;
-                    throw err;
-                }
-                return r.blob();
-            })
-            .then(function (blob) {
-                var blobUrl = URL.createObjectURL(blob);
-                var a = document.createElement("a");
-                a.href = blobUrl;
-                a.download = "simon-brunou-cv.pdf";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(blobUrl);
-                var s = getStatus();
-                if (s) s.textContent = "PDF téléchargé.";
-            })
-            .catch(function (err) {
-                if (err && err.name === "AbortError") {
-                    setError("La génération du PDF a expiré. Réessayez.");
-                } else if (err && typeof err.status === "number") {
-                    setError(messageForStatus(err.status));
-                } else {
-                    setError("Échec du téléchargement. Vérifiez votre connexion.");
-                }
-            })
-            .finally(function () {
-                clearTimeout(timer);
-                setLoading(false);
-                if (widgetId !== undefined) turnstile.reset(widgetId);
-            });
-    }
-
-    var turnstileOpts = {
-        sitekey: "0x4AAAAAACvBqO10GT9_Ajun",
-        // Keep the widget out of the layout in Managed and
-        // Non-Interactive sitekey modes too — "interaction-only"
-        // hides the box unless an interactive challenge is
-        // genuinely required, so the PDF flow stays silent for
-        // the vast majority of visitors. (The old `size:
-        // "invisible"` was removed by Cloudflare; invisibility
-        // is now driven by the sitekey mode in the dashboard
-        // plus this appearance setting.)
-        appearance: "interaction-only",
-        // Defer the challenge until the user clicks the PDF button.
-        // Without this, Turnstile defaults to execution:"render",
-        // which runs the challenge immediately when the widget is
-        // rendered → success callback fires → downloadPDF runs →
-        // PDF generated on every page visit. With "execute", the
-        // widget waits for turnstile.execute(widgetId) — called
-        // from the button click handler below.
-        execution: "execute",
-        callback: function (token) { downloadPDF(token); },
-        "error-callback": function () { setLoading(false); },
-        "expired-callback": function () { setLoading(false); },
-    };
-
-    window.onloadTurnstileCallback = function () {
-        widgetId = turnstile.render("#cf-turnstile", turnstileOpts);
-
-        var btn = getBtn();
-        if (btn) {
-            btn.addEventListener("click", function () {
-                setLoading(true);
-                turnstile.execute(widgetId);
-            });
-        }
-    };
-
-    // Re-render the widget when the page is restored from bfcache
-    window.addEventListener("pageshow", function (e) {
-        if (e.persisted && typeof turnstile !== "undefined" && widgetId !== undefined) {
-            turnstile.remove(widgetId);
-            widgetId = turnstile.render("#cf-turnstile", turnstileOpts);
-        }
     });
 })();

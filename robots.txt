@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /resume/simon-brunou-cv.pdf
 
 Sitemap: https://simonbrunou.bzh/sitemap.xml
