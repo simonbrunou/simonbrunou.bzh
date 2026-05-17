@@ -39,8 +39,10 @@ changes start here.
 server on a random localhost port that exposes `pdf-template/` and the repo
 root, drives headless Chrome at `/pdf-template/`, waits for the
 `html[data-render-complete]` sentinel set by `pdf-template/app.js` once all
-images have loaded, then snapshots to A4 PDF with `printBackground: true`.
-The sentinel is load-bearing — don't remove it or the PDF races the photo.
+images **and** `document.fonts.ready` have resolved, then snapshots to A4
+PDF with `printBackground: true`. The sentinel is load-bearing — don't drop
+either gate or the PDF races (image gate → missing photo; font gate → system
+fallback glyphs instead of Inter / JetBrains Mono).
 
 **Server — `server.js` (Hono on Node 22).** Reads every asset into memory at
 boot, then serves from cache. Key concerns:
@@ -70,7 +72,10 @@ in the Dockerfile.
 - **The `data-render-complete` sentinel** is required by `scripts/build-pdf.js`
   to know when the page is fully painted. If you refactor `pdf-template/app.js`
   and drop the image-load barrier, the PDF will sometimes ship without the
-  profile photo.
+  profile photo. If you drop the `document.fonts.ready` barrier, the PDF will
+  sometimes ship with system-fallback glyphs instead of Inter / JetBrains Mono
+  (Google Fonts woff2 files load lazily, so DOMContentLoaded alone is not
+  enough).
 
 ## graphify
 
