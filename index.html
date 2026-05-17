@@ -523,6 +523,65 @@
             .tl-item ul { padding-left: 18px; margin: 0; color: var(--text-secondary); }
             .tl-item li { font-size: 0.95rem; line-height: 1.55; margin-bottom: 4px; }
 
+            /* Projects */
+            .projects-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+                margin-top: 6px;
+            }
+            @media (max-width: 720px) { .projects-grid { grid-template-columns: 1fr; } }
+
+            .project-card {
+                position: relative;
+                background: var(--bg-elev);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 20px 20px 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                transition: border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+                            background 200ms cubic-bezier(0.22, 1, 0.36, 1),
+                            transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+            }
+            .project-card:hover {
+                border-color: var(--accent-border);
+                background: var(--bg-elev-strong);
+                transform: translateY(-1px);
+            }
+
+            .project-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+            .project-name { font-size: 1.05rem; font-weight: 600; margin: 0; }
+            .project-period {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.76rem;
+                color: var(--accent-2);
+            }
+            .project-tagline { font-size: 0.92rem; color: var(--text-secondary); margin: 0; }
+            .project-card ul { padding-left: 18px; margin: 0; color: var(--text-secondary); }
+            .project-card li { font-size: 0.9rem; line-height: 1.55; margin-bottom: 3px; }
+
+            .project-stack { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+            .project-stack .chip-skill { font-size: 0.72rem; padding: 3px 9px; }
+
+            .project-links { display: flex; gap: 8px; flex-wrap: wrap; }
+            .project-link {
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                font-size: 0.78rem;
+                padding: 6px 12px;
+                border-radius: 8px;
+                border: 1px solid var(--border-strong);
+                background: var(--bg-elev);
+                color: var(--text-primary);
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                transition: border-color 180ms, background 180ms, color 180ms;
+            }
+            .project-link:hover { border-color: var(--accent-border); background: var(--bg-elev-strong); color: var(--accent-2); }
+            .project-link svg { width: 0.85rem; height: 0.85rem; }
+
             /* Education */
             .edu-grid {
                 display: grid;
@@ -851,6 +910,12 @@
                 <div class="timeline" id="experience-timeline"></div>
             </section>
 
+            <section class="container section fade-in projects" id="projects" aria-labelledby="projects-heading">
+                <div class="section-label" id="projects-eyebrow"></div>
+                <h2 id="projects-heading"></h2>
+                <div class="projects-grid" id="projects-grid"></div>
+            </section>
+
             <section class="container section fade-in education" id="education" aria-labelledby="education-heading">
                 <div class="section-label" id="education-eyebrow"></div>
                 <h2 id="education-heading"></h2>
@@ -1025,6 +1090,77 @@
                         item.appendChild(ul);
 
                         tl.appendChild(item);
+                    });
+
+                    // Projects
+                    document.getElementById('projects-eyebrow').textContent = D.ui[lang].projects_title;
+                    document.getElementById('projects-heading').textContent = D.ui[lang].section_heading_projects;
+                    var projectsGrid = document.getElementById('projects-grid');
+                    projectsGrid.textContent = '';
+                    (D.projects || []).forEach(function (p) {
+                        var card = document.createElement('article');
+                        card.className = 'project-card';
+
+                        var head = document.createElement('div');
+                        head.className = 'project-head';
+                        var name = document.createElement('h3');
+                        name.className = 'project-name';
+                        name.textContent = p.name;
+                        head.appendChild(name);
+                        var period = document.createElement('span');
+                        period.className = 'project-period';
+                        period.textContent = pick(p.period, lang);
+                        head.appendChild(period);
+                        card.appendChild(head);
+
+                        var tagline = document.createElement('p');
+                        tagline.className = 'project-tagline';
+                        tagline.textContent = pick(p.tagline, lang);
+                        card.appendChild(tagline);
+
+                        var ul = document.createElement('ul');
+                        pick(p.description, lang).forEach(function (b) {
+                            var li = document.createElement('li');
+                            li.textContent = b;
+                            ul.appendChild(li);
+                        });
+                        card.appendChild(ul);
+
+                        if (p.stack && p.stack.length) {
+                            var stack = document.createElement('div');
+                            stack.className = 'project-stack chips';
+                            p.stack.forEach(function (s) {
+                                var c = document.createElement('span');
+                                c.className = 'chip-skill';
+                                c.textContent = s;
+                                stack.appendChild(c);
+                            });
+                            card.appendChild(stack);
+                        }
+
+                        var links = document.createElement('div');
+                        links.className = 'project-links';
+                        if (p.url) {
+                            var visit = document.createElement('a');
+                            visit.className = 'project-link';
+                            visit.href = p.url;
+                            visit.rel = 'noopener';
+                            visit.target = '_blank';
+                            visit.textContent = D.ui[lang].projects_visit + ' ↗';
+                            links.appendChild(visit);
+                        }
+                        if (p.repoUrl) {
+                            var src = document.createElement('a');
+                            src.className = 'project-link';
+                            src.href = p.repoUrl;
+                            src.rel = 'noopener';
+                            src.target = '_blank';
+                            src.textContent = D.ui[lang].projects_source;
+                            links.appendChild(src);
+                        }
+                        card.appendChild(links);
+
+                        projectsGrid.appendChild(card);
                     });
 
                     // Education

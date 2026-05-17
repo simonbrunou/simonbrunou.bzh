@@ -176,6 +176,14 @@
             }
             .skills-list { font-size: 0.86rem; color: var(--text-primary); line-height: 1.5; }
 
+            .project-tagline { font-size: 0.86rem; color: var(--text-secondary); margin: 2px 0 6px; font-style: italic; }
+            .project-links { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.76rem; color: var(--accent-1); margin-top: 6px; }
+            .project-links a { color: var(--accent-1); text-decoration: none; }
+            .project-links a:hover { text-decoration: underline; }
+            .project-links .sep { color: var(--text-muted); margin: 0 6px; }
+            .project-stack { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; }
+            @media print { .project-links a { color: #111 !important; } }
+
             .edu-row, .lang-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
             @media (max-width: 640px) { .edu-row, .lang-row { grid-template-columns: 1fr; } }
             .edu-item .name, .lang-item .name { font-weight: 600; font-size: 0.92rem; }
@@ -261,6 +269,11 @@
                 </section>
 
                 <section class="section">
+                    <div class="section-h">// open source</div>
+                    <div id="resume-projects"></div>
+                </section>
+
+                <section class="section">
                     <div class="section-h">// formation</div>
                     <div class="edu-row" id="resume-education"></div>
                 </section>
@@ -330,6 +343,76 @@
                     entry.appendChild(ul);
 
                     expBox.appendChild(entry);
+                });
+
+                var projBox = document.getElementById('resume-projects');
+                projBox.textContent = '';
+                (D.projects || []).forEach(function (p) {
+                    var entry = document.createElement('div');
+                    entry.className = 'entry';
+
+                    var head = document.createElement('div');
+                    head.className = 'entry-head';
+                    var pos = document.createElement('div');
+                    pos.className = 'pos';
+                    pos.textContent = p.name;
+                    head.appendChild(pos);
+                    var period = document.createElement('div');
+                    period.className = 'period';
+                    period.textContent = pick(p.period, lang);
+                    head.appendChild(period);
+                    entry.appendChild(head);
+
+                    var tagline = document.createElement('div');
+                    tagline.className = 'project-tagline';
+                    tagline.textContent = pick(p.tagline, lang);
+                    entry.appendChild(tagline);
+
+                    var ul = document.createElement('ul');
+                    pick(p.description, lang).forEach(function (b) {
+                        var li = document.createElement('li');
+                        li.textContent = b;
+                        ul.appendChild(li);
+                    });
+                    entry.appendChild(ul);
+
+                    if (p.stack && p.stack.length) {
+                        var stack = document.createElement('div');
+                        stack.className = 'project-stack';
+                        stack.textContent = '// ' + p.stack.join(' · ');
+                        entry.appendChild(stack);
+                    }
+
+                    var links = document.createElement('div');
+                    links.className = 'project-links';
+                    var hasLink = false;
+                    if (p.url) {
+                        var visit = document.createElement('a');
+                        visit.href = p.url;
+                        visit.rel = 'noopener';
+                        visit.target = '_blank';
+                        visit.textContent = p.url.replace(/^https?:\/\//, '');
+                        links.appendChild(visit);
+                        hasLink = true;
+                    }
+                    if (p.repoUrl) {
+                        if (hasLink) {
+                            var sep = document.createElement('span');
+                            sep.className = 'sep';
+                            sep.textContent = '·';
+                            links.appendChild(sep);
+                        }
+                        var src = document.createElement('a');
+                        src.href = p.repoUrl;
+                        src.rel = 'noopener';
+                        src.target = '_blank';
+                        src.textContent = p.repoUrl.replace(/^https?:\/\//, '');
+                        links.appendChild(src);
+                        hasLink = true;
+                    }
+                    if (hasLink) entry.appendChild(links);
+
+                    projBox.appendChild(entry);
                 });
 
                 var edu = document.getElementById('resume-education');
