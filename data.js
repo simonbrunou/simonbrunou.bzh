@@ -199,7 +199,7 @@ window.RESUME_DATA = {
             name: "Diversif",
             url: "https://diversif.app",
             repoUrl: "https://github.com/simonbrunou/diversif",
-            period: { en: "2025 — present", fr: "2025 — présent" },
+            period: { en: "2026 — present", fr: "2026 — présent" },
             tagline: {
                 en: "Baby food diversification tracker with co-parent sharing",
                 fr: "Suivi de la diversification alimentaire d'un bébé, avec partage entre parents",
@@ -230,7 +230,7 @@ window.RESUME_DATA = {
             name: "Tisanerie",
             url: "https://tisanerie.app",
             repoUrl: "https://github.com/simonbrunou/tisanerie",
-            period: { en: "2025", fr: "2025" },
+            period: { en: "2026", fr: "2026" },
             tagline: {
                 en: "Herbal infusion recommender by need — sleep, focus, digestion…",
                 fr: "Recommandation de tisanes selon le besoin — sommeil, concentration, digestion…",
