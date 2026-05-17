@@ -100,7 +100,7 @@ window.RESUME_DATA = {
                 ],
                 fr: [
                     "Développement d'une application mobile compagnon (POC) en Dart et Flutter : interaction avec un objet connecté, gestion de compte utilisateur et consommation d'API",
-                    "Développement de bibliothèques en Rust pour la communication bas niveau avec un objet connecté",
+                    "Développement de bibliothèques en Rust pour la communication de bas niveau avec un objet connecté",
                 ],
             },
         },
@@ -139,7 +139,7 @@ window.RESUME_DATA = {
                     "Développement, documentation et livraison continue de bibliothèques (SDK) en Swift, Kotlin, Rust, JavaScript, TypeScript et C destinées à l'intégration du tampon connecté par des partenaires tiers",
                     "Développement et maintenance d'applications de démonstration d'intégration du SDK en Flutter, Xamarin, React Native, Kotlin et Swift",
                     "DevOps : mise en place de CI/CD (GitLab CI/CD), conteneurisation avec Docker, gestion d'infrastructure avec Proxmox et Terraform, automatisation des déploiements et livraisons",
-                    "Observabilité : intégration de Sentry sur l'ensemble des applications (mobile, desktop, backend, SDK) pour le suivi des erreurs, le suivi des performances et le signalement des plantages",
+                    "Observabilité : intégration de Sentry sur l'ensemble des applications (mobile, desktop, backend, SDK) pour le suivi des erreurs et des performances et le signalement des plantages",
                     "Encadrement d'alternants en tant que maître d'apprentissage",
                     "Interventions à l'IUT de Vannes : présentation de parcours et accompagnement d'étudiants",
                 ],
@@ -206,14 +206,14 @@ window.RESUME_DATA = {
             },
             description: {
                 en: [
-                    "Bilingual (FR/EN) PWA to log a baby's food introductions, follow 14 priority allergens, and share the log with a co-parent or caregiver",
-                    "In-house authentication: Argon2id session hashing and WebAuthn passkeys",
-                    "Self-hostable in a single Docker container; RGPD-compliant (data export, account deletion, retention task)",
+                    "Bilingual (FR/EN) PWA: log a baby's food introductions in a few taps, share the journal with a co-parent, follow priority allergens",
+                    "Evidence-based content from HCSP, LEAP and EAT guidelines, with cited sources and a privacy-first, no-telemetry stance",
+                    "Solo full-stack build (SvelteKit, Postgres, Sentry), self-hostable in a single Docker container, RGPD-compliant (export, deletion, retention)",
                 ],
                 fr: [
-                    "PWA bilingue (FR/EN) pour suivre la diversification d'un bébé : journal des aliments testés, 14 allergènes prioritaires et partage avec un co-parent",
-                    "Authentification maison : Argon2id pour les sessions, passkeys WebAuthn",
-                    "Auto-hébergeable dans un seul conteneur Docker ; conforme RGPD (export, suppression, rétention)",
+                    "PWA bilingue (FR/EN) : journal de la diversification alimentaire en quelques gestes, partage avec un co-parent, suivi des allergènes prioritaires",
+                    "Contenu fondé sur les recommandations HCSP, LEAP et EAT, sources citées, approche privacy-first sans télémétrie",
+                    "Stack complète développée en solo (SvelteKit, Postgres, Sentry), auto-hébergeable en un seul conteneur Docker, conforme RGPD (export, suppression, rétention)",
                 ],
             },
             stack: [
@@ -223,7 +223,6 @@ window.RESUME_DATA = {
                 "Postgres",
                 "Drizzle",
                 "Tailwind",
-                "WebAuthn",
                 "Docker",
             ],
         },
@@ -238,14 +237,14 @@ window.RESUME_DATA = {
             },
             description: {
                 en: [
-                    "Bilingual (FR/EN) static site that scores herbal infusions against what the user needs (stress, sleep, focus, cold, digestion…)",
-                    "Content-first: ~25 plants and ~12 needs stored as Zod-validated JSON, regenerated at build time",
-                    "Astro 5 with React islands for the need picker, fuzzy search, and brewing timer; deployed on Cloudflare Pages",
+                    "Bilingual (FR/EN) recommender: surfaces herbal infusions matching what the user needs (sleep, focus, digestion…) via a scoring engine",
+                    "Content-as-data architecture: ~25 plants and ~12 needs as Zod-validated JSON, both languages generated at build time",
+                    "Astro 5 with minimal React islands, deployed on Cloudflare Pages, no telemetry by default",
                 ],
                 fr: [
-                    "Site statique bilingue (FR/EN) qui propose des tisanes adaptées au besoin (stress, sommeil, concentration, rhume, digestion…)",
-                    "Approche content-first : ~25 plantes et ~12 besoins en JSON validé par Zod ; pages régénérées à chaque build",
-                    "Astro 5 avec des îlots React pour le sélecteur de besoin, la recherche approximative et le minuteur d'infusion ; déployé sur Cloudflare Pages",
+                    "Recommandation bilingue (FR/EN) : propose les tisanes adaptées au besoin (sommeil, concentration, digestion…) via un moteur de scoring",
+                    "Architecture content-as-data : ~25 plantes et ~12 besoins en JSON validé par Zod, génération des deux langues au build",
+                    "Astro 5 avec des îlots React minimalistes, déployé sur Cloudflare Pages, sans télémétrie par défaut",
                 ],
             },
             stack: [
