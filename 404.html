@@ -9,6 +9,12 @@
                     document.documentElement.classList.add('light');
                 }
             } catch (_) {}
+            try {
+                var storedLang = localStorage.getItem('lang');
+                if (storedLang === 'fr' || storedLang === 'en') {
+                    document.documentElement.lang = storedLang;
+                }
+            } catch (_) {}
         </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -33,7 +39,7 @@
                 --bg-page: #0c0a14;
                 --text-primary: #efe9f5;
                 --text-secondary: rgba(239, 233, 245, 0.75);
-                --text-muted: rgba(239, 233, 245, 0.50);
+                --text-muted: rgba(239, 233, 245, 0.60);
                 --accent-1: #b964ff;
                 --accent-2: #d98cff;
                 --accent-3: #ff8cb3;
@@ -48,9 +54,9 @@
                 --bg-page: #fbfaff;
                 --text-primary: #1a1726;
                 --text-secondary: #5f5a6e;
-                --text-muted: #8c879a;
+                --text-muted: #6b6680;
                 --accent-1: #8e3dd1;
-                --accent-2: #a14de3;
+                --accent-2: #8c3cc8;
                 --accent-3: #c84686;
                 --border: rgba(26, 23, 38, 0.08);
                 --gradient-text: linear-gradient(90deg, var(--accent-1), var(--accent-3));
@@ -175,7 +181,7 @@
         </style>
     </head>
     <body>
-        <nav class="topbar">
+        <nav class="topbar" aria-label="Page controls">
             <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
                 <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
