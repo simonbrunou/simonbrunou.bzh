@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
-    "hono": "^4.12.23"
+    "hono": "^4.12.25"
   },
   "devDependencies": {
     "puppeteer-core": "^23.10.4"
