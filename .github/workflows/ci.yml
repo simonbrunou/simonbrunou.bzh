@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      # No unit suite — gate on the server actually booting and /healthz answering.
+      - name: Boot server and probe /healthz
+        run: |
+          PORT=3999 node server.js &
+          pid=$!
+          for i in $(seq 1 20); do
+            curl -fsS http://localhost:3999/healthz && break
+            sleep 0.5
+          done
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3999/healthz)
+          kill "$pid" 2>/dev/null || true
+          test "$code" = "200"
