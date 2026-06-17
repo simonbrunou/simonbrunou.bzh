@@ -32,6 +32,9 @@
     // All DOM mutations use textContent / createElement — never innerHTML
     // with interpolated data values.
     function render(lang) {
+        // Update page title for current language
+        document.title = D.ui[lang].page_title;
+
         // Page-control labels (skip link text, theme + back-to-top aria-labels)
         var skipLink = document.querySelector('.skip-link[data-i18n="skip_link"]');
         if (skipLink) skipLink.textContent = D.ui[lang].skip_link;
@@ -177,7 +180,12 @@
                 visit.href = p.url;
                 visit.rel = 'noopener';
                 visit.target = '_blank';
-                visit.textContent = D.ui[lang].projects_visit + ' ↗';
+                var visitText = document.createTextNode(D.ui[lang].projects_visit + ' ↗');
+                visit.appendChild(visitText);
+                var visitSr = document.createElement('span');
+                visitSr.className = 'sr-only';
+                visitSr.textContent = ' ' + D.ui[lang].new_tab;
+                visit.appendChild(visitSr);
                 links.appendChild(visit);
             }
             if (p.repoUrl) {
@@ -186,7 +194,12 @@
                 src.href = p.repoUrl;
                 src.rel = 'noopener';
                 src.target = '_blank';
-                src.textContent = D.ui[lang].projects_source;
+                var srcText = document.createTextNode(D.ui[lang].projects_source);
+                src.appendChild(srcText);
+                var srcSr = document.createElement('span');
+                srcSr.className = 'sr-only';
+                srcSr.textContent = ' ' + D.ui[lang].new_tab;
+                src.appendChild(srcSr);
                 links.appendChild(src);
             }
             card.appendChild(links);
@@ -268,7 +281,14 @@
             a.className = 'contact-link';
             a.href = l.href;
             a.textContent = l.label;
-            if (l.external) { a.rel = 'me noopener'; a.target = '_blank'; }
+            if (l.external) {
+                a.rel = 'me noopener';
+                a.target = '_blank';
+                var srHint = document.createElement('span');
+                srHint.className = 'sr-only';
+                srHint.textContent = ' ' + D.ui[lang].new_tab;
+                a.appendChild(srHint);
+            }
             cLinks.appendChild(a);
         });
 
@@ -346,6 +366,11 @@
             document.documentElement.lang = newLang;
             syncLangButtons(newLang);
             render(newLang);
+            var announcer = document.getElementById('a11y-announcer');
+            if (announcer) {
+                announcer.textContent = '';
+                setTimeout(function () { announcer.textContent = D.ui[newLang].lang_switched; }, 100);
+            }
         });
     });
 
