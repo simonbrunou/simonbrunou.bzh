@@ -23,3 +23,7 @@ graphify-out/.graphify_root
 # misc
 .DS_Store
 *.log
+
+# nix / direnv
+.direnv/
+result
