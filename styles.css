@@ -278,6 +278,8 @@ h3 { font-size: 1.05rem; }
     box-shadow: 0 0 8px var(--status-ok);
 }
 
+.status[hidden] { display: none; }
+
 .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 .btn {
