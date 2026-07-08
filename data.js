@@ -21,11 +21,7 @@ window.RESUME_DATA = {
     },
 
     availability: {
-        open: true,
-        label: {
-            en: "Open to opportunities",
-            fr: "Ouvert aux opportunités",
-        },
+        open: false,
     },
 
     title: {
@@ -327,7 +323,7 @@ window.RESUME_DATA = {
             interests_title: "Interests",
             contact_title: "Let's Connect",
             contact_text:
-                "Interested in working together or just want to say hello?",
+                "Want to talk shop or just say hello? My inbox is open.",
             footer: "© 2026 Simon Brunou — Built with care in Brittany",
             skip_link: "Skip to main content",
             theme_toggle: "Toggle theme",
@@ -358,7 +354,7 @@ window.RESUME_DATA = {
             interests_title: "Centres d'intérêt",
             contact_title: "Restons en contact",
             contact_text:
-                "Intéressé par une collaboration ou simplement envie de dire bonjour ?",
+                "Envie d'échanger sur la tech ou simplement de dire bonjour ? Ma boîte mail est ouverte.",
             footer: "© 2026 Simon Brunou — Fait avec soin en Bretagne",
             skip_link: "Aller au contenu principal",
             theme_toggle: "Changer de thème",
