@@ -25,6 +25,6 @@
     "hono": "^4.12.23"
   },
   "devDependencies": {
-    "puppeteer-core": "^23.10.4"
+    "puppeteer-core": "^25.0.0"
   }
 }
