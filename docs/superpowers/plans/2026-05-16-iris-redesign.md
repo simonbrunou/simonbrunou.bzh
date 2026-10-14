@@ -1,5 +1,7 @@
 # Iris Redesign Implementation Plan
 
+> **Superseded** by `docs/adr/0001-replace-iris.md` (2026-10-14). Do not execute this plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Redesign the homepage (`/`), résumé (`/resume/`), and 404 page into the Iris language (engineering-elegant, Stripe-lineage warm purple-pink palette) while preserving every piece of content in `data.js` and the bilingual EN/FR toggle.

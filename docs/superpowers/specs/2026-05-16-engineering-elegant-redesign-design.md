@@ -1,6 +1,7 @@
 # simonbrunou.bzh — Engineering-elegant redesign
 
-**Status:** design approved 2026-05-16 (brainstorming session).
+**Status:** superseded by `docs/adr/0001-replace-iris.md` (2026-10-14). Do not
+build from this spec. Originally approved 2026-05-16 (brainstorming session).
 **Scope:** index page (`/`), résumé page (`/resume/`, including the PDF render
 path), and `404.html`. All bilingual EN/FR behaviour preserved.
 
