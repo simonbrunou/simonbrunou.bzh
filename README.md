@@ -6,10 +6,13 @@ service serves the static site. The FR CV ships as a pre-built PDF
 
 ## Stack
 
-- **Static**: `index.html` (EN/FR, bilingual), `404.html`, `photo.png`
+- **Static**: `index.html` (EN/FR, bilingual, rendered by `app.js`),
+  `404.html`, `styles.css`, `photo.png`, project screenshots in `images/`,
+  self-hosted fonts in `fonts/` (Big Shoulders Display and Besley, SIL OFL)
 - **Data**: `data.js` is the single source of truth for the site and the PDF
-- **Shared rendering**: `render.js` exposes helpers (`pickLang`, `splitPeriod`,
-  `injectJsonLd`)
+- **Design**: Bands, see `docs/adr/0001-replace-iris.md` and `DESIGN.md`
+- **Shared rendering**: `render.js` exposes helpers (`pickLang`,
+  `buildPersonJsonLd`, `injectJsonLd`)
 - **PDF template** (build-time only, not served): `pdf-template/index.html` +
   `pdf-template/styles.css` + `pdf-template/app.js`. Rendered to
   `simon-brunou-cv.pdf` by `scripts/build-pdf.js` (Puppeteer + headless Chrome).

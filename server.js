@@ -13,9 +13,9 @@ const HOST = process.env.HOST || "0.0.0.0";
 const BASE_CSP =
     "default-src 'self'; " +
     "script-src 'self'; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "img-src 'self' data:; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
+    "style-src 'self'; " +
+    "img-src 'self'; " +
+    "font-src 'self'; " +
     "connect-src 'self'; " +
     "base-uri 'self'; " +
     "form-action 'self'; " +
@@ -59,6 +59,41 @@ const STATIC_ASSETS = {
         file: "photo.png",
         type: "image/png",
         cache: "public, max-age=604800, s-maxage=2592000, immutable",
+    },
+    "/favicon.svg": {
+        file: "favicon.svg",
+        type: "image/svg+xml",
+        cache: "public, max-age=604800",
+    },
+    "/images/diversif-home.webp": {
+        file: "images/diversif-home.webp",
+        type: "image/webp",
+        cache: "public, max-age=86400",
+    },
+    "/images/diversif-allergens.webp": {
+        file: "images/diversif-allergens.webp",
+        type: "image/webp",
+        cache: "public, max-age=86400",
+    },
+    "/images/cinder-library.webp": {
+        file: "images/cinder-library.webp",
+        type: "image/webp",
+        cache: "public, max-age=86400",
+    },
+    "/images/cinder-dashboard.webp": {
+        file: "images/cinder-dashboard.webp",
+        type: "image/webp",
+        cache: "public, max-age=86400",
+    },
+    "/fonts/big-shoulders-display-latin.woff2": {
+        file: "fonts/big-shoulders-display-latin.woff2",
+        type: "font/woff2",
+        cache: "public, max-age=2592000",
+    },
+    "/fonts/besley-latin.woff2": {
+        file: "fonts/besley-latin.woff2",
+        type: "font/woff2",
+        cache: "public, max-age=2592000",
     },
     "/simon-brunou-cv.pdf": {
         file: "simon-brunou-cv.pdf",

@@ -1,251 +1,62 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <script>
-            document.documentElement.classList.add('js');
-            try {
-                var t = localStorage.getItem('theme');
-                if (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-                    document.documentElement.classList.add('light');
-                }
-            } catch (_) {}
-            try {
-                var storedLang = localStorage.getItem('lang');
-                if (storedLang === 'fr' || storedLang === 'en') {
-                    document.documentElement.lang = storedLang;
-                }
-            } catch (_) {}
-        </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Page Not Found — Simon Brunou</title>
-        <meta name="description" content="The page you're looking for doesn't exist. Return to Simon Brunou's portfolio." />
+        <title>Page not found, Simon Brunou</title>
+        <meta name="description" content="There is no page at this address. Simon Brunou's homepage is at simonbrunou.bzh." />
         <meta name="robots" content="noindex, follow" />
-        <meta name="theme-color" content="#0c0a14" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link id="font-inter" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
-        <script>document.getElementById('font-inter').rel='stylesheet';</script>
-        <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
-        <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
-        <link
-            rel="icon"
-            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
-        />
-        <style>
-            :root {
-                --bg-page: #0c0a14;
-                --text-primary: #efe9f5;
-                --text-secondary: rgba(239, 233, 245, 0.75);
-                --text-muted: rgba(239, 233, 245, 0.60);
-                --accent-1: #b964ff;
-                --accent-2: #d98cff;
-                --accent-3: #ff8cb3;
-                --border: rgba(255, 255, 255, 0.10);
-                --gradient-text: linear-gradient(90deg, var(--accent-2), var(--accent-3));
-                --gradient-button: linear-gradient(180deg, var(--accent-1), #a04ce6);
-                --gradient-mesh: radial-gradient(circle at 50% 30%, rgba(217, 140, 255, 0.22), transparent 50%);
-                color-scheme: dark light;
-            }
-
-            :root.light {
-                --bg-page: #fbfaff;
-                --text-primary: #1a1726;
-                --text-secondary: #5f5a6e;
-                --text-muted: #6b6680;
-                --accent-1: #8e3dd1;
-                --accent-2: #8c3cc8;
-                --accent-3: #c84686;
-                --border: rgba(26, 23, 38, 0.08);
-                --gradient-text: linear-gradient(90deg, var(--accent-1), var(--accent-3));
-                --gradient-button: linear-gradient(180deg, var(--accent-1), #7530b0);
-                --gradient-mesh: radial-gradient(circle at 50% 30%, rgba(142, 61, 209, 0.12), transparent 55%);
-            }
-
-            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-            body {
-                font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                background: var(--bg-page);
-                color: var(--text-primary);
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                -webkit-font-smoothing: antialiased;
-            }
-
-            .topbar { display: flex; justify-content: flex-end; padding: 14px 24px; }
-            .theme-toggle {
-                width: 38px; height: 38px;
-                border-radius: 100px;
-                border: 1px solid var(--border);
-                background: rgba(255, 255, 255, 0.04);
-                color: var(--text-primary);
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            }
-            .theme-toggle svg { width: 1rem; height: 1rem; stroke: currentColor; fill: none; stroke-width: 1.75; }
-
-            main {
-                flex: 1;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-                padding: 60px 24px;
-                overflow: hidden;
-            }
-            main::before {
-                content: "";
-                position: absolute;
-                inset: -20%;
-                background: var(--gradient-mesh);
-                filter: blur(40px);
-                pointer-events: none;
-            }
-            main > * { position: relative; z-index: 1; }
-
-            .eyebrow {
-                font-family: "JetBrains Mono", ui-monospace, monospace;
-                font-size: 0.72rem;
-                text-transform: uppercase;
-                letter-spacing: 0.18em;
-                color: var(--text-muted);
-                margin-bottom: 16px;
-            }
-
-            .big {
-                font-size: 6rem;
-                font-weight: 600;
-                letter-spacing: -0.04em;
-                line-height: 1;
-                margin-bottom: 18px;
-            }
-            .big .accent {
-                background: var(--gradient-text);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                color: var(--accent-2);
-            }
-
-            #message { font-size: 1.05rem; color: var(--text-secondary); max-width: 360px; margin: 0 auto 28px; }
-
-            .actions { display: flex; gap: 10px; justify-content: center; }
-            .btn {
-                padding: 11px 20px;
-                border-radius: 10px;
-                font-family: inherit;
-                font-size: 0.86rem;
-                font-weight: 500;
-                text-decoration: none;
-                display: inline-flex;
-                align-items: center;
-            }
-            .btn-primary {
-                background: var(--gradient-button);
-                color: #fff;
-                border: 1px solid var(--border);
-                box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 8px 24px rgba(185, 100, 255, 0.25);
-            }
-            .btn-secondary {
-                background: rgba(255, 255, 255, 0.04);
-                color: var(--text-primary);
-                border: 1px solid var(--border);
-            }
-
-            a:focus-visible {
-                outline: 2px solid var(--accent-1);
-                outline-offset: 3px;
-                border-radius: 4px;
-            }
-            button:focus-visible {
-                outline: 2px solid var(--accent-1);
-                outline-offset: 3px;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-                * { transition-duration: 0.01ms !important; }
-            }
-            @media (forced-colors: active) {
-                .btn-primary { border: 2px solid LinkText !important; }
-                .btn-secondary { border: 1px solid CanvasText !important; }
-                .theme-toggle { border: 1px solid CanvasText !important; }
-            }
-        </style>
+        <meta name="theme-color" content="#e6e7e3" />
+        <meta name="color-scheme" content="light" />
+        <link rel="preload" href="/fonts/big-shoulders-display-latin.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/besley-latin.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="stylesheet" href="/styles.css" />
     </head>
-    <body>
-        <nav class="topbar" aria-label="Page controls">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
-                <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-                <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" hidden>
-                    <circle cx="12" cy="12" r="4"/>
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                </svg>
-            </button>
-        </nav>
-        <main>
-            <div class="eyebrow">Error</div>
-            <div class="big">4<span class="accent">0</span>4</div>
-            <p id="message">This page took a wrong turn somewhere in the Breton countryside.</p>
-            <div class="actions">
-                <a href="/" class="btn btn-primary" id="home-link">Back home &rarr;</a>
-                <a href="/simon-brunou-cv.pdf" download class="btn btn-secondary" id="resume-link">Resume</a>
+    <body class="not-found">
+        <main class="nf">
+            <div class="wrap">
+                <a class="nf-home" href="/">Simon Brunou</a>
+                <div class="name-row nf-row">
+                    <h1 class="display nf-title" id="nf-title">Page not found</h1>
+                    <span class="year">404</span>
+                </div>
+                <p class="nf-text" id="nf-text">There is no page at this address.</p>
+                <p class="actions">
+                    <a class="btn btn-solid" href="/" id="nf-home-btn">Go to the homepage</a>
+                    <a class="btn btn-line" href="/simon-brunou-cv.pdf" download id="nf-cv">Download the CV (PDF, in French)</a>
+                </p>
             </div>
         </main>
+        <footer class="contact nf-contact">
+            <div class="wrap">
+                <a class="contact-mail" href="mailto:simon.brunou@proton.me">simon.brunou@proton.me</a>
+                <p class="colophon" id="nf-colophon">© 2026 Simon Brunou. Saint-Nolff, Brittany.</p>
+            </div>
+        </footer>
 
         <script>
-            var THEME_COLOR_DARK = "#0c0a14";
-            var THEME_COLOR_LIGHT = "#fbfaff";
-            var themeColorMeta = document.querySelector('meta[name="theme-color"]');
-            var toggleBtn = document.getElementById("theme-toggle");
-
-            function isLight() { return document.documentElement.classList.contains("light"); }
-
-            function syncMeta() {
-                if (themeColorMeta) themeColorMeta.content = isLight() ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
-            }
-
-            function updateThemeIcon() {
-                var isLightNow = isLight();
-                if (toggleBtn) toggleBtn.setAttribute("aria-pressed", isLightNow ? "true" : "false");
-                var moon = document.getElementById("theme-icon-moon");
-                var sun  = document.getElementById("theme-icon-sun");
-                if (moon) moon.hidden = isLightNow;   // hide moon when light theme is active
-                if (sun)  sun.hidden  = !isLightNow;  // show sun when light theme is active
-            }
-
-            function toggleTheme() {
-                var light = !isLight();
-                document.documentElement.classList.toggle("light", light);
-                try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
-                updateThemeIcon();
-                syncMeta();
-            }
-
-            if (toggleBtn) toggleBtn.addEventListener("click", toggleTheme);
-            updateThemeIcon();
-            syncMeta();
-
-            // Restore saved language
-            try {
-                if (localStorage.getItem("lang") === "fr") {
-                    document.documentElement.lang = "fr";
-                    document.title = "Page introuvable — Simon Brunou";
-                    document.getElementById("message").textContent = "Cette page n’existe pas. Retour vers la Bretagne.";
-                    document.getElementById("home-link").textContent = "Accueil";
-                    document.getElementById("resume-link").textContent = "CV";
-                    if (toggleBtn) toggleBtn.setAttribute("aria-label", "Basculer le thème");
-                }
-            } catch (_) {}
+            (function () {
+                var lang = "en";
+                try {
+                    var fromUrl = new URLSearchParams(window.location.search).get("lang");
+                    if (fromUrl === "en" || fromUrl === "fr") lang = fromUrl;
+                    else if (localStorage.getItem("lang") === "fr") lang = "fr";
+                } catch (_) {}
+                if (lang !== "fr") return;
+                document.documentElement.lang = "fr";
+                document.title = "Page introuvable, Simon Brunou";
+                var text = {
+                    "nf-title": "Page introuvable",
+                    "nf-text": "Il n'y a pas de page à cette adresse.",
+                    "nf-home-btn": "Aller à l'accueil",
+                    "nf-cv": "Télécharger le CV (PDF)",
+                    "nf-colophon": "© 2026 Simon Brunou. Saint-Nolff, Bretagne.",
+                };
+                Object.keys(text).forEach(function (id) {
+                    document.getElementById(id).textContent = text[id];
+                });
+            })();
         </script>
     </body>
 </html>

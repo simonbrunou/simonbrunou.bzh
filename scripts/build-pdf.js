@@ -27,6 +27,8 @@ const MIME = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".svg": "image/svg+xml",
+    ".webp": "image/webp",
+    ".woff2": "font/woff2",
 };
 
 function resolveChromium() {
@@ -109,9 +111,14 @@ async function main() {
             { name: "prefers-color-scheme", value: "light" },
         ]);
         await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.waitForSelector("html[data-render-complete]", {
-            timeout: 10_000,
-        });
+        await page.waitForSelector(
+            "html[data-render-complete], html[data-render-error]",
+            { timeout: 10_000 },
+        );
+        const renderError = await page.evaluate(() =>
+            document.documentElement.getAttribute("data-render-error"),
+        );
+        if (renderError) throw new Error(`build-pdf: ${renderError}`);
         const pdf = await page.pdf({
             format: "A4",
             margin: { top: "0", right: "0", bottom: "0", left: "0" },

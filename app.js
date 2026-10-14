@@ -1,435 +1,361 @@
+// Homepage renderer (Bands). Builds the whole page from window.RESUME_DATA
+// into #page, and rebuilds it when the visitor switches language.
+// DOM is built with createElement and textContent only, never innerHTML.
 (function () {
+    "use strict";
+
     var D = window.RESUME_DATA;
-    var P = D.personal;
-    var pick = window.SBRender.pickLang;
-    var backToTop = document.getElementById("back-to-top");
+    var root = document.getElementById("page");
+    var announcer = document.getElementById("a11y-announcer");
+    var lang = initialLang();
 
-    // Theme toggle
-    function isLight() {
-        return document.documentElement.classList.contains("light");
+    function pick(value) {
+        return window.SBRender.pickLang(value, lang);
     }
-    function updateThemeIcon() {
-        var isLightNow = isLight();
-        var btn = document.getElementById("theme-toggle");
-        // aria-pressed=true means "light theme is the active choice"
-        if (btn) btn.setAttribute("aria-pressed", isLightNow ? "true" : "false");
-        var moon = document.getElementById("theme-icon-moon");
-        var sun  = document.getElementById("theme-icon-sun");
-        if (moon) moon.hidden = isLightNow;   // hide moon when light theme is active
-        if (sun)  sun.hidden  = !isLightNow;  // show sun when light theme is active
-    }
-    function toggleTheme() {
-        var light = !isLight();
-        document.documentElement.classList.toggle("light", light);
-        try { localStorage.setItem("theme", light ? "light" : "dark"); } catch (_) {}
-        updateThemeIcon();
-        if (window.__setThemeColor) window.__setThemeColor(light);
-    }
-    updateThemeIcon();
 
-    // Render all bilingual content for the given lang.
-    // Called once at startup and again on every language toggle.
-    // All DOM mutations use textContent / createElement — never innerHTML
-    // with interpolated data values.
-    function render(lang) {
-        // Update page title for current language
+    // ?lang= (hreflang arrivals, shared links) wins over the stored choice,
+    // which wins over English.
+    function initialLang() {
+        var fromUrl = new URLSearchParams(window.location.search).get("lang");
+        if (fromUrl === "en" || fromUrl === "fr") return fromUrl;
+        try {
+            if (localStorage.getItem("lang") === "fr") return "fr";
+        } catch (_) {}
+        return "en";
+    }
+
+    function el(tag, cls, text) {
+        var node = document.createElement(tag);
+        if (cls) node.className = cls;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
+    }
+
+    // External links open in a new tab and say so to screen readers.
+    function link(href, text, cls, opts) {
+        var a = el("a", cls, text);
+        a.href = href;
+        if (opts && opts.download) a.setAttribute("download", "");
+        if (/^https?:/.test(href)) {
+            a.target = "_blank";
+            a.rel = opts && opts.me ? "me noopener" : "noopener";
+            a.appendChild(el("span", "sr-only", " " + D.ui[lang].new_tab));
+        }
+        return a;
+    }
+
+    function hostOf(url) {
+        return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    }
+
+    function yearOf(date) {
+        return date.slice(0, 4);
+    }
+
+    // Months between the first position's start and the last one's end.
+    function tenure(job) {
+        var first = job.positions[0].startDate.split("-");
+        var last = job.positions[job.positions.length - 1].endDate.split("-");
+        return (last[0] - first[0]) * 12 + (last[1] - first[1]);
+    }
+
+    function setLang(next) {
+        if (next === lang) return;
+        lang = next;
+        try {
+            localStorage.setItem("lang", next);
+        } catch (_) {}
+        var url = new URL(window.location.href);
+        if (next === "fr") url.searchParams.set("lang", "fr");
+        else url.searchParams.delete("lang");
+        history.replaceState(null, "", url.pathname + url.search + url.hash);
+        render();
+        // The toggle was rebuilt with the page; keep keyboard focus on it.
+        var toggle = root.querySelector(".lang-toggle");
+        if (toggle) toggle.focus();
+        announcer.textContent = "";
+        setTimeout(function () {
+            announcer.textContent = D.ui[lang].lang_switched;
+        }, 100);
+    }
+
+    function renderIntro() {
+        var ui = D.ui[lang];
+        var other = lang === "en" ? "fr" : "en";
+        var sec = el("section", "intro");
+        sec.setAttribute("aria-labelledby", "name");
+        var wrap = el("div", "wrap intro-grid");
+
+        var toggle = el("button", "lang-toggle", ui.switch_to);
+        toggle.type = "button";
+        toggle.setAttribute("lang", other);
+        toggle.addEventListener("click", function () {
+            setLang(other);
+        });
+        wrap.appendChild(toggle);
+
+        var who = el("div", "who");
+        var photo = el("img", "photo");
+        photo.src = "/photo.png";
+        photo.width = 76;
+        photo.height = 76;
+        photo.alt = "";
+        who.appendChild(photo);
+        var h1 = el("h1", "display name", D.personal.name);
+        h1.id = "name";
+        who.appendChild(h1);
+        who.appendChild(el("p", "role", pick(D.title)));
+        who.appendChild(el("p", "loc", pick(D.personal.location)));
+        wrap.appendChild(who);
+
+        var about = el("div", "about");
+        pick(D.about).forEach(function (para) {
+            about.appendChild(el("p", "lede", para));
+        });
+        var actions = el("p", "actions");
+        actions.appendChild(link("mailto:" + D.personal.email, ui.cta_email, "btn btn-solid"));
+        actions.appendChild(link("/simon-brunou-cv.pdf", ui.cta_cv, "btn btn-line", { download: true }));
+        about.appendChild(actions);
+        wrap.appendChild(about);
+
+        sec.appendChild(wrap);
+        return sec;
+    }
+
+    function renderShot(shot, eager) {
+        var fig = el("figure", "shot");
+        var crop = el("div", "crop");
+        crop.style.setProperty("--ard", String(shot.crop.wide));
+        crop.style.setProperty("--arm", String(shot.crop.narrow.ratio));
+        crop.style.setProperty("--cx", String(shot.crop.narrow.x));
+        crop.style.setProperty("--cy", String(shot.crop.narrow.y));
+        crop.style.setProperty("--cw", String(shot.crop.narrow.w));
+        crop.style.setProperty("--r", String(shot.height / shot.width));
+        var img = el("img");
+        img.src = shot.src;
+        img.width = shot.width;
+        img.height = shot.height;
+        img.alt = pick(shot.alt);
+        img.decoding = "async";
+        if (!eager) img.loading = "lazy";
+        crop.appendChild(img);
+        fig.appendChild(crop);
+        return fig;
+    }
+
+    function renderBand(p, first) {
+        var ui = D.ui[lang];
+        var sec = el("section", "band band-" + p.id);
+        var headingId = "project-" + p.id;
+        sec.setAttribute("aria-labelledby", headingId);
+
+        var text = el("div", "band-text");
+        var head = el("div", "name-row");
+        var h = el("h2", "display pname", p.name);
+        h.id = headingId;
+        head.appendChild(h);
+        head.appendChild(el("span", "year", p.year));
+        text.appendChild(head);
+        text.appendChild(el("p", "summary", pick(p.summary)));
+        text.appendChild(el("p", "details", pick(p.details)));
+        text.appendChild(el("p", "stack", p.stack.join(", ")));
+        var links = el("p", "plinks");
+        if (p.url) {
+            links.appendChild(link(p.url, ui.visit + " " + hostOf(p.url), "plink plink-main"));
+            links.appendChild(link(p.repoUrl, ui.source, "plink"));
+        } else {
+            links.appendChild(link(p.repoUrl, ui.source + " " + hostOf(p.repoUrl), "plink plink-main"));
+        }
+        text.appendChild(links);
+        sec.appendChild(text);
+
+        var shots = el("div", "band-shots");
+        p.shots.forEach(function (shot, i) {
+            shots.appendChild(renderShot(shot, first && i === 0));
+        });
+        sec.appendChild(shots);
+        return sec;
+    }
+
+    function renderMore(projects) {
+        var sec = el("section", "more");
+        sec.setAttribute("aria-labelledby", "more-title");
+        var wrap = el("div", "wrap more-row");
+        var h = el("h2", "display more-title", D.ui[lang].more_title);
+        h.id = "more-title";
+        wrap.appendChild(h);
+        projects.forEach(function (p) {
+            var line = el("p", "more-line");
+            line.appendChild(link(p.url || p.repoUrl, p.name, "more-name"));
+            line.appendChild(document.createTextNode(". " + pick(p.summary)));
+            wrap.appendChild(line);
+        });
+        sec.appendChild(wrap);
+        return sec;
+    }
+
+    function renderJob(job, isMain) {
+        var ui = D.ui[lang];
+        var art = el("article", "job" + (isMain ? " job-main" : ""));
+        var grid = el("div", "wrap job-grid");
+
+        var head = el("div", "job-head");
+        head.appendChild(el("h3", "display job-co", pick(job.company)));
+        if (isMain) {
+            var first = job.positions[0];
+            var last = job.positions[job.positions.length - 1];
+            head.appendChild(el("span", "year", yearOf(first.startDate) + "\u2013" + yearOf(last.endDate)));
+        }
+        grid.appendChild(head);
+
+        var meta = el("ul", "job-meta");
+        job.positions.forEach(function (pos) {
+            var li = el("li", "job-pos");
+            li.appendChild(el("span", "job-role", pick(pos.role)));
+            li.appendChild(el("span", "job-period", pick(pos.period)));
+            meta.appendChild(li);
+        });
+        grid.appendChild(meta);
+
+        var body = el("div", "job-body");
+        body.appendChild(el("p", "job-sum", pick(job.summary)));
+        var det = el("details", "job-more");
+        det.appendChild(el("summary", "", ui.detail_label));
+        var grouped = job.positions.length > 1;
+        job.positions.forEach(function (pos) {
+            if (grouped) det.appendChild(el("p", "job-more-role", pick(pos.role) + ", " + pick(pos.period)));
+            var ul = el("ul");
+            pick(pos.description).forEach(function (b) {
+                ul.appendChild(el("li", "", b));
+            });
+            det.appendChild(ul);
+        });
+        body.appendChild(det);
+        grid.appendChild(body);
+
+        art.appendChild(grid);
+        return art;
+    }
+
+    function renderExperience() {
+        var sec = el("section", "experience");
+        sec.setAttribute("aria-labelledby", "experience-title");
+        var head = el("div", "wrap");
+        var h = el("h2", "display section-title", D.ui[lang].experience_title);
+        h.id = "experience-title";
+        head.appendChild(h);
+        sec.appendChild(head);
+
+        // The longest-held job gets its own slate band.
+        var mainIdx = 0;
+        D.experience.forEach(function (job, i) {
+            if (tenure(job) > tenure(D.experience[mainIdx])) mainIdx = i;
+        });
+        D.experience.forEach(function (job, i) {
+            sec.appendChild(renderJob(job, i === mainIdx));
+        });
+        return sec;
+    }
+
+    function renderFacts() {
+        var ui = D.ui[lang];
+        var sec = el("section", "facts");
+        sec.setAttribute("aria-labelledby", "facts-title");
+        var wrap = el("div", "wrap");
+        var h = el("h2", "display section-title", ui.facts_title);
+        h.id = "facts-title";
+        wrap.appendChild(h);
+
+        ["languages", "frameworks", "tools"].forEach(function (key) {
+            var block = el("div", "skill skill-" + key);
+            block.appendChild(el("h3", "fact-label", pick(D.skillCategoryLabels[key])));
+            block.appendChild(el("p", "display skill-run", D.skills[key].join(", ")));
+            wrap.appendChild(block);
+        });
+
+        var two = el("div", "facts-two");
+
+        var edu = el("div", "facts-col");
+        edu.appendChild(el("h3", "fact-label", ui.education_label));
+        var eul = el("ul", "fact-list");
+        D.education.forEach(function (e) {
+            var li = el("li", "fact fact-edu");
+            li.appendChild(el("span", "display fact-degree", pick(e.degree)));
+            li.appendChild(el("span", "fact-school", e.school + ", " + e.startYear + "\u2013" + e.endYear));
+            eul.appendChild(li);
+        });
+        edu.appendChild(eul);
+        two.appendChild(edu);
+
+        var spoken = el("div", "facts-col");
+        spoken.appendChild(el("h3", "fact-label", ui.spoken_label));
+        var sul = el("ul", "fact-list");
+        D.languages.forEach(function (l) {
+            var li = el("li", "fact fact-spoken");
+            li.appendChild(el("span", "display fact-lang", pick(l.name)));
+            li.appendChild(el("span", "fact-level", pick(l.level)));
+            sul.appendChild(li);
+        });
+        spoken.appendChild(sul);
+        two.appendChild(spoken);
+
+        wrap.appendChild(two);
+        sec.appendChild(wrap);
+        return sec;
+    }
+
+    function renderContact() {
+        var ui = D.ui[lang];
+        var P = D.personal;
+        var foot = el("footer", "contact");
+        foot.setAttribute("aria-labelledby", "contact-title");
+        var wrap = el("div", "wrap");
+        var h = el("h2", "display section-title", ui.contact_title);
+        h.id = "contact-title";
+        wrap.appendChild(h);
+        wrap.appendChild(el("p", "contact-text", ui.contact_text));
+        wrap.appendChild(link("mailto:" + P.email, P.email, "contact-mail"));
+
+        var ul = el("ul", "contact-links");
+        [
+            link(P.githubUrl, P.githubDisplay, "contact-link", { me: true }),
+            link(P.linkedinUrl, P.linkedinDisplay, "contact-link", { me: true }),
+            link("/simon-brunou-cv.pdf", ui.cta_cv, "contact-link", { download: true }),
+        ].forEach(function (a) {
+            var li = el("li");
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+        wrap.appendChild(ul);
+        wrap.appendChild(el("p", "colophon", ui.footer));
+        foot.appendChild(wrap);
+        return foot;
+    }
+
+    function render() {
+        document.documentElement.lang = lang;
         document.title = D.ui[lang].page_title;
 
-        // Page-control labels (skip link text, theme + back-to-top aria-labels)
-        var skipLink = document.querySelector('.skip-link[data-i18n="skip_link"]');
-        if (skipLink) skipLink.textContent = D.ui[lang].skip_link;
-
-        var themeBtn = document.getElementById('theme-toggle');
-        if (themeBtn) themeBtn.setAttribute('aria-label', D.ui[lang].theme_toggle);
-
-        var backTop = document.getElementById('back-to-top') || document.querySelector('.back-to-top');
-        if (backTop) backTop.setAttribute('aria-label', D.ui[lang].back_to_top);
-
-        // Hero
-        document.getElementById('hero-eyebrow').textContent = pick(D.personal.location, lang);
-        document.getElementById('hero-role').textContent = pick(D.title, lang);
-        document.getElementById('hero-cta').textContent = D.ui[lang].cta + ' →';
-        document.getElementById('hero-resume-link').textContent = D.ui[lang].resume_link;
-
-        if (D.availability && D.availability.open) {
-            document.getElementById('hero-status-label').textContent = pick(D.availability.label, lang);
-            document.getElementById('hero-status').hidden = false;
-        }
-
-        // About
-        document.getElementById('about-eyebrow').textContent = D.ui[lang].about_title;
-        document.getElementById('about-heading').textContent = D.ui[lang].section_heading_about;
-        document.getElementById('about-text').textContent = pick(D.about, lang);
-
-        // Skills eyebrow + heading
-        document.getElementById('skills-eyebrow').textContent = D.ui[lang].skills_title;
-        document.getElementById('skills-heading').textContent = D.ui[lang].section_heading_skills;
-
-        // Generate skills — DOM construction only (no innerHTML for data values)
-        var grid = document.getElementById('skills-grid');
-        grid.textContent = '';
-        ['languages', 'frameworks', 'tools'].forEach(function (cat) {
-            var card = document.createElement('div');
-            card.className = 'skill-cat';
-
-            var catLabel = document.createElement('div');
-            catLabel.className = 'skill-cat-label';
-            catLabel.textContent = '// ' + pick(D.skillCategoryLabels[cat], lang).toLowerCase();
-            card.appendChild(catLabel);
-
-            var chips = document.createElement('div');
-            chips.className = 'chips';
-            D.skills[cat].forEach(function (s) {
-                var c = document.createElement('span');
-                c.className = 'chip-skill';
-                c.textContent = s;
-                chips.appendChild(c);
-            });
-            card.appendChild(chips);
-
-            grid.appendChild(card);
+        var main = el("main");
+        main.appendChild(renderIntro());
+        var banded = D.projects.filter(function (p) {
+            return p.shots && p.shots.length;
         });
-
-        // Experience eyebrow + heading
-        document.getElementById('experience-eyebrow').textContent = D.ui[lang].exp_title;
-        document.getElementById('experience-heading').textContent = D.ui[lang].section_heading_exp;
-
-        // Generate experience timeline — DOM construction only (no innerHTML for data values)
-        var tl = document.getElementById('experience-timeline');
-        tl.textContent = '';
-        D.experience.forEach(function (exp) {
-            var item = document.createElement('div');
-            item.className = 'tl-item';
-
-            var meta = document.createElement('div');
-            meta.className = 'tl-meta';
-            meta.textContent = pick(exp.period, lang);
-            item.appendChild(meta);
-
-            var role = document.createElement('h3');
-            role.textContent = pick(exp.role, lang);
-            item.appendChild(role);
-
-            var co = document.createElement('div');
-            co.className = 'tl-company';
-            co.textContent = pick(exp.company, lang);
-            item.appendChild(co);
-
-            var ul = document.createElement('ul');
-            pick(exp.description, lang).forEach(function (b) {
-                var li = document.createElement('li');
-                li.textContent = b;
-                ul.appendChild(li);
-            });
-            item.appendChild(ul);
-
-            tl.appendChild(item);
+        var rest = D.projects.filter(function (p) {
+            return !(p.shots && p.shots.length);
         });
-
-        // Projects
-        document.getElementById('projects-eyebrow').textContent = D.ui[lang].projects_title;
-        document.getElementById('projects-heading').textContent = D.ui[lang].section_heading_projects;
-        var projectsGrid = document.getElementById('projects-grid');
-        projectsGrid.textContent = '';
-        (D.projects || []).forEach(function (p) {
-            var card = document.createElement('article');
-            card.className = 'project-card';
-
-            var head = document.createElement('div');
-            head.className = 'project-head';
-            var name = document.createElement('h3');
-            name.className = 'project-name';
-            name.textContent = p.name;
-            head.appendChild(name);
-            var period = document.createElement('span');
-            period.className = 'project-period';
-            period.textContent = pick(p.period, lang);
-            head.appendChild(period);
-            card.appendChild(head);
-
-            var tagline = document.createElement('p');
-            tagline.className = 'project-tagline';
-            tagline.textContent = pick(p.tagline, lang);
-            card.appendChild(tagline);
-
-            var ul = document.createElement('ul');
-            pick(p.description, lang).forEach(function (b) {
-                var li = document.createElement('li');
-                li.textContent = b;
-                ul.appendChild(li);
-            });
-            card.appendChild(ul);
-
-            if (p.stack && p.stack.length) {
-                var stack = document.createElement('div');
-                stack.className = 'project-stack chips';
-                p.stack.forEach(function (s) {
-                    var c = document.createElement('span');
-                    c.className = 'chip-skill';
-                    c.textContent = s;
-                    stack.appendChild(c);
-                });
-                card.appendChild(stack);
-            }
-
-            var links = document.createElement('div');
-            links.className = 'project-links';
-            if (p.url) {
-                var visit = document.createElement('a');
-                visit.className = 'project-link';
-                visit.href = p.url;
-                visit.rel = 'noopener';
-                visit.target = '_blank';
-                var visitText = document.createTextNode(D.ui[lang].projects_visit + ' ↗');
-                visit.appendChild(visitText);
-                var visitSr = document.createElement('span');
-                visitSr.className = 'sr-only';
-                visitSr.textContent = ' ' + D.ui[lang].new_tab;
-                visit.appendChild(visitSr);
-                links.appendChild(visit);
-            }
-            if (p.repoUrl) {
-                var src = document.createElement('a');
-                src.className = 'project-link';
-                src.href = p.repoUrl;
-                src.rel = 'noopener';
-                src.target = '_blank';
-                var srcText = document.createTextNode(D.ui[lang].projects_source);
-                src.appendChild(srcText);
-                var srcSr = document.createElement('span');
-                srcSr.className = 'sr-only';
-                srcSr.textContent = ' ' + D.ui[lang].new_tab;
-                src.appendChild(srcSr);
-                links.appendChild(src);
-            }
-            card.appendChild(links);
-
-            projectsGrid.appendChild(card);
+        banded.forEach(function (p, i) {
+            main.appendChild(renderBand(p, i === 0));
         });
+        if (rest.length) main.appendChild(renderMore(rest));
+        main.appendChild(renderExperience());
+        main.appendChild(renderFacts());
 
-        // Education
-        document.getElementById('education-eyebrow').textContent = D.ui[lang].edu_title;
-        document.getElementById('education-heading').textContent = D.ui[lang].section_heading_edu;
-        var eduGrid = document.getElementById('education-grid');
-        eduGrid.textContent = '';
-        D.education.forEach(function (e) {
-            var card = document.createElement('div');
-            card.className = 'edu-card';
-
-            var degree = document.createElement('div');
-            degree.className = 'degree';
-            degree.textContent = pick(e.degree, lang);
-            card.appendChild(degree);
-
-            var school = document.createElement('div');
-            school.className = 'school';
-            school.textContent = e.school;
-            card.appendChild(school);
-
-            var year = document.createElement('div');
-            year.className = 'year';
-            year.textContent = e.startYear + ' — ' + e.endYear;
-            card.appendChild(year);
-
-            eduGrid.appendChild(card);
-        });
-
-        // Languages
-        document.getElementById('languages-eyebrow').textContent = D.ui[lang].lang_title;
-        document.getElementById('languages-heading').textContent = D.ui[lang].section_heading_lang;
-        var langGrid = document.getElementById('languages-grid');
-        langGrid.textContent = '';
-        D.languages.forEach(function (l) {
-            var card = document.createElement('div');
-            card.className = 'lang-card';
-            var name = document.createElement('div');
-            name.className = 'name';
-            name.textContent = pick(l.name, lang);
-            card.appendChild(name);
-            var level = document.createElement('div');
-            level.className = 'level';
-            level.textContent = pick(l.level, lang);
-            card.appendChild(level);
-            langGrid.appendChild(card);
-        });
-
-        // Interests
-        document.getElementById('interests-eyebrow').textContent = D.ui[lang].interests_title;
-        document.getElementById('interests-heading').textContent = D.ui[lang].section_heading_interests;
-        var iRow = document.getElementById('interests-row');
-        iRow.textContent = '';
-        D.interests.forEach(function (interest) {
-            var s = document.createElement('span');
-            s.className = 'interest';
-            s.textContent = interest.emoji + ' ' + pick(interest.label, lang);
-            iRow.appendChild(s);
-        });
-
-        // Contact
-        document.getElementById('contact-eyebrow').textContent = D.ui[lang].contact_title;
-        document.getElementById('contact-heading-text').textContent = D.ui[lang].section_heading_contact;
-        document.getElementById('contact-text').textContent = D.ui[lang].contact_text;
-
-        var cLinks = document.getElementById('contact-links');
-        cLinks.textContent = '';
-        [
-            { href: 'mailto:' + D.personal.email, label: D.personal.email, external: false },
-            { href: D.personal.githubUrl, label: D.personal.githubDisplay, external: true },
-            { href: D.personal.linkedinUrl, label: D.personal.linkedinDisplay, external: true },
-        ].forEach(function (l) {
-            var a = document.createElement('a');
-            a.className = 'contact-link';
-            a.href = l.href;
-            a.textContent = l.label;
-            if (l.external) {
-                a.rel = 'me noopener';
-                a.target = '_blank';
-                var srHint = document.createElement('span');
-                srHint.className = 'sr-only';
-                srHint.textContent = ' ' + D.ui[lang].new_tab;
-                a.appendChild(srHint);
-            }
-            cLinks.appendChild(a);
-        });
-
-        // Footer
-        document.getElementById('footer-text').textContent = D.ui[lang].footer;
+        root.textContent = "";
+        root.appendChild(main);
+        root.appendChild(renderContact());
     }
 
-    // Update aria-current on language toggle buttons.
-    function syncLangButtons(activeLang) {
-        document.querySelectorAll('.lang-toggle button[data-lang]').forEach(function (b) {
-            b.setAttribute('aria-current', b.getAttribute('data-lang') === activeLang ? 'true' : 'false');
-        });
-    }
-
-    // Generate SR summary via DOM construction (language-neutral, English only).
-    // Uses createElement + textContent throughout — no innerHTML on data values.
-    (function buildSrSummary() {
-        var allSkills = D.skills.languages.concat(D.skills.frameworks, D.skills.tools);
-        var langSummary = D.languages.map(function (l) { return l.name.en + ' (' + l.level.en + ')'; }).join(', ');
-        var sr = document.getElementById('sr-summary');
-        sr.textContent = '';
-
-        function addEl(tag, text) {
-            var el = document.createElement(tag);
-            el.textContent = text;
-            sr.appendChild(el);
-        }
-
-        addEl('h1', P.name + ' — ' + D.title.en);
-        addEl('p', 'Email: ' + P.email + ' | Phone: ' + P.phoneDisplay.en);
-        addEl('p', 'Location: ' + P.location.en);
-        addEl('p', 'GitHub: ' + P.githubUrl + ' | LinkedIn: ' + P.linkedinUrl);
-        addEl('h2', 'Summary');
-        addEl('p', D.about.en);
-        addEl('h2', 'Skills');
-        addEl('p', allSkills.join(', '));
-        addEl('h2', 'Languages');
-        addEl('p', langSummary);
-    })();
-
-    // Language resolution priority: URL ?lang= (for hreflang
-    // arrivals and shareable English / French links) > localStorage
-    // > default EN. An explicit URL value wins even if it matches
-    // the default — `?lang=en` must force English when localStorage
-    // would otherwise restore a previous French session.
-    var initialLang = 'en';
-    var hadExplicitLang = false;
-    try {
-        var params = new URLSearchParams(window.location.search);
-        var fromUrl = params.get('lang');
-        if (fromUrl === 'fr' || fromUrl === 'en') {
-            initialLang = fromUrl;
-            hadExplicitLang = true;
-        }
-    } catch (_) {}
-    if (!hadExplicitLang) {
-        try {
-            var stored = localStorage.getItem('lang');
-            if (stored === 'fr') { initialLang = 'fr'; }
-        } catch (_) {}
-    }
-
-    document.documentElement.lang = initialLang;
-    render(initialLang);
-    syncLangButtons(initialLang);
-
-    // Generate JSON-LD via shared helper once at startup
-    SBRender.injectJsonLd(D, initialLang);
-
-    // EN/FR toggle handlers — call render() so all new sections update live
-    document.querySelectorAll('.lang-toggle button[data-lang]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var newLang = btn.getAttribute('data-lang');
-            try { localStorage.setItem('lang', newLang); } catch (_) {}
-            document.documentElement.lang = newLang;
-            syncLangButtons(newLang);
-            render(newLang);
-            var announcer = document.getElementById('a11y-announcer');
-            if (announcer) {
-                announcer.textContent = '';
-                setTimeout(function () { announcer.textContent = D.ui[newLang].lang_switched; }, 100);
-            }
-        });
-    });
-
-    // Scroll progress + back-to-top
-    var progressBar = document.getElementById("scroll-progress");
-    var ticking = false;
-    function updateScrollUI() {
-        var h = document.documentElement;
-        var scrollable = h.scrollHeight - h.clientHeight;
-        var progress = scrollable > 0 ? h.scrollTop / scrollable : 0;
-        progressBar.style.transform = "scaleX(" + progress + ")";
-        backToTop.classList.toggle("visible", h.scrollTop > 600);
-        ticking = false;
-    }
-    function onScrollOrResize() {
-        if (!ticking) {
-            window.requestAnimationFrame(updateScrollUI);
-            ticking = true;
-        }
-    }
-    window.addEventListener("scroll", onScrollOrResize, { passive: true });
-    window.addEventListener("resize", onScrollOrResize, { passive: true });
-    updateScrollUI();
-    backToTop.addEventListener("click", function () {
-        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
-    });
-
-    // Fade-in observer. Without IntersectionObserver (old browsers
-    // or sandboxed contexts where it's stripped), the .js .fade-in
-    // rule would leave sections invisible forever — reveal them
-    // immediately as a fallback. Use a `for` loop, not
-    // NodeList.forEach, because browsers without IO also tend to
-    // lack NodeList.prototype.forEach.
-    var fadeEls = document.querySelectorAll(".fade-in");
-    if (typeof IntersectionObserver === "function") {
-        var o = new IntersectionObserver(
-            function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("visible");
-                        o.unobserve(entry.target);
-                    }
-                });
-            },
-            { threshold: 0.15 }
-        );
-        for (var i = 0; i < fadeEls.length; i++) o.observe(fadeEls[i]);
-    } else {
-        for (var j = 0; j < fadeEls.length; j++) fadeEls[j].classList.add("visible");
-    }
-    // Observer is wired (or fallback applied) — cancel the head's
-    // safety-net rescue so it doesn't reveal off-screen sections
-    // prematurely on users who linger above the fold.
-    if (window.__fadeRescueId) {
-        clearTimeout(window.__fadeRescueId);
-        window.__fadeRescueId = null;
-    }
-
-    // Wire up theme toggle
-    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+    render();
+    window.SBRender.injectJsonLd(D, lang);
 })();
