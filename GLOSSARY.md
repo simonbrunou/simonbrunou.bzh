@@ -12,6 +12,10 @@ _Avoid_: user, audience, reader
 A product Simon built and shipped himself, shown first on the homepage as the main evidence of his work.
 _Avoid_: open source, side project, portfolio item
 
+**Band**:
+A full-width homepage section in one Featured project's own colours, with its screenshots running off the edge. The longest-held job gets a slate band. The design language is named Bands after it.
+_Avoid_: card, panel, project tile
+
 **CV**:
 The downloadable PDF document generated from the shared data, in French.
 _Avoid_: resume, résumé, resume page

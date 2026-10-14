@@ -1,61 +1,20 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <script>
-            (function () {
-                var THEME_COLOR_LIGHT = '#fbfaff';
-                var THEME_COLOR_DARK  = '#0c0a14';
-                document.documentElement.classList.add('js');
-                var light = false;
-                try {
-                    var t = localStorage.getItem('theme');
-                    light = (t === 'light' || (!t && window.matchMedia('(prefers-color-scheme: light)').matches));
-                } catch (_) {}
-                if (light) document.documentElement.classList.add('light');
-                // Expose so the toggle handler later in the page can reuse the same source of truth.
-                window.__setThemeColor = function (isLight) {
-                    var m = document.querySelector('meta[name="theme-color"]');
-                    if (m) m.content = isLight ? THEME_COLOR_LIGHT : THEME_COLOR_DARK;
-                };
-                window.__setThemeColor(light);
-
-                // Safety net: .js .fade-in starts at opacity:0 and relies on
-                // a later IntersectionObserver to reveal sections. If the
-                // main script throws before reaching the observer setup, the
-                // content stays invisible. Schedule a force-reveal pass once
-                // the DOM is parsed; the main IIFE clears this handle as soon
-                // as the observer is wired so we don't erode the fade effect
-                // in the normal path.
-                function scheduleFadeRescue() {
-                    window.__fadeRescueId = setTimeout(function () {
-                        window.__fadeRescueId = null;
-                        var fades = document.querySelectorAll('.fade-in');
-                        for (var i = 0; i < fades.length; i++) fades[i].classList.add('visible');
-                    }, 4000);
-                }
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', scheduleFadeRescue, { once: true });
-                } else {
-                    scheduleFadeRescue();
-                }
-            })();
-        </script>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Simon Brunou — Fullstack Developer</title>
+        <title>Simon Brunou, fullstack developer</title>
         <meta
             name="description"
-            content="Simon Brunou — Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
+            content="Fullstack developer in Saint-Nolff, Brittany. Eight years at BYSTAMP on every layer of a connected signing stamp, then three products of my own in 2026: Diversif, Cinder and Tisanerie."
         />
         <meta name="author" content="Simon Brunou" />
-        <meta name="theme-color" content="#0c0a14" />
-        <meta
-            property="og:title"
-            content="Simon Brunou — Fullstack Developer"
-        />
+        <meta name="theme-color" content="#e6e7e3" />
+        <meta name="color-scheme" content="light" />
+        <meta property="og:title" content="Simon Brunou, fullstack developer" />
         <meta
             property="og:description"
-            content="Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
+            content="Eight years at BYSTAMP on every layer of a connected signing stamp, then three products of my own in 2026: Diversif, Cinder and Tisanerie."
         />
         <meta property="og:type" content="profile" />
         <meta property="og:url" content="https://simonbrunou.bzh" />
@@ -70,10 +29,10 @@
         <meta property="profile:first_name" content="Simon" />
         <meta property="profile:last_name" content="Brunou" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Simon Brunou — Fullstack Developer" />
+        <meta name="twitter:title" content="Simon Brunou, fullstack developer" />
         <meta
             name="twitter:description"
-            content="Committed, motivated Fullstack Developer based in Brittany, France. Experienced in Rust, Flutter, Kotlin, Swift, React, and DevOps."
+            content="Eight years at BYSTAMP on every layer of a connected signing stamp, then three products of my own in 2026: Diversif, Cinder and Tisanerie."
         />
         <meta name="twitter:image" content="https://simonbrunou.bzh/photo.png" />
         <meta name="robots" content="index, follow" />
@@ -81,136 +40,45 @@
         <link rel="alternate" hreflang="en" href="https://simonbrunou.bzh/" />
         <link rel="alternate" hreflang="fr" href="https://simonbrunou.bzh/?lang=fr" />
         <link rel="alternate" hreflang="x-default" href="https://simonbrunou.bzh/" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link id="font-inter" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" /></noscript>
-        <script>document.getElementById('font-inter').rel='stylesheet';</script>
-        <link id="font-jbmono" rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" />
-        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" /></noscript>
-        <script>document.getElementById('font-jbmono').rel='stylesheet';</script>
-        <link
-            rel="icon"
-            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦀</text></svg>"
-        />
-        <!-- JSON-LD structured data is generated dynamically from data.js -->
+        <link rel="preload" href="/fonts/big-shoulders-display-latin.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/besley-latin.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="stylesheet" href="/styles.css" />
     </head>
     <body>
-        <a href="#main-content" class="skip-link" data-i18n="skip_link">Skip to main content</a>
-
-        <nav class="container topbar" aria-label="Page controls">
-            <button id="theme-toggle" class="chip theme-toggle" type="button" aria-label="Toggle theme" aria-pressed="false">
-                <svg id="theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-                <svg id="theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true" hidden>
-                    <circle cx="12" cy="12" r="4"/>
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                </svg>
-            </button>
-            <div class="chip lang-toggle" role="group" aria-label="Language">
-                <button id="btn-en" type="button" data-lang="en" aria-current="true">EN</button>
-                <button id="btn-fr" type="button" data-lang="fr" aria-current="false">FR</button>
-            </div>
-        </nav>
-
-        <div id="scroll-progress" class="scroll-progress" aria-hidden="true"></div>
-
+        <!--
+            THESIS: the products are the page. Each featured project fills a full-width band in its own app's colours, with screenshots bleeding off the edge; refuses the contained card grid of projects.
+            OWN-WORLD: stone #E6E7E3 and ink #16181B. Diversif peach #FFDBBD and sage #6B8E6B, Cinder #0B0C10 and ember #F38042, BYSTAMP slate #2F5168. Big Shoulders Display caps over Besley text. Square 2px-border buttons, thick underlines, no cards.
+            STORY: in 30 seconds the Visitor sees two shipped products and eight years at BYSTAMP, then emails Simon or downloads the CV.
+            FIRST VIEWPORT: name in 96px caps at left with photo, role and place; intro and the two actions (Email me, Download the CV) at right; at 1440x900 the Diversif band's peach and sage fill the bottom half.
+            FORM: Bands, prototype variant B, chosen over Rail, Document and Topo (ADR 0001). No seed key: the direction came from the prototype round.
+            FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+        -->
         <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-        <div id="sr-summary" class="sr-only" role="region" aria-label="Resume summary"></div>
+        <div id="page">
+            <noscript>
+                <main class="intro">
+                    <div class="wrap">
+                        <h1 class="display name">Simon Brunou</h1>
+                        <p class="role">Fullstack developer</p>
+                        <p class="loc">Saint-Nolff, Brittany, France</p>
+                        <p class="lede">I'm Simon. For eight years at BYSTAMP I worked on every layer of the software around a connected signing stamp. This year I shipped three products of my own: Diversif, Cinder and Tisanerie.</p>
+                        <p class="actions">
+                            <a class="btn btn-solid" href="mailto:simon.brunou@proton.me">simon.brunou@proton.me</a>
+                            <a class="btn btn-line" href="/simon-brunou-cv.pdf" download>Download the CV (PDF, in French)</a>
+                        </p>
+                        <p class="actions">
+                            <a href="https://github.com/simonbrunou">github.com/simonbrunou</a>
+                            <a href="https://www.linkedin.com/in/simon-brunou-a7a5a489">linkedin.com/in/simon-brunou</a>
+                        </p>
+                    </div>
+                </main>
+            </noscript>
+        </div>
 
-        <header class="container hero fade-in">
-            <img src="/photo.png" alt="Simon Brunou" class="hero-photo" width="96" height="96" loading="eager" />
-            <div class="eyebrow" id="hero-eyebrow"></div>
-            <h1>Simon <span class="accent">Brunou</span></h1>
-            <div class="role" id="hero-role"></div>
-            <div class="status" id="hero-status" hidden>
-                <span class="dot" aria-hidden="true"></span>
-                <span id="hero-status-label"></span>
-            </div>
-            <div class="actions">
-                <a class="btn btn-primary" href="#contact" id="hero-cta"></a>
-                <a class="btn btn-secondary" href="/simon-brunou-cv.pdf" download id="hero-resume-link"></a>
-            </div>
-        </header>
-
-        <main id="main-content" tabindex="-1">
-            <section class="container section fade-in about" id="about" aria-labelledby="about-heading">
-                <div class="section-label" id="about-eyebrow"></div>
-                <h2 id="about-heading"></h2>
-                <p id="about-text"></p>
-            </section>
-
-            <section class="container section fade-in skills" id="skills" aria-labelledby="skills-heading">
-                <div class="section-label" id="skills-eyebrow"></div>
-                <h2 id="skills-heading"></h2>
-                <div class="skills-grid" id="skills-grid"></div>
-            </section>
-
-            <section class="container section fade-in experience" id="experience" aria-labelledby="experience-heading">
-                <div class="section-label" id="experience-eyebrow"></div>
-                <h2 id="experience-heading"></h2>
-                <div class="timeline" id="experience-timeline"></div>
-            </section>
-
-            <section class="container section fade-in projects" id="projects" aria-labelledby="projects-heading">
-                <div class="section-label" id="projects-eyebrow"></div>
-                <h2 id="projects-heading"></h2>
-                <div class="projects-grid" id="projects-grid"></div>
-            </section>
-
-            <section class="container section fade-in education" id="education" aria-labelledby="education-heading">
-                <div class="section-label" id="education-eyebrow"></div>
-                <h2 id="education-heading"></h2>
-                <div class="edu-grid" id="education-grid"></div>
-            </section>
-
-            <section class="container section fade-in languages" id="languages" aria-labelledby="languages-heading">
-                <div class="section-label" id="languages-eyebrow"></div>
-                <h2 id="languages-heading"></h2>
-                <div class="lang-grid" id="languages-grid"></div>
-            </section>
-
-            <section class="container section fade-in interests" id="interests" aria-labelledby="interests-heading">
-                <div class="section-label" id="interests-eyebrow"></div>
-                <h2 id="interests-heading"></h2>
-                <div class="interests-row" id="interests-row"></div>
-            </section>
-
-            <section class="container section fade-in contact" id="contact" aria-labelledby="contact-heading">
-                <div class="contact-card">
-                    <div class="section-label" id="contact-eyebrow"></div>
-                    <h2 id="contact-heading"><span class="accent" id="contact-heading-text"></span></h2>
-                    <p id="contact-text"></p>
-                    <div class="contact-links" id="contact-links"></div>
-                </div>
-            </section>
-        </main>
-
-        <footer class="container site-footer">
-            <p id="footer-text"></p>
-        </footer>
-
-        <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                <path d="M12 19V5" />
-                <path d="M5 12l7-7 7 7" />
-            </svg>
-        </button>
-
-        <noscript>
-            <style>.hero-photo, .theme-toggle, .lang-toggle, .status, .actions, .scroll-progress, .back-to-top { display: none; }</style>
-            <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;font-family:monospace;">
-                <p style="color:#e0e0f0;line-height:1.8;margin-bottom:2rem;">Committed, motivated and serious Fullstack Developer with experience in mobile application development, project management, client communication and regular product delivery. Based in Brittany, France, I build robust applications across the entire stack — from mobile and desktop to backend and middleware — with a passion for Rust and systems programming.</p>
-                <p style="margin-bottom:1rem;"><strong>Skills:</strong> <span style="color:#b0b0d0;">Rust, Dart, Kotlin, Swift, Java, JavaScript, TypeScript, Python, C, Flutter, React Native, Android, iOS, React, Electron, Angular, Spring Boot, Node.js, Git, Docker, Proxmox, GitLab CI/CD, Terraform, Figma</span></p>
-                <p><a href="mailto:simon.brunou@proton.me" style="color:#6c63ff;">simon.brunou@proton.me</a> &middot; <a href="https://github.com/simonbrunou" style="color:#6c63ff;">GitHub</a> &middot; <a href="https://www.linkedin.com/in/simon-brunou-a7a5a489" style="color:#6c63ff;">LinkedIn</a> &middot; <a href="/simon-brunou-cv.pdf" download style="color:#6c63ff;">Resume</a></p>
-            </div>
-        </noscript>
-
-        <script src="data.js"></script>
-        <script src="render.js"></script>
+        <script src="/data.js"></script>
+        <script src="/render.js"></script>
         <script src="/app.js"></script>
     </body>
 </html>

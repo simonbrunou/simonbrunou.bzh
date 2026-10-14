@@ -3,184 +3,228 @@
     var lang = 'fr';
     var pick = window.SBRender.pickLang;
 
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
+
+    function link(url, className) {
+        var a = el('a', className, url.replace(/^https?:\/\//, ''));
+        a.href = url;
+        return a;
+    }
+
+    function clear(id) {
+        var node = document.getElementById(id);
+        node.textContent = '';
+        return node;
+    }
+
+    // Header
+    var P = D.personal;
     document.getElementById('resume-role').textContent = pick(D.title, lang);
-    document.getElementById('resume-contact').textContent =
-        D.personal.email + ' · ' + pick(D.personal.phoneDisplay, lang) + ' · ' + D.personal.githubDisplay;
+    document.getElementById('resume-location').textContent = pick(P.location, lang);
 
-    document.getElementById('resume-about').textContent = pick(D.about, lang);
+    var contact = clear('resume-contact');
+    function addContact(node) {
+        var li = el('li');
+        li.appendChild(node);
+        contact.appendChild(li);
+    }
+    var mail = el('a', '', P.email);
+    mail.href = 'mailto:' + P.email;
+    addContact(mail);
+    var tel = el('a', '', pick(P.phoneDisplay, lang));
+    tel.href = 'tel:' + P.phone;
+    addContact(tel);
+    addContact(link(P.websiteUrl));
+    var gh = el('a', '', P.githubDisplay);
+    gh.href = P.githubUrl;
+    addContact(gh);
+    var lk = el('a', '', P.linkedinDisplay);
+    lk.href = P.linkedinUrl;
+    addContact(lk);
 
-    document.getElementById('resume-skills-languages').textContent = D.skills.languages.join(', ');
-    document.getElementById('resume-skills-frameworks').textContent = D.skills.frameworks.join(', ');
-    document.getElementById('resume-skills-tools').textContent = D.skills.tools.join(', ');
-
-    var expBox = document.getElementById('resume-experience');
-    expBox.textContent = '';
-    D.experience.forEach(function (e) {
-        var entry = document.createElement('div');
-        entry.className = 'entry';
-
-        var head = document.createElement('div');
-        head.className = 'entry-head';
-        var pos = document.createElement('div');
-        pos.className = 'pos';
-        pos.textContent = pick(e.role, lang);
-        head.appendChild(pos);
-        var period = document.createElement('div');
-        period.className = 'period';
-        period.textContent = pick(e.period, lang);
-        head.appendChild(period);
-        entry.appendChild(head);
-
-        var company = document.createElement('div');
-        company.className = 'entry-company';
-        company.textContent = pick(e.company, lang);
-        entry.appendChild(company);
-
-        var ul = document.createElement('ul');
-        pick(e.description, lang).forEach(function (b) {
-            var li = document.createElement('li');
-            li.textContent = b;
-            ul.appendChild(li);
-        });
-        entry.appendChild(ul);
-
-        expBox.appendChild(entry);
+    // Profil
+    var about = clear('resume-about');
+    pick(D.about, lang).forEach(function (para) {
+        about.appendChild(el('p', 'about-p', para));
     });
 
-    var projBox = document.getElementById('resume-projects');
-    projBox.textContent = '';
+    // Projets
+    function strip(className, name, span) {
+        var s = el('div', 'strip ' + className);
+        s.appendChild(el('h3', 'strip-name', name));
+        s.appendChild(el('span', 'date', span));
+        return s;
+    }
+
+    var projBox = clear('resume-projects');
     (D.projects || []).forEach(function (p) {
-        var entry = document.createElement('div');
-        entry.className = 'entry';
+        if (!p.details) {
+            var row = el('div', 'project-line');
+            row.appendChild(el('h3', 'line-name', p.name));
+            var text = el('p', 'line-text');
+            text.appendChild(document.createTextNode(pick(p.summary, lang) + ' '));
+            text.appendChild(el('span', 'stack-inline', p.stack.join(', ') + '.'));
+            row.appendChild(text);
+            var meta = el('div', 'line-links');
+            if (p.url) meta.appendChild(link(p.url));
+            meta.appendChild(link(p.repoUrl));
+            row.appendChild(meta);
+            row.appendChild(el('span', 'date', p.year));
+            projBox.appendChild(row);
+            return;
+        }
 
-        var head = document.createElement('div');
-        head.className = 'entry-head';
-        var pos = document.createElement('div');
-        pos.className = 'pos';
-        pos.textContent = p.name;
-        head.appendChild(pos);
-        var period = document.createElement('div');
-        period.className = 'period';
-        period.textContent = pick(p.period, lang);
-        head.appendChild(period);
-        entry.appendChild(head);
+        var box = el('article', 'project');
+        box.appendChild(strip('strip-' + p.id, p.name, p.year));
+        var body = el('div', 'project-body');
+        body.appendChild(el('p', 'summary', pick(p.summary, lang)));
+        body.appendChild(el('p', 'details', pick(p.details, lang)));
+        var foot = el('div', 'project-foot');
+        var stack = el('p', 'stack');
+        stack.appendChild(el('strong', '', 'Stack\u00a0: '));
+        stack.appendChild(document.createTextNode(p.stack.join(', ')));
+        foot.appendChild(stack);
+        var links = el('p', 'links');
+        if (p.url) links.appendChild(link(p.url));
+        links.appendChild(link(p.repoUrl));
+        foot.appendChild(links);
+        body.appendChild(foot);
+        box.appendChild(body);
+        projBox.appendChild(box);
+    });
 
-        var tagline = document.createElement('div');
-        tagline.className = 'project-tagline';
-        tagline.textContent = pick(p.tagline, lang);
-        entry.appendChild(tagline);
+    // Expérience
+    function span(positions) {
+        var from = positions[0].startDate.slice(0, 4);
+        var to = positions[positions.length - 1].endDate.slice(0, 4);
+        return from === to ? from : from + '\u2013' + to;
+    }
 
-        var ul = document.createElement('ul');
-        pick(p.description, lang).forEach(function (b) {
-            var li = document.createElement('li');
-            li.textContent = b;
-            ul.appendChild(li);
+    // Months between the first position's start and the last one's end.
+    function tenure(e) {
+        var first = e.positions[0].startDate.split('-');
+        var last = e.positions[e.positions.length - 1].endDate.split('-');
+        return (last[0] - first[0]) * 12 + (last[1] - first[1]);
+    }
+
+    // The longest-held job gets the slate strip, as on the homepage.
+    var mainIdx = 0;
+    D.experience.forEach(function (e, i) {
+        if (tenure(e) > tenure(D.experience[mainIdx])) mainIdx = i;
+    });
+
+    // Page 1 ends with the first employer; the others open page 2.
+    var expBox = clear('resume-experience');
+    var expMore = clear('resume-experience-more');
+    D.experience.forEach(function (e, index) {
+        var company = pick(e.company, lang);
+        var box = el('article', 'employer');
+        if (index === mainIdx) {
+            box.appendChild(strip('strip-main', company, span(e.positions)));
+        } else {
+            var head = el('div', 'employer-head');
+            head.appendChild(el('h3', 'employer-name', company));
+            head.appendChild(el('span', 'date', span(e.positions)));
+            box.appendChild(head);
+        }
+
+        var body = el('div', 'employer-body');
+        e.positions.forEach(function (pos) {
+            var posBox = el('div', 'position');
+            var h = el('div', 'position-head');
+            h.appendChild(el('h4', 'role-name', pick(pos.role, lang)));
+            h.appendChild(el('span', 'date', pick(pos.period, lang)));
+            posBox.appendChild(h);
+            var ul = el('ul', 'bullets');
+            pick(pos.description, lang).forEach(function (line) {
+                ul.appendChild(el('li', '', line));
+            });
+            posBox.appendChild(ul);
+            body.appendChild(posBox);
         });
-        entry.appendChild(ul);
-
-        if (p.stack && p.stack.length) {
-            var stack = document.createElement('div');
-            stack.className = 'project-stack';
-            stack.textContent = '// ' + p.stack.join(' · ');
-            entry.appendChild(stack);
-        }
-
-        var links = document.createElement('div');
-        links.className = 'project-links';
-        var hasLink = false;
-        if (p.url) {
-            var visit = document.createElement('a');
-            visit.href = p.url;
-            visit.rel = 'noopener';
-            visit.target = '_blank';
-            visit.textContent = p.url.replace(/^https?:\/\//, '');
-            links.appendChild(visit);
-            hasLink = true;
-        }
-        if (p.repoUrl) {
-            if (hasLink) {
-                var sep = document.createElement('span');
-                sep.className = 'sep';
-                sep.textContent = '·';
-                links.appendChild(sep);
-            }
-            var src = document.createElement('a');
-            src.href = p.repoUrl;
-            src.rel = 'noopener';
-            src.target = '_blank';
-            src.textContent = p.repoUrl.replace(/^https?:\/\//, '');
-            links.appendChild(src);
-            hasLink = true;
-        }
-        if (hasLink) entry.appendChild(links);
-
-        projBox.appendChild(entry);
+        box.appendChild(body);
+        (index === 0 ? expBox : expMore).appendChild(box);
     });
 
-    var edu = document.getElementById('resume-education');
-    edu.textContent = '';
+    // Compétences
+    var skills = clear('resume-skills');
+    ['languages', 'frameworks', 'tools'].forEach(function (key) {
+        var row = el('div', 'skills-row');
+        row.appendChild(el('h3', 'skills-label', pick(D.skillCategoryLabels[key], lang)));
+        row.appendChild(el('p', 'skills-list', D.skills[key].join(', ')));
+        skills.appendChild(row);
+    });
+
+    // Formation
+    var edu = clear('resume-education');
     D.education.forEach(function (ed) {
-        var item = document.createElement('div');
-        item.className = 'edu-item';
-        var name = document.createElement('div');
-        name.className = 'name';
-        name.textContent = pick(ed.degree, lang);
-        item.appendChild(name);
-        var school = document.createElement('div');
-        school.className = 'school';
-        school.textContent = ed.school;
-        item.appendChild(school);
-        var year = document.createElement('div');
-        year.className = 'year';
-        year.textContent = ed.startYear + ' — ' + ed.endYear;
-        item.appendChild(year);
-        edu.appendChild(item);
+        var row = el('div', 'edu-row');
+        var text = el('div', 'edu-text');
+        text.appendChild(el('strong', 'edu-degree', pick(ed.degree, lang)));
+        text.appendChild(document.createTextNode(', ' + ed.school));
+        row.appendChild(text);
+        row.appendChild(el('span', 'date', ed.startYear + '\u2013' + ed.endYear));
+        edu.appendChild(row);
     });
 
-    var langs = document.getElementById('resume-languages');
-    langs.textContent = '';
+    // Langues
+    var langs = clear('resume-languages');
     D.languages.forEach(function (l) {
-        var item = document.createElement('div');
-        item.className = 'lang-item';
-        var name = document.createElement('div');
-        name.className = 'name';
-        name.textContent = pick(l.name, lang);
-        item.appendChild(name);
-        var level = document.createElement('div');
-        level.className = 'level';
-        level.textContent = pick(l.level, lang);
-        item.appendChild(level);
+        var item = el('li');
+        item.appendChild(el('strong', '', pick(l.name, lang)));
+        item.appendChild(document.createTextNode(', ' + pick(l.level, lang).toLowerCase()));
         langs.appendChild(item);
     });
 
-    var ints = document.getElementById('resume-interests');
-    ints.textContent = '';
-    D.interests.forEach(function (i) {
-        var s = document.createElement('span');
-        s.className = 'item';
-        s.textContent = i.emoji + ' ' + pick(i.label, lang);
-        ints.appendChild(s);
-    });
+    // Centres d'intérêt
+    document.getElementById('resume-interests').textContent = D.interests
+        .map(function (i) { return pick(i, lang); })
+        .join(', ');
 
     SBRender.injectJsonLd(D, lang);
 
     // build-pdf.js waits on html[data-render-complete] before snapshotting,
     // so the sentinel must gate on every resource the rendered PDF depends on:
     //   - images: document.images load events
-    //   - webfonts: document.fonts.ready (the @font-face files Google Fonts
-    //     pulls in are downloaded lazily, so DOMContentLoaded alone is not
-    //     enough — without this, the PDF can snapshot with system fallback
-    //     glyphs instead of Inter / JetBrains Mono).
+    //   - webfonts: document.fonts.ready (the self-hosted woff2 files load
+    //     lazily, so DOMContentLoaded alone is not enough; without this the
+    //     PDF can snapshot with system fallback glyphs instead of
+    //     Big Shoulders Display / Besley).
     var imgs = Array.prototype.slice.call(document.images);
     var imgsReady = Promise.all(imgs.map(function (img) {
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        if (img.complete) return Promise.resolve();
         return new Promise(function (resolve) {
             img.addEventListener('load', resolve, { once: true });
             img.addEventListener('error', resolve, { once: true });
         });
     }));
-    var fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
+    var fontsReady = !document.fonts
+        ? Promise.resolve()
+        : Promise.all([
+              document.fonts.load('900 1em "Big Shoulders Display"'),
+              document.fonts.load('400 1em "Besley"'),
+              document.fonts.load('700 1em "Besley"'),
+          ]).then(function () { return document.fonts.ready; });
+    // Each .page has a fixed A4 height with overflow hidden, so content that
+    // outgrows a page would be clipped silently. Flag it instead:
+    // build-pdf.js fails the build on data-render-error.
     Promise.all([imgsReady, fontsReady]).then(function () {
+        var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+        var overflowing = pages
+            .map(function (page, i) { return page.scrollHeight > page.clientHeight + 1 ? i + 1 : 0; })
+            .filter(Boolean);
+        if (overflowing.length) {
+            document.documentElement.setAttribute(
+                'data-render-error',
+                'page ' + overflowing.join(', ') + ' overflows A4; move content between pages in pdf-template/'
+            );
+            return;
+        }
         document.documentElement.setAttribute('data-render-complete', '');
     });
 })();

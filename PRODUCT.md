@@ -46,7 +46,7 @@ Two things another fullstack developer could not easily claim together:
 - Diversif: live at https://diversif.app (interface in French), source at https://github.com/simonbrunou/diversif.
 - Cinder: public GPLv3 repo at https://github.com/simonbrunou/cinder, v3.0, over 1,100 commits since June 2026. No public demo.
 - Tisanerie: live at https://tisanerie.app.
-- Screenshots in `prototype/assets/` (prototype branch). The Cinder ones show an empty test instance and must be retaken with real data before shipping.
+- Screenshots in `images/` (WebP, provenance in the `.json` sidecars): two of the live Diversif site, and two of Simon's own Cinder instance taken on 2026-10-14 (library on the series tab, admin dashboard with every service OK), with the signed-in email hidden.
 - `photo.png` is 76×76 px. No larger photo is available yet.
 - No testimonials, client names or metrics exist. Do not invent any.
 

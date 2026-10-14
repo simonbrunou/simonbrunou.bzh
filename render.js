@@ -1,10 +1,9 @@
 // Shared rendering helpers for index.html and pdf-template/index.html.
 // Loaded after data.js. Exposes window.SBRender.
 //
-// The two pages render different DOM (different visual designs), so this
-// module covers the concerns that benefit from one source of truth:
-// language picking, period parsing, and the canonical Person JSON-LD.
-
+// The pages render different DOM, so this module covers the concerns that
+// benefit from one source of truth: language picking and the canonical
+// Person JSON-LD.
 (function () {
     function pickLang(value, lang) {
         if (
@@ -15,14 +14,6 @@
             return value[lang] || value.en;
         }
         return value;
-    }
-
-    // Split "Feb 2025 — Jul 2025" or "Feb 2025 - Jul 2025" into [start, end].
-    // Tolerates either separator so a future data tweak can't silently break dates.
-    function splitPeriod(periodStr) {
-        if (!periodStr) return ["", ""];
-        var parts = String(periodStr).split(/\s+[—-]\s+/);
-        return [parts[0] || "", parts[1] || ""];
     }
 
     function dedupeBySchool(education) {
@@ -68,19 +59,23 @@
                 "Fullstack Development",
                 "DevOps",
             ]),
-            hasOccupation: D.experience.map(function (exp) {
-                return {
-                    "@type": "Role",
-                    roleName: pickLang(exp.role, lang),
-                    startDate: exp.startDate,
-                    endDate: exp.endDate,
-                    description: pickLang(exp.description, lang).join(". "),
-                    worksFor: {
-                        "@type": "Organization",
-                        name: pickLang(exp.company, lang),
-                    },
-                };
-            }),
+            hasOccupation: D.experience.reduce(function (roles, exp) {
+                return roles.concat(
+                    exp.positions.map(function (pos) {
+                        return {
+                            "@type": "Role",
+                            roleName: pickLang(pos.role, lang),
+                            startDate: pos.startDate,
+                            endDate: pos.endDate,
+                            description: pickLang(pos.description, lang).join(". "),
+                            worksFor: {
+                                "@type": "Organization",
+                                name: pickLang(exp.company, lang),
+                            },
+                        };
+                    }),
+                );
+            }, []),
             alumniOf: dedupeBySchool(D.education).map(function (e) {
                 return { "@type": "EducationalOrganization", name: e.school };
             }),
@@ -109,7 +104,6 @@
 
     window.SBRender = {
         pickLang: pickLang,
-        splitPeriod: splitPeriod,
         buildPersonJsonLd: buildPersonJsonLd,
         injectJsonLd: injectJsonLd,
     };

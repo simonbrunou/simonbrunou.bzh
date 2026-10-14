@@ -18,22 +18,30 @@ a tiny Node server.
 ## Architecture
 
 **Single source of truth — `data.js`.** Defines `window.RESUME_DATA` (personal
-info, skills, experience, projects, education, languages, interests, UI
-strings). Consumed by both the live site and the PDF template. Most content
+info, about paragraphs, projects with their screenshots, experience grouped by
+employer with positions oldest first, skills, education, languages, interests,
+UI strings). Consumed by the live site and the PDF template. Most content
 changes start here.
+
+**Design — Bands** (`docs/adr/0001-replace-iris.md`, `DESIGN.md`). Each
+project with `shots` in `data.js` gets a full-width band in its own app's
+colours; projects without shots get one line under the bands. A new banded
+project needs its own `.band-<id>` colours in `styles.css`. The longest-held
+job gets the slate band. Fonts (Big Shoulders Display, Besley) are
+self-hosted under `fonts/`; screenshots live in `images/` as WebP.
 
 **Two rendering targets, one data model.**
 
-1. `index.html` + `app.js` + `styles.css` — the live site at `/`. Bilingual
-   (EN/FR), client-side language toggle. JSON-LD `Person` block injected at
-   runtime.
+1. `index.html` + `app.js` + `styles.css` — the live site at `/`. `app.js`
+   builds the whole page from `data.js` into `#page`. Bilingual (EN/FR),
+   client-side language toggle that also rewrites `?lang=`. JSON-LD `Person`
+   block injected at runtime. `404.html` reuses `styles.css`.
 2. `pdf-template/{index.html,app.js,styles.css}` — build-time template
    rendered once to `simon-brunou-cv.pdf`. **Not served in production** (the
    Dockerfile strips this directory). French-only, print-styled.
 
 `render.js` is loaded by both pages and exposes shared helpers on
-`window.SBRender`: `pickLang`, `splitPeriod`, `buildPersonJsonLd`,
-`injectJsonLd`.
+`window.SBRender`: `pickLang`, `buildPersonJsonLd`, `injectJsonLd`.
 
 **PDF generation flow** (`scripts/build-pdf.js`): spins up a tiny static HTTP
 server on a random localhost port that exposes `pdf-template/` and the repo
@@ -42,7 +50,7 @@ root, drives headless Chrome at `/pdf-template/`, waits for the
 images **and** `document.fonts.ready` have resolved, then snapshots to A4
 PDF with `printBackground: true`. The sentinel is load-bearing — don't drop
 either gate or the PDF races (image gate → missing photo; font gate → system
-fallback glyphs instead of Inter / JetBrains Mono).
+fallback glyphs instead of Big Shoulders Display / Besley).
 
 **Server — `server.js` (Hono on Node 22).** Reads every asset into memory at
 boot, then serves from cache. Key concerns:
@@ -54,7 +62,9 @@ boot, then serves from cache. Key concerns:
   so a shared cache can't replay a nonce to multiple visitors. `'strict-dynamic'`
   is required so `render.js` can inject the JSON-LD `<script>` block at runtime.
 - **Static asset map** — `STATIC_ASSETS` is the allowlist of routes; adding a
-  new file means adding an entry here. There is no directory traversal.
+  new file (a screenshot in `images/`, a font in `fonts/`) means adding an
+  entry here. There is no directory traversal. The CSP allows only `'self'`
+  for styles and fonts, so no third-party font CDN and no inline styles.
 - **`HTML_PAGES`** lists pages that get the nonce treatment. `404.html` is
   served via `app.notFound(...)` with the same machinery.
 
@@ -73,9 +83,18 @@ in the Dockerfile.
   to know when the page is fully painted. If you refactor `pdf-template/app.js`
   and drop the image-load barrier, the PDF will sometimes ship without the
   profile photo. If you drop the `document.fonts.ready` barrier, the PDF will
-  sometimes ship with system-fallback glyphs instead of Inter / JetBrains Mono
-  (Google Fonts woff2 files load lazily, so DOMContentLoaded alone is not
+  sometimes ship with system-fallback glyphs instead of Big Shoulders Display /
+  Besley (the woff2 files load lazily, so DOMContentLoaded alone is not
   enough).
+- **The CV is two fixed A4 pages.** Each `.page` in `pdf-template/` has a set
+  height with overflow hidden, and page 1 ends after the first employer. When
+  content outgrows a page, `pdf-template/app.js` sets `data-render-error`
+  instead of the sentinel and `npm run build:pdf` fails; move content between
+  pages rather than shrinking type.
+- **The dev server caches every file at boot.** Restart `npm run dev` after
+  editing HTML, CSS, JS or assets. Screenshots in `images/` are served with a
+  one-day `max-age`, so a browser keeps showing the old image after a swap;
+  disable the cache when checking one.
 
 ## graphify
 
