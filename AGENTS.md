@@ -79,6 +79,11 @@ in the Dockerfile.
 - **Cloudflare proxy options break CSP.** Rocket Loader and Auto Minify
   inject/rewrite scripts in a way that defeats the strict-dynamic nonce
   policy — they must stay **off** in the Cloudflare dashboard for this site.
+- **Cloudflare Email Obfuscation is on.** It rewrites any email address in
+  static HTML into `[email protected]` plus a decoder script, and the CSP
+  blocks that script, so the visitor sees `[email protected]`. Wrap every
+  static address in `<!--email_off-->…<!--/email_off-->` (see `404.html`).
+  Addresses that `app.js` writes at runtime are not affected.
 - **The `data-render-complete` sentinel** is required by `scripts/build-pdf.js`
   to know when the page is fully painted. If you refactor `pdf-template/app.js`
   and drop the image-load barrier, the PDF will sometimes ship without the
