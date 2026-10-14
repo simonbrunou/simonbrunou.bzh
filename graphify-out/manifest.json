@@ -1,51 +1,51 @@
 {
   "app.js": {
-    "mtime": 1781680420.945574,
-    "seen": 1791969035.981343,
-    "ast_hash": "bfc9ade1c6197d06af632144c36fe749",
-    "semantic_hash": "bfc9ade1c6197d06af632144c36fe749"
+    "mtime": 1791987154.739432,
+    "seen": 1791989663.7140803,
+    "ast_hash": "5248c1eaf0ed0fa0b927d513de1e9fda",
+    "semantic_hash": "5248c1eaf0ed0fa0b927d513de1e9fda"
   },
   "data.js": {
-    "mtime": 1790944850.3167398,
-    "seen": 1791969035.9813447,
-    "ast_hash": "9abd3a3382eea364f6b8d5edfc2d21c5",
-    "semantic_hash": "9abd3a3382eea364f6b8d5edfc2d21c5"
+    "mtime": 1791988337.5859742,
+    "seen": 1791989663.7140818,
+    "ast_hash": "7ed63aace1894082f397fdb9076de086",
+    "semantic_hash": "7ed63aace1894082f397fdb9076de086"
   },
   "server.js": {
-    "mtime": 1779039641.4304612,
-    "seen": 1791969035.9813519,
-    "ast_hash": "f15b58b2e345391ab5f696ca2cf4357e",
-    "semantic_hash": "f15b58b2e345391ab5f696ca2cf4357e"
+    "mtime": 1791988734.9405262,
+    "seen": 1791989663.714094,
+    "ast_hash": "b8247f298911cd1e690ff506d80559c2",
+    "semantic_hash": "b8247f298911cd1e690ff506d80559c2"
   },
   "render.js": {
-    "mtime": 1779039641.4304612,
-    "seen": 1791969035.9813485,
-    "ast_hash": "0ca4245f2498a9971ec464f082533a90",
-    "semantic_hash": "0ca4245f2498a9971ec464f082533a90"
+    "mtime": 1791987065.9884503,
+    "seen": 1791989663.7140903,
+    "ast_hash": "7c1d351ab893d8aaf3b3966950401b51",
+    "semantic_hash": "7c1d351ab893d8aaf3b3966950401b51"
   },
   "pdf-template/app.js": {
-    "mtime": 1779039641.4295204,
-    "seen": 1791969035.9813473,
-    "ast_hash": "935c95b8b35588755e74cd947d5f6754",
-    "semantic_hash": "935c95b8b35588755e74cd947d5f6754"
+    "mtime": 1791987770.6493618,
+    "seen": 1791989663.7140892,
+    "ast_hash": "a90774ff2624dd74d2f6130f20c1d2e1",
+    "semantic_hash": "a90774ff2624dd74d2f6130f20c1d2e1"
   },
   "scripts/build-pdf.js": {
-    "mtime": 1779039641.4304612,
-    "seen": 1791969035.981351,
-    "ast_hash": "de5dfdae226b7640e4f2f2d31e224757",
-    "semantic_hash": "de5dfdae226b7640e4f2f2d31e224757"
+    "mtime": 1791987784.9581976,
+    "seen": 1791989663.7140925,
+    "ast_hash": "98da0ffd2ea36abe4bbf9a1c65b88082",
+    "semantic_hash": "98da0ffd2ea36abe4bbf9a1c65b88082"
   },
   "index.html": {
-    "mtime": 1781680420.945574,
-    "seen": 1791969035.981365,
-    "ast_hash": "e4af854805fe91e745eff384ed6c4cae",
-    "semantic_hash": "e4af854805fe91e745eff384ed6c4cae"
+    "mtime": 1791988725.5276322,
+    "seen": 1791989663.7141128,
+    "ast_hash": "12f577d1b44adc3d0c8a899d14fe776a",
+    "semantic_hash": "12f577d1b44adc3d0c8a899d14fe776a"
   },
   "404.html": {
-    "mtime": 1781680420.945574,
-    "seen": 1791969035.9813547,
-    "ast_hash": "e5a99d9a20670734d584cf37c81d1a79",
-    "semantic_hash": "e5a99d9a20670734d584cf37c81d1a79"
+    "mtime": 1791988725.5286322,
+    "seen": 1791989663.714096,
+    "ast_hash": "77fa7f76d7864d060c5f2121dc1cc9da",
+    "semantic_hash": "77fa7f76d7864d060c5f2121dc1cc9da"
   },
   "robots.txt": {
     "mtime": 1779039641.4304612,
@@ -54,10 +54,10 @@
     "semantic_hash": "4192fc7bc0c2d59e4a7798b05f059b4a"
   },
   "README.md": {
-    "mtime": 1779039641.4273481,
-    "seen": 1791969035.9813583,
-    "ast_hash": "16808a95b13a3722c2f827f39391edae",
-    "semantic_hash": "16808a95b13a3722c2f827f39391edae"
+    "mtime": 1791987434.4052227,
+    "seen": 1791989663.7141027,
+    "ast_hash": "a87cdf8fba71d55082a6f665d4f12a18",
+    "semantic_hash": "a87cdf8fba71d55082a6f665d4f12a18"
   },
   "CLAUDE.md": {
     "mtime": 1791968366.9591076,
@@ -66,28 +66,28 @@
     "semantic_hash": "5c27369b226fcf2be8a6cfe52224e767"
   },
   "docs/superpowers/plans/2026-05-16-iris-redesign.md": {
-    "mtime": 1778971407.3481383,
-    "seen": 1791969035.9813626,
-    "ast_hash": "3a343298b9088ff287550e97d83647f5",
-    "semantic_hash": "3a343298b9088ff287550e97d83647f5"
+    "mtime": 1791976747.2890005,
+    "seen": 1791989663.7141087,
+    "ast_hash": "4de412dc36d56785a875b4f416e0ea6b",
+    "semantic_hash": "4de412dc36d56785a875b4f416e0ea6b"
   },
   "docs/superpowers/specs/2026-05-16-engineering-elegant-redesign-design.md": {
-    "mtime": 1778971407.3481383,
-    "seen": 1791969035.9813638,
-    "ast_hash": "d9536978f22f938e5940521fdde8e31b",
-    "semantic_hash": "d9536978f22f938e5940521fdde8e31b"
+    "mtime": 1791976747.2870004,
+    "seen": 1791989663.7141097,
+    "ast_hash": "6d6e8acf11aa8bd0772f3c32d1f2ad23",
+    "semantic_hash": "6d6e8acf11aa8bd0772f3c32d1f2ad23"
   },
   "pdf-template/index.html": {
-    "mtime": 1779039641.4304612,
-    "seen": 1791969035.981366,
-    "ast_hash": "b0245f1dca02ed4b60dc59d05970e664",
-    "semantic_hash": "b0245f1dca02ed4b60dc59d05970e664"
+    "mtime": 1791988742.924436,
+    "seen": 1791989663.7141137,
+    "ast_hash": "c09178bfbec858178aaf1c2b1ba4fc34",
+    "semantic_hash": "c09178bfbec858178aaf1c2b1ba4fc34"
   },
   "simon-brunou-cv.pdf": {
-    "mtime": 1779043038.5564156,
-    "seen": 1791969035.9813683,
-    "ast_hash": "ea4d0b5b026e8589b8183a3be7c6f94e",
-    "semantic_hash": "ea4d0b5b026e8589b8183a3be7c6f94e"
+    "mtime": 1791988751.45434,
+    "seen": 1791989663.714116,
+    "ast_hash": "904760a146dd1cbc47c7379466a55b13",
+    "semantic_hash": "904760a146dd1cbc47c7379466a55b13"
   },
   "photo.png": {
     "mtime": 1779039641.4304612,
@@ -132,10 +132,10 @@
     "semantic_hash": "2bfeb7ecc5dc8f5ca1b432831bbf81c3"
   },
   "AGENTS.md": {
-    "mtime": 1791968366.9571078,
-    "seen": 1791969035.9813561,
-    "ast_hash": "650dfe079b1c3adc7ce8e84784629dd9",
-    "semantic_hash": "650dfe079b1c3adc7ce8e84784629dd9"
+    "mtime": 1791988456.4446514,
+    "seen": 1791989663.7140973,
+    "ast_hash": "f897cdd8d1e7084560e135bfd244356f",
+    "semantic_hash": "f897cdd8d1e7084560e135bfd244356f"
   },
   "docs/agents/domain.md": {
     "mtime": 1791967714.1432278,
@@ -154,5 +154,101 @@
     "seen": 1791969035.9813614,
     "ast_hash": "9918a4051db590bde5644c39db5194f4",
     "semantic_hash": "9918a4051db590bde5644c39db5194f4"
+  },
+  ".impeccable/design.json": {
+    "mtime": 1791988978.190777,
+    "seen": 1791989663.7140784,
+    "ast_hash": "2c78628b81be3ad926c2bbb84812783a",
+    "semantic_hash": "2c78628b81be3ad926c2bbb84812783a"
+  },
+  "images/cinder-dashboard.webp.json": {
+    "mtime": 1791988406.1332123,
+    "seen": 1791989663.7140827,
+    "ast_hash": "5415879d41090ab712b3e93f7b1f07a6",
+    "semantic_hash": "5415879d41090ab712b3e93f7b1f07a6"
+  },
+  "images/cinder-library.webp.json": {
+    "mtime": 1791988406.1092124,
+    "seen": 1791989663.7140841,
+    "ast_hash": "28a908a3fd94d0081277ee57aa49d416",
+    "semantic_hash": "28a908a3fd94d0081277ee57aa49d416"
+  },
+  "images/diversif-allergens.webp.json": {
+    "mtime": 1791988406.0852127,
+    "seen": 1791989663.7140853,
+    "ast_hash": "f4312847daffe212bd2767443cb3e8c5",
+    "semantic_hash": "f4312847daffe212bd2767443cb3e8c5"
+  },
+  "images/diversif-home.webp.json": {
+    "mtime": 1791988406.058213,
+    "seen": 1791989663.7140863,
+    "ast_hash": "a8e0e874e7938531e0178db1f0e37cca",
+    "semantic_hash": "a8e0e874e7938531e0178db1f0e37cca"
+  },
+  "DESIGN.md": {
+    "mtime": 1791988999.9565303,
+    "seen": 1791989663.7140994,
+    "ast_hash": "7a8c9fa281491876ed8ed4297e99d400",
+    "semantic_hash": "7a8c9fa281491876ed8ed4297e99d400"
+  },
+  "GLOSSARY.md": {
+    "mtime": 1791988461.3605964,
+    "seen": 1791989663.7141004,
+    "ast_hash": "ad35736477c7100e03b177718fb6c8f0",
+    "semantic_hash": "ad35736477c7100e03b177718fb6c8f0"
+  },
+  "PRODUCT.md": {
+    "mtime": 1791988893.4557362,
+    "seen": 1791989663.7141016,
+    "ast_hash": "f1c1130aecff609df49fbc1c9d1f45be",
+    "semantic_hash": "f1c1130aecff609df49fbc1c9d1f45be"
+  },
+  "docs/adr/0001-replace-iris.md": {
+    "mtime": 1791986922.7600927,
+    "seen": 1791989663.7141037,
+    "ast_hash": "ac8337ab5d6824cf9b734e9c1171e78b",
+    "semantic_hash": "ac8337ab5d6824cf9b734e9c1171e78b"
+  },
+  "fonts/OFL-besley.txt": {
+    "mtime": 1791986946.485062,
+    "seen": 1791989663.7141106,
+    "ast_hash": "426f7f13e3baec037220efe3e0cef55b",
+    "semantic_hash": "426f7f13e3baec037220efe3e0cef55b"
+  },
+  "fonts/OFL-big-shoulders-display.txt": {
+    "mtime": 1791986946.757545,
+    "seen": 1791989663.7141118,
+    "ast_hash": "da4a9ad9e0aa8f4e25f5e68e2c10488b",
+    "semantic_hash": "da4a9ad9e0aa8f4e25f5e68e2c10488b"
+  },
+  "favicon.svg": {
+    "mtime": 1791988717.658373,
+    "seen": 1791989663.714117,
+    "ast_hash": "4f73254a2d6559720290f5d87b61a9de",
+    "semantic_hash": "4f73254a2d6559720290f5d87b61a9de"
+  },
+  "images/cinder-dashboard.webp": {
+    "mtime": 1791988323.1581342,
+    "seen": 1791989663.7141182,
+    "ast_hash": "c644b7a1e835c927c5709a630b96d88d",
+    "semantic_hash": "c644b7a1e835c927c5709a630b96d88d"
+  },
+  "images/cinder-library.webp": {
+    "mtime": 1791988322.8301377,
+    "seen": 1791989663.7141194,
+    "ast_hash": "429fad1e70799df51c8bc41cfed92f5f",
+    "semantic_hash": "429fad1e70799df51c8bc41cfed92f5f"
+  },
+  "images/diversif-allergens.webp": {
+    "mtime": 1791986926.7810466,
+    "seen": 1791989663.7141204,
+    "ast_hash": "9666ab1aa198e33de1d83bbc71ba11ad",
+    "semantic_hash": "9666ab1aa198e33de1d83bbc71ba11ad"
+  },
+  "images/diversif-home.webp": {
+    "mtime": 1791986926.665048,
+    "seen": 1791989663.7141216,
+    "ast_hash": "0660c4f14dba3631e29d6326136cf065",
+    "semantic_hash": "0660c4f14dba3631e29d6326136cf065"
   }
 }

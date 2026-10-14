@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T00:00:00Z",
+  "title": "Design System: simonbrunou.bzh",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Ink", "canonical": "#16181b" },
+      "stone": { "role": "neutral", "displayName": "Stone", "canonical": "#e6e7e3" },
+      "concrete": { "role": "neutral", "displayName": "Concrete (facts field)", "canonical": "#d3d5cf" },
+      "slate": { "role": "secondary", "displayName": "Slate (longest-held job)", "canonical": "#2f5168" },
+      "peach": { "role": "tertiary", "displayName": "Diversif Peach", "canonical": "#ffdbbd" },
+      "sage": { "role": "tertiary", "displayName": "Diversif Sage field", "canonical": "#6b8e6b" },
+      "cinder-ground": { "role": "tertiary", "displayName": "Cinder Ground", "canonical": "#0b0c10" },
+      "ember": { "role": "tertiary", "displayName": "Cinder Ember", "canonical": "#f38042" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Names, product names, 404 title. Big Shoulders Display 900 uppercase." },
+      "headline": { "displayName": "Section title", "purpose": "Section headings, line-height 1." },
+      "lead": { "displayName": "Lead", "purpose": "Product summaries and 404 text." },
+      "body": { "displayName": "Body", "purpose": "Running text, Besley 17px/1.6." },
+      "date": { "displayName": "Date", "purpose": "Years and periods, tabular lining figures." }
+    },
+    "shadows": [
+      { "name": "shot-diversif", "value": "0 28px 48px -22px rgba(38, 24, 10, 0.5)", "purpose": "Screenshots in the Diversif band only." },
+      { "name": "shot-cinder", "value": "0 28px 48px -22px rgba(30, 10, 0, 0.7)", "purpose": "Screenshots in the Cinder band only." }
+    ],
+    "motion": [
+      { "name": "shots-in", "value": "translate 7% -> 0, linear, animation-timeline: view(), range entry 10% cover 40%", "purpose": "The single motion: band screenshots slide out from the band edge; mirrored bands use -7%. Wide screens and no-preference motion only." },
+      { "name": "state-transition", "value": "0.15s ease-out", "purpose": "Button, contact-mail and chevron state changes." }
+    ],
+    "breakpoints": [
+      { "name": "stack", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Primary action in the intro.",
+      "html": "<a class=\"ds-btn ds-btn-solid\" href=\"#\">Download CV</a>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;min-height:48px;padding:10px 22px;border:2px solid currentColor;border-radius:2px;font:700 17px/1.25 Besley,Georgia,serif;text-decoration:none;transition:background-color .15s ease-out,border-color .15s ease-out,color .15s ease-out}.ds-btn-solid{background:#16181b;border-color:#16181b;color:#e6e7e3}.ds-btn-solid:hover{background:#34383f;border-color:#34383f}"
+    },
+    {
+      "name": "Line Button",
+      "kind": "button",
+      "refersTo": "button-line",
+      "description": "Secondary action; fills ink on hover.",
+      "html": "<a class=\"ds-btn ds-btn-line\" href=\"#\">GitHub</a>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;min-height:48px;padding:10px 22px;border:2px solid currentColor;border-radius:2px;font:700 17px/1.25 Besley,Georgia,serif;text-decoration:none}.ds-btn-line{color:#16181b;background:transparent}.ds-btn-line:hover{background:#16181b;color:#e6e7e3}"
+    },
+    {
+      "name": "Project Band Name Row",
+      "kind": "custom",
+      "refersTo": "band-cinder",
+      "description": "Display product name with tabular year on a product-coloured band.",
+      "html": "<div class=\"ds-band\"><div class=\"ds-row\"><h2 class=\"ds-pname\">Cinder</h2><span class=\"ds-year\">2026</span></div><p class=\"ds-sum\">Self-hosted media requests in one container.</p></div>",
+      "css": ".ds-band{background:#0b0c10;color:#ece8e3;padding:48px 32px}.ds-row{display:flex;align-items:baseline;gap:8px 20px;flex-wrap:wrap}.ds-pname{margin:0;font:900 clamp(3.5rem,9vw,6rem)/.9 'Big Shoulders Display','Arial Narrow',sans-serif;text-transform:uppercase;color:#f38042}.ds-year{font:600 1.25rem Besley,Georgia,serif;font-variant-numeric:tabular-nums lining-nums;color:#b9b6b2}.ds-sum{margin:28px 0 0;font:500 1.3125rem/1.45 Besley,Georgia,serif;max-width:36em}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Bands",
+    "overview": "Each featured product fills a full-width band in its own app's colours with oversized screenshots bleeding off the edge, on a stone ground with ink text, Big Shoulders Display caps for names and Besley for reading, closing on an ink contact block. The same system translates to a two-page A4 CV with full-bleed strips on white.",
+    "keyCharacteristics": [
+      "Full-bleed flat colour bands, mirrored alternately",
+      "Big Shoulders Display 900 caps over Besley",
+      "2px radius, hairline rules, no cards",
+      "One scroll-driven motion",
+      "Two fixed A4 CV pages with an overflow guard"
+    ],
+    "rules": [
+      { "name": "The Own Band Rule", "body": "A product's colours appear only in its band and CV strip; each band re-scopes --ring and ::selection.", "section": "colors" },
+      { "name": "The Flat Field Rule", "body": "Colour is flat full-width fields; no gradients or washes.", "section": "colors" },
+      { "name": "The Caps Are Names Rule", "body": "Display caps for names and headings; skills keep official casing.", "section": "typography" },
+      { "name": "The Tabular Dates Rule", "body": "Dates use tabular lining figures.", "section": "typography" },
+      { "name": "The Shots-Only Shadow Rule", "body": "Only band screenshots cast shadows, tinted to the band ground.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do confine product colours to their band and strip.",
+      "Do align band text to --edge/--textw.",
+      "Do keep slate for the longest-held job and concrete for facts.",
+      "Do re-scope --ring and ::selection on new coloured fields."
+    ],
+    "donts": [
+      "Don't use gradients, gradient text, washes or glow shadows (ADR 0001).",
+      "Don't use Inter or system faces for display.",
+      "Don't use uppercase mono labels, kickers or eyebrows.",
+      "Don't use card grids.",
+      "Don't add a theme toggle or Brittany imagery.",
+      "Don't use emoji or glyph icons."
+    ]
+  }
+}

@@ -1,170 +1,164 @@
 # Graph Report - simonbrunou.bzh  (2026-10-14)
 
 ## Corpus Check
-- Corpus is ~18,620 words - fits in a single context window. You may not need a graph.
+- Corpus is ~39,637 words - fits in a single context window. You may not need a graph.
 
 ## Summary
-- 256 nodes · 325 edges · 29 communities (17 shown, 12 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 40 edges (avg confidence: 0.85)
+- 211 nodes · 256 edges · 26 communities (17 shown, 9 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 29 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- Site Pages & Rendering
-- Server & PDF Build Scripts
 - package.json Manifest
-- CV Profile, Education & Languages
-- CV BYSTAMP & Diversif Work
-- CSP, Deployment & CI
-- Site Hero & Skills
-- Site Bootstrap & JSON-LD
-- Agent Instructions & Tracker
-- Site app.js Internals
-- PDF Template Sections
-- Tisanerie Project & Frameworks
+- Site Architecture Docs
+- Iris Replacement Decision
+- Bands Design System
+- Homepage Renderer (app.js)
+- Hono Server and CSP
+- PDF Build Script
+- Diversif Home Screenshot
+- CV Template Renderer
+- Cinder Dashboard Screenshot
+- Cinder Library Screenshot
 - Renovate Config
+- Diversif Allergens Screenshot
 - Shared Render Helpers
-- Iris Color Palettes
-- Iris Plan & Spec
-- Iris Design Language
-- CSP Nonce Guard Hook
-- PDF Rebuild Reminder Hook
-- Accessibility Spot Checks
-- Iris Scope Boundaries
-- Motion & Reduced Motion
-- Profile Photo
-- Graphify Integration
-- Resume PDF Skip Path
-- Section Heading Keys
-- Robots & Sitemap
+- Forgejo Issue Tracker
+- Self-hosted Fonts
+- Domain Docs
+- SB Favicon
+- Coolify Deployment
+- CSP Nonce Hook
+- PDF Rebuild Hook
+- Bands Palette Rule
+- Sitemap
 
 ## God Nodes (most connected - your core abstractions)
-1. `Simon Brunou` - 23 edges
-2. `index.html live site` - 19 edges
-3. `SEO / Open Graph / Twitter meta tags` - 12 edges
-4. `Développeur Fullstack — BYSTAMP, juil. 2017 – fév. 2025` - 12 edges
-5. `Fullstack Developer role` - 11 edges
-6. `404 page` - 10 edges
-7. `Stack overview` - 7 edges
-8. `server.js Hono server` - 7 edges
-9. `PDF template (FR-only build-time)` - 7 edges
-10. `Simon Brunou CV` - 7 edges
+1. `el()` - 11 edges
+2. `render()` - 9 edges
+3. `Simon Brunou CV (French PDF)` - 9 edges
+4. `ADR 0001: Replace Iris with a recruiter-first, product-led design` - 8 edges
+5. `pick()` - 7 edges
+6. `renderBand()` - 7 edges
+7. `Iris Redesign Implementation Plan (superseded)` - 7 edges
+8. `link()` - 6 edges
+9. `renderIntro()` - 6 edges
+10. `Homepage index.html` - 6 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Fullstack Developer role` --semantically_similar_to--> `Développeur Fullstack`  [INFERRED] [semantically similar]
-  index.html → simon-brunou-cv.pdf
-- `Simon Brunou (person)` --semantically_similar_to--> `Simon Brunou`  [INFERRED] [semantically similar]
-  index.html → simon-brunou-cv.pdf
-- `Brittany, France (location)` --conceptually_related_to--> `Profil: Rust et programmation système, Bretagne`  [INFERRED]
-  index.html → simon-brunou-cv.pdf
-- `Rust` --conceptually_related_to--> `Langages: Rust, Dart, Kotlin, Swift, Java, JavaScript, TypeScript, Python, C`  [INFERRED]
-  index.html → simon-brunou-cv.pdf
-- `Apps de démonstration SDK: Flutter, Xamarin, React Native, Kotlin, Swift` --references--> `Flutter`  [EXTRACTED]
-  simon-brunou-cv.pdf → index.html
+- `Profile photo used in the CV header and as the Open Graph / social preview image for the personal site` --references--> `CV PDF template page`  [INFERRED]
+  photo.png → pdf-template/index.html
+- `BYSTAMP experience section in CV` --semantically_similar_to--> `BYSTAMP (employer 2017-2025)`  [INFERRED] [semantically similar]
+  simon-brunou-cv.pdf → PRODUCT.md
+- `CV PDF template page` --references--> `Simon Brunou CV (French PDF)`  [INFERRED]
+  pdf-template/index.html → simon-brunou-cv.pdf
+- `Headshot portrait of a young man with short dark wavy hair, light stubble, neutral expression, framed from shoulders up against a plain light background` --conceptually_related_to--> `Simon Brunou CV (French PDF)`  [INFERRED]
+  photo.png → simon-brunou-cv.pdf
+- `CV` --references--> `Simon Brunou CV (French PDF)`  [INFERRED]
+  GLOSSARY.md → simon-brunou-cv.pdf
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **CV PDF build pipeline** — agents_data_js, agents_pdf_generation_flow, agents_render_complete_sentinel, simon_brunou_cv [EXTRACTED 1.00]
-- **Iris design system: palette + typography across dark site, light résumé, 404** — iris_spec_iris_codename, iris_spec_palette_dark, iris_spec_palette_light, iris_plan_inter_jbmono [EXTRACTED 1.00]
-- **Server security and deployment stack** — agents_server_js, agents_csp_nonce, agents_static_assets_allowlist, agents_cloudflare_csp_pitfall [EXTRACTED 1.00]
-- **Agent guidance docs** — agents, claude, docs_agents_domain, docs_agents_issue_tracker, docs_agents_triage_labels [INFERRED 0.85]
-- **Head SEO and discoverability metadata** — index_seo_meta, index_hreflang, index_canonical_url, index_jsonld_placeholder [EXTRACTED 1.00]
-- **Progressive enhancement and failure fallbacks** — index_noscript_fallback, index_fade_rescue, index_theme_bootstrap, index_intersectionobserver_reveals [INFERRED 0.85]
-- **Script load chain data.js render.js app.js** — index_data_js, index_render_js, index_app_js, index_scripts [EXTRACTED 1.00]
-- **BYSTAMP connected stamp ecosystem** — simon_brunou_cv_pdf_sign, simon_brunou_cv_device_mgmt, simon_brunou_cv_middleware, simon_brunou_cv_sdk, simon_brunou_cv_backend, simon_brunou_cv_desktop_apps [EXTRACTED 1.00]
-- **Skill groups** — simon_brunou_cv_lang, simon_brunou_cv_fw, simon_brunou_cv_tools [EXTRACTED 1.00]
-- **Education path** — simon_brunou_cv_dut, simon_brunou_cv_licence, simon_brunou_cv_master [EXTRACTED 1.00]
+- **Bands design language rules** — design_md_bands_north_star, design_md_own_band_rule, design_md_flat_field_rule, design_md_shots_only_shadow_rule [EXTRACTED 1.00]
+- **One data model, two rendering targets** — agents_data_js_single_source, index_html, pdf_template_index_html, simon_brunou_cv_pdf [EXTRACTED 1.00]
+- **Featured products shipped in 2026** — product_md_diversif, product_md_cinder, product_md_tisanerie [EXTRACTED 1.00]
+- **Iris design language components** — docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_palette, docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_typography, docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_gradient_mesh, docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_motion [EXTRACTED 1.00]
+- **Three redesigned surfaces** — docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_homepage, docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_resume_page, docs_superpowers_specs_2026_05_16_engineering_elegant_redesign_design_404_page [EXTRACTED 1.00]
+- **Cinder dashboard panels** — images_cinder_dashboard_pipeline_stats, images_cinder_dashboard_run_maintenance, images_cinder_dashboard_service_health, images_cinder_dashboard_pending_approvals [EXTRACTED 1.00]
+- **Cinder Library page layout** — images_cinder_library_sidebar_navigation, images_cinder_library_media_tabs, images_cinder_library_poster_card_grid, images_cinder_library_adopt_existing_library [INFERRED 0.85]
+- **Diversif feature cards** — images_diversif_home_carnet, images_diversif_home_allergens, images_diversif_home_coparents, images_diversif_home_guide [EXTRACTED 1.00]
 
-## Communities (29 total, 12 thin omitted)
+## Communities (26 total, 9 thin omitted)
 
-### Community 0 - "Site Pages & Rendering"
-Cohesion: 0.07
-Nodes (33): 404 page, Focus, reduced-motion and forced-colors support, Back home and Resume actions, Inline theme/lang bootstrap script, Google Fonts Inter + JetBrains Mono, Saved-language restore (EN/FR strings), Breton countryside 404 message, Theme toggle with localStorage and theme-color meta (+25 more)
-
-### Community 1 - "Server & PDF Build Scripts"
-Cohesion: 0.09
-Nodes (23): puppeteer-core, __dirname, main(), MIME, OUTPUT, resolveChromium(), ROOT, serveFile() (+15 more)
-
-### Community 2 - "package.json Manifest"
+### Community 0 - "package.json Manifest"
 Cohesion: 0.08
 Nodes (25): author, dependencies, hono, @hono/node-server, description, devDependencies, puppeteer-core, engines (+17 more)
 
-### Community 3 - "CV Profile, Education & Languages"
+### Community 1 - "Site Architecture Docs"
 Cohesion: 0.10
-Nodes (26): Backend Spring Boot (Java/Kotlin) migré vers Rust, Application mobile compagnon (POC) Dart/Flutter, Allemand — notions, DUT Informatique — IUT de Vannes, simon.brunou@proton.me, Anglais — courant, Stage — IUT de Vannes, mars 2014 – juin 2014, Développeur Fullstack — Startup (confidentiel), fév. 2025 – juil. 2025 (+18 more)
+Nodes (22): 404 page, 404 inline EN/FR language script, Per-request CSP nonce with strict-dynamic, data.js single source of truth, PDF generation flow (build-pdf.js), data-render-complete sentinel, render.js SBRender shared helpers, server.js Hono server (+14 more)
 
-### Community 4 - "CV BYSTAMP & Diversif Work"
-Cohesion: 0.10
-Nodes (23): Authentification maison: Argon2id, passkeys WebAuthn, BYSTAMP, Apps de démonstration SDK: Flutter, Xamarin, React Native, Kotlin, Swift, Apps desktop Windows/macOS/Linux React + Electron, Gestion objet connecté: onboarding, appairage Bluetooth, OTA, configuration, DevOps: GitLab CI/CD, Docker, Proxmox, Terraform, Stack Diversif: SvelteKit, Svelte 5, TypeScript, Postgres, Drizzle, Tailwind, Docker, Diversif — diversification alimentaire bébé (2026 – présent) (+15 more)
+### Community 2 - "Iris Replacement Decision"
+Cohesion: 0.14
+Nodes (17): ADR 0001: Replace Iris with a recruiter-first, product-led design, Featured projects Diversif and Cinder, Visitor (recruiter or client skimming ~30s), Iris Redesign Implementation Plan (superseded), render(lang) live EN/FR re-render, Resume data-render-complete sentinel and Turnstile PDF flow, Engineering-elegant redesign spec (superseded), 404 page design (+9 more)
 
-### Community 5 - "CSP, Deployment & CI"
-Cohesion: 0.17
-Nodes (12): Coolify + Docker deployment, server.js Hono server, STATIC_ASSETS allowlist, Forgejo CI workflow, Boot server and probe /healthz gate, Chromium requirement / CHROMIUM_PATH, Coolify deployment steps, Docker build and run (+4 more)
+### Community 3 - "Bands Design System"
+Cohesion: 0.11
+Nodes (16): Cinder band (dark/ember), Diversif band (peach/sage), Creative North Star: Bands, Project band component, Scroll-driven screenshot slide, Slate band for longest job (BYSTAMP), Band, Featured project (+8 more)
 
-### Community 6 - "Site Hero & Skills"
-Cohesion: 0.30
-Nodes (14): Brittany, France (location), DevOps, Flutter, Fullstack Developer role, Hero header, Kotlin, Noscript static fallback, photo.png profile photo (+6 more)
-
-### Community 7 - "Site Bootstrap & JSON-LD"
-Cohesion: 0.25
-Nodes (10): app.js (page bootstrap), Contact section, data.js (single source of truth), Fade-in rescue timer (4s safety net), JSON-LD Person schema (runtime injection), Dynamic JSON-LD from data.js, Noscript contact links (email, GitHub, LinkedIn), render.js (shared helpers) (+2 more)
-
-### Community 8 - "Agent Instructions & Tracker"
-Cohesion: 0.25
-Nodes (7): Domain docs guidance, docs/adr ADRs, GLOSSARY.md, Issue tracker: Forgejo, fj CLI, Wayfinding map/child tickets, Triage labels
-
-### Community 9 - "Site app.js Internals"
+### Community 4 - "Homepage Renderer (app.js)"
 Cohesion: 0.33
-Nodes (5): isLight(), onScrollOrResize(), toggleTheme(), updateScrollUI(), updateThemeIcon()
+Nodes (16): el(), hostOf(), link(), pick(), render(), renderBand(), renderContact(), renderExperience() (+8 more)
 
-### Community 10 - "PDF Template Sections"
-Cohesion: 0.25
-Nodes (8): // compétences section (langages, frameworks, outils), // expérience section, // formation section, // centres d'intérêt section, // langues section, // open source section, // profil section, PDF template (FR-only build-time)
+### Community 5 - "Hono Server and CSP"
+Cohesion: 0.15
+Nodes (14): app, BASELINE_HEADERS, cspWithNonce(), __dirname, generateNonce(), HTML_PAGES, htmlCache, injectNonce() (+6 more)
 
-### Community 11 - "Tisanerie Project & Frameworks"
-Cohesion: 0.33
-Nodes (7): Astro, Architecture content-as-data (~60 plantes, 12 besoins, Zod), Frameworks: Flutter, React Native, Android, iOS, React, Electron, Angular, Spring Boot, Node.js, React, Stack Tisanerie: Astro, React, TypeScript, Tailwind, Zod, Docker, Tisanerie — recommandation de tisanes (2026 – présent), Zod
+### Community 6 - "PDF Build Script"
+Cohesion: 0.18
+Nodes (9): puppeteer-core, __dirname, main(), MIME, OUTPUT, resolveChromium(), ROOT, serveFile() (+1 more)
 
-### Community 12 - "Renovate Config"
+### Community 7 - "Diversif Home Screenshot"
+Cohesion: 0.20
+Nodes (9): Allergenes suivis card (12 allergens), Carnet d'aliments card, Co-parents card, Creer mon compte / Se connecter CTAs, Guide par etape card, Hero: Diversifier en confiance, a votre rythme, Top navigation (Accueil, Guide, Allergenes, Sources), Diversif homepage screenshot (FR) (+1 more)
+
+### Community 8 - "CV Template Renderer"
+Cohesion: 0.36
+Nodes (4): addContact(), el(), link(), strip()
+
+### Community 9 - "Cinder Dashboard Screenshot"
+Cohesion: 0.29
+Nodes (6): Cinder admin dashboard screenshot, Cinder (media request/pipeline app), Pending approvals empty state, Pipeline stats summary (219 movies, 155 TV wanted), Run maintenance task cards, Service health panel (TMDB, Prowlarr, QBittorrent, Sabnzbd, Plex, Audiobookshelf, OpenSubtitles)
+
+### Community 10 - "Cinder Library Screenshot"
+Cohesion: 0.40
+Nodes (6): Adopt existing library action, Cinder media management app, Library tabs: Movies 229, Series 91, Books 126, Poster card grid with Monitored badge, size, Cancel/Delete actions, Cinder Library page screenshot (Series tab, dark UI, poster grid), Sidebar navigation (Everyone/Admin sections, theme and EN/FR toggles)
+
+### Community 11 - "Renovate Config"
 Cohesion: 0.33
 Nodes (5): config:recommended, extends, packageRules, platformAutomerge, $schema
 
+### Community 12 - "Diversif Allergens Screenshot"
+Cohesion: 0.40
+Nodes (4): Cited sources: HCSP 2020, EAACI 2021, NEJM 2015/2016, EU reg 1169/2011, Diversif (baby food diversification app), Early allergen introduction guidance (4-6 months; LEAP and EAT studies), Diversif Allergens page screenshot (French UI, 12 tracked allergens)
+
 ### Community 13 - "Shared Render Helpers"
-Cohesion: 0.53
+Cohesion: 0.70
 Nodes (4): buildPersonJsonLd(), dedupeBySchool(), injectJsonLd(), pickLang()
 
-### Community 14 - "Iris Color Palettes"
-Cohesion: 0.67
-Nodes (4): Iris palette (warm purple-pink), Radial gradient mesh background, Dark-surface palette (#0c0a14 ground + accent ramp), Light-surface palette (résumé / PDF register)
+### Community 14 - "Forgejo Issue Tracker"
+Cohesion: 0.50
+Nodes (4): Issue tracker: Forgejo, fj CLI, Wayfinding map/child tickets, Triage labels
 
-### Community 15 - "Iris Plan & Spec"
+### Community 15 - "Self-hosted Fonts"
 Cohesion: 0.67
-Nodes (3): DOM construction via createElement + textContent (no innerHTML), Iris Redesign implementation plan, Engineering-elegant Iris redesign spec
+Nodes (3): Typography: Big Shoulders Display + Besley, Besley OFL license, Big Shoulders Display OFL license
 
-### Community 16 - "Iris Design Language"
+### Community 16 - "Domain Docs"
 Cohesion: 0.67
-Nodes (3): Inter + JetBrains Mono typography pairing, Codename Iris (design language), Linear / Vercel / Stripe aesthetic lineage
+Nodes (3): Domain docs guidance, docs/adr ADRs, GLOSSARY.md
 
 ## Knowledge Gaps
-- **62 isolated node(s):** `config:recommended`, `Iris Redesign implementation plan`, `Focus, reduced-motion and forced-colors support`, `Google Fonts Inter + JetBrains Mono`, `Breton countryside 404 message` (+57 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 112 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **47 isolated node(s):** `config:recommended`, `Forgejo CI workflow`, `GLOSSARY.md`, `docs/adr ADRs`, `fj CLI` (+42 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 103 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Simon Brunou` connect `CV Profile, Education & Languages` to `Site Pages & Rendering`, `Tisanerie Project & Frameworks`, `CV BYSTAMP & Diversif Work`, `Site Hero & Skills`?**
-  _High betweenness centrality (0.248) - this node is a cross-community bridge._
-- **Are the 2 inferred relationships involving `Fullstack Developer role` (e.g. with `Développeur Fullstack` and `Hero header`) actually correct?**
-  _`Fullstack Developer role` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `config:recommended`, `Iris Redesign implementation plan`, `Focus, reduced-motion and forced-colors support` to the rest of the system?**
-  _62 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Site Pages & Rendering` be split into smaller, more focused modules?**
-  _Cohesion score 0.06825396825396825 - nodes in this community are weakly interconnected._
-- **Why does `Simon Brunou CV` connect `Site Pages & Rendering` to `Server & PDF Build Scripts`, `CV Profile, Education & Languages`, `Site Hero & Skills`?**
-  _High betweenness centrality (0.192) - this node is a cross-community bridge._
-- **Should `Server & PDF Build Scripts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08602150537634409 - nodes in this community are weakly interconnected._
-- **Why does `index.html live site` connect `Site Pages & Rendering` to `CSP, Deployment & CI`, `Site Hero & Skills`, `Site Bootstrap & JSON-LD`?**
-  _High betweenness centrality (0.154) - this node is a cross-community bridge._
+- **Why does `Simon Brunou CV (French PDF)` connect `Site Architecture Docs` to `Bands Design System`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Are the 4 inferred relationships involving `Simon Brunou CV (French PDF)` (e.g. with `CV` and `CV PDF template page`) actually correct?**
+  _`Simon Brunou CV (French PDF)` has 4 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `config:recommended`, `Forgejo CI workflow`, `GLOSSARY.md` to the rest of the system?**
+  _47 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `package.json Manifest` be split into smaller, more focused modules?**
+  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
+- **Why does `BYSTAMP experience section in CV` connect `Bands Design System` to `Site Architecture Docs`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Should `Site Architecture Docs` be split into smaller, more focused modules?**
+  _Cohesion score 0.10144927536231885 - nodes in this community are weakly interconnected._
+- **Should `Iris Replacement Decision` be split into smaller, more focused modules?**
+  _Cohesion score 0.1380952380952381 - nodes in this community are weakly interconnected._

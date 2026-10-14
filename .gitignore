@@ -27,3 +27,6 @@ graphify-out/.graphify_root
 # nix / direnv
 .direnv/
 result
+
+# Impeccable review screenshots (scratch; DESIGN.md's sidecar .impeccable/design.json is tracked)
+.impeccable/review/
