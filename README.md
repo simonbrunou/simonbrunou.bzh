@@ -19,7 +19,7 @@ service serves the static site. The FR CV ships as a pre-built PDF
   `pdf-template/styles.css` + `pdf-template/app.js`. Rendered to
   `simon-brunou-cv.pdf` by `scripts/build-pdf.js` (Puppeteer + headless Chrome).
 - **Server** (`server.js` loads the files and listens; `site.js` is the app):
-  - Hono on Node 22 (`@hono/node-server`)
+  - Hono on Node 24 (`@hono/node-server`)
   - Per-request CSP nonce stitched into `script-src` (alongside
     `'strict-dynamic'`) and onto every `<script>` tag. The JSON-LD block
     that `app.js` injects needs neither: it is a data block the browser
@@ -30,7 +30,7 @@ service serves the static site. The FR CV ships as a pre-built PDF
 
 ## Local development
 
-Requires Node ≥ 22. Rebuilding the PDF additionally requires a Chromium
+Requires Node 24. Rebuilding the PDF additionally requires a Chromium
 binary; the build script auto-detects `google-chrome-stable`, `chromium`, or
 `chromium-browser`, or honors `$CHROMIUM_PATH`.
 
@@ -56,16 +56,22 @@ docker run --rm -p 3000:3000 simonbrunou-bzh
 ```
 
 The runtime image is browser-free — Puppeteer is a devDependency and the PDF
-is baked into the image as a static asset.
+is baked into the image as a static asset. The Dockerfile copies only the
+server and the files it serves, so a new page or root file needs a `COPY`
+line there as well as its `HTML_PAGES` or `ROOT_FILES` entry in `site.js`.
+Screenshots and fonts are
+copied by extension (`images/*.webp`, `fonts/*.woff2`), as the server serves
+them.
 
 ## Coolify deployment
 
-1. **Create an app** of type *Dockerfile* pointing at this Git repo.
+1. **Create an app** with the *Dockerfile* build pack pointing at this Git repo.
 2. **Port**: `3000`.
 3. **Environment variables**: `PORT` and `HOST` keep defaults unless you're
    customising — no secrets required.
-4. **Healthcheck**: Coolify picks up the Dockerfile `HEALTHCHECK` automatically.
-   Path `/healthz`, port `3000`.
+4. **Healthcheck**: Coolify runs its own check instead of the Dockerfile
+   `HEALTHCHECK`. Path `/healthz`, port `3000`, host `127.0.0.1`. Not
+   `localhost`: Alpine resolves it to `::1` and the server listens on IPv4.
 5. **Domain**: set in Coolify; Traefik handles TLS via Let's Encrypt.
 
 Pushing to `main` (with a Coolify Git webhook configured) triggers a rebuild.
