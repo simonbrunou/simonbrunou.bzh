@@ -1,6 +1,7 @@
 // CV renderer. Fills pdf-template/index.html from the Profile (profile.js),
 // in French.
 import profile, { pick } from '../profile.js';
+import { pagesFilled } from './render-outcome.js';
 
 (function () {
     var D = profile.data;
@@ -171,43 +172,7 @@ import profile, { pick } from '../profile.js';
         .map(function (i) { return pick(i, lang); })
         .join(', ');
 
-    // build-pdf.js waits on html[data-render-complete] before snapshotting,
-    // so the sentinel must gate on every resource the rendered PDF depends on:
-    //   - images: document.images load events
-    //   - webfonts: document.fonts.ready (the self-hosted woff2 files load
-    //     lazily, so DOMContentLoaded alone is not enough; without this the
-    //     PDF can snapshot with system fallback glyphs instead of
-    //     Big Shoulders Display / Besley).
-    var imgs = Array.prototype.slice.call(document.images);
-    var imgsReady = Promise.all(imgs.map(function (img) {
-        if (img.complete) return Promise.resolve();
-        return new Promise(function (resolve) {
-            img.addEventListener('load', resolve, { once: true });
-            img.addEventListener('error', resolve, { once: true });
-        });
-    }));
-    var fontsReady = !document.fonts
-        ? Promise.resolve()
-        : Promise.all([
-              document.fonts.load('900 1em "Big Shoulders Display"'),
-              document.fonts.load('400 1em "Besley"'),
-              document.fonts.load('700 1em "Besley"'),
-          ]).then(function () { return document.fonts.ready; });
-    // Each .page has a fixed A4 height with overflow hidden, so content that
-    // outgrows a page would be clipped silently. Flag it instead:
-    // build-pdf.js fails the build on data-render-error.
-    Promise.all([imgsReady, fontsReady]).then(function () {
-        var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
-        var overflowing = pages
-            .map(function (page, i) { return page.scrollHeight > page.clientHeight + 1 ? i + 1 : 0; })
-            .filter(Boolean);
-        if (overflowing.length) {
-            document.documentElement.setAttribute(
-                'data-render-error',
-                'page ' + overflowing.join(', ') + ' overflows A4; move content between pages in pdf-template/'
-            );
-            return;
-        }
-        document.documentElement.setAttribute('data-render-complete', '');
-    });
+    // render-outcome.js waits for the images and fonts, checks the pages and
+    // records the outcome for build-pdf.js.
+    pagesFilled();
 })();

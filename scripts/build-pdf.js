@@ -20,6 +20,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUTPUT = path.join(ROOT, "simon-brunou-cv.pdf");
 
+// pdf-template/render-outcome.js writes the outcome of the render on <html>:
+// data-render-complete, or data-render-error with the reason it failed.
+const OUTCOME = "html[data-render-complete], html[data-render-error]";
+const OUTCOME_TIMEOUT_MS = 10_000;
+
 const MIME = {
     ".html": "text/html; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -86,6 +91,25 @@ function startStaticServer() {
     });
 }
 
+// The reason the render failed, or null once the CV is ready to print.
+// pageError resolves with the first uncaught exception in the page. The
+// template records those itself, so the pageerror gives the reason only when
+// the template could not, as with a syntax error in render-outcome.js.
+async function renderFailure(page, pageError) {
+    const outcome = page.waitForSelector(OUTCOME, { timeout: OUTCOME_TIMEOUT_MS }).then(
+        () => null,
+        () => `no render outcome after ${OUTCOME_TIMEOUT_MS / 1000} s`,
+    );
+    const uncaught = pageError.then((err) =>
+        err instanceof Error ? `Uncaught ${err.stack}` : `Uncaught ${err}`,
+    );
+    const fallback = await Promise.race([outcome, uncaught]);
+    const recorded = await page.evaluate(() =>
+        document.documentElement.getAttribute("data-render-error"),
+    );
+    return recorded || fallback;
+}
+
 async function main() {
     const server = await startStaticServer();
     const port = server.address().port;
@@ -106,19 +130,20 @@ async function main() {
             ],
         });
         const page = await browser.newPage();
+        // Listen before navigating: the shape check of the Profile throws
+        // while the modules load, before goto() returns.
+        const pageError = new Promise((resolve) => page.once("pageerror", resolve));
         await page.emulateMediaType("print");
         await page.emulateMediaFeatures([
             { name: "prefers-color-scheme", value: "light" },
         ]);
         await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.waitForSelector(
-            "html[data-render-complete], html[data-render-error]",
-            { timeout: 10_000 },
-        );
-        const renderError = await page.evaluate(() =>
-            document.documentElement.getAttribute("data-render-error"),
-        );
-        if (renderError) throw new Error(`build-pdf: ${renderError}`);
+        const failure = await renderFailure(page, pageError);
+        if (failure) {
+            console.error(`build-pdf: render failed: ${failure}`);
+            process.exitCode = 1;
+            return;
+        }
         const pdf = await page.pdf({
             format: "A4",
             margin: { top: "0", right: "0", bottom: "0", left: "0" },
