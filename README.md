@@ -16,7 +16,7 @@ service serves the static site. The FR CV ships as a pre-built PDF
 - **PDF template** (build-time only, not served): `pdf-template/index.html` +
   `pdf-template/styles.css` + `pdf-template/app.js`. Rendered to
   `simon-brunou-cv.pdf` by `scripts/build-pdf.js` (Puppeteer + headless Chrome).
-- **Server** (`server.js`):
+- **Server** (`server.js` loads the files and listens; `site.js` is the app):
   - Hono on Node 22 (`@hono/node-server`)
   - Per-request CSP nonce stitched into `script-src` (alongside
     `'strict-dynamic'`) and onto every `<script>` tag. The JSON-LD block
@@ -35,6 +35,7 @@ binary; the build script auto-detects `google-chrome-stable`, `chromium`, or
 ```sh
 npm install
 npm run dev                # node --watch server.js
+npm test                   # in-process tests of the site app and its CSP
 npm run build:pdf          # rebuild simon-brunou-cv.pdf from pdf-template/
 ```
 
@@ -69,6 +70,6 @@ Pushing to `main` (with a Coolify Git webhook configured) triggers a rebuild.
 ## Security headers
 
 Baseline headers (CSP, HSTS, X-Frame-Options, Permissions-Policy, COOP, CORP,
-…) are set in `server.js`. CSP `script-src` is rewritten per-response to inject
+…) are set in `site.js`. CSP `script-src` is rewritten per-response to inject
 the nonce. If Traefik / Coolify also adds headers, deduplicate them — double
 `Strict-Transport-Security` is harmless but double CSP is not.

@@ -12,7 +12,9 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      # No unit suite — gate on the server actually booting and /healthz answering.
+      - run: npm test
+      # The tests drive the app in-process; this checks the real entry point
+      # boots and /healthz answers.
       - name: Boot server and probe /healthz
         run: |
           PORT=3999 node server.js &

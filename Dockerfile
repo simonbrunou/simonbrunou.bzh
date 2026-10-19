@@ -20,9 +20,9 @@ COPY --chown=app:app . .
 
 # Drop dev / build artefacts that shouldn't ship.
 # pdf-template/ + scripts/ are build-time only — the runtime serves the
-# already-built simon-brunou-cv.pdf at the repo root.
+# already-built simon-brunou-cv.pdf at the repo root. test/ runs in CI only.
 RUN rm -rf .git .github .claude .wrangler README.md Dockerfile .dockerignore .env* \
-        pdf-template scripts \
+        pdf-template scripts test \
     && chown -R app:app /app
 
 USER app
