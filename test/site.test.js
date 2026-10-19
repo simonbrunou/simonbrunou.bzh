@@ -2,18 +2,22 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import {
     HTML_PAGES,
     NOT_FOUND_HTML,
-    STATIC_ASSETS,
+    ROOT_FILES,
     createSiteApp,
     injectNonce,
     loadSiteFiles,
+    staticAssets,
 } from "../site.js";
+import profile, { createProfile } from "../profile.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const files = await loadSiteFiles(root);
 const app = createSiteApp(files);
+const assets = staticAssets(files.keys());
 const source = (rel) => files.get(rel).toString("utf8");
 
 // Today's policy, written out by hand. Changing the CSP means changing this.
@@ -172,7 +176,7 @@ test("baseline security headers are on every response", async () => {
     const routes = [
         ...HTML_RESPONSES.map(([route]) => route),
         "/healthz",
-        ...Object.keys(STATIC_ASSETS),
+        ...Object.keys(assets),
     ];
     for (const route of routes) {
         const res = await app.request(route);
@@ -182,9 +186,15 @@ test("baseline security headers are on every response", async () => {
     }
 });
 
+test("the static asset map holds today's routes, no more, no fewer", () => {
+    assert.deepEqual(
+        Object.keys(assets).sort(),
+        Object.keys(STATIC_HEADERS).sort(),
+    );
+});
+
 test("static routes keep today's Content-Type and Cache-Control", async () => {
     for (const [route, [type, cache]] of Object.entries(STATIC_HEADERS)) {
-        assert.ok(route in STATIC_ASSETS, `${route} is no longer served`);
         const res = await app.request(route);
         assert.equal(res.status, 200, route);
         assert.equal(res.headers.get("Content-Type"), type, route);
@@ -192,8 +202,19 @@ test("static routes keep today's Content-Type and Cache-Control", async () => {
     }
 });
 
+test("sidecars and licences next to the assets are not served", async () => {
+    for (const rel of [
+        "images/diversif-home.webp.json",
+        "fonts/OFL-besley.txt",
+    ]) {
+        assert.ok(existsSync(path.join(root, rel)), `${rel} is not on disk`);
+        assert.equal(files.has(rel), false, rel);
+        assert.equal((await app.request(`/${rel}`)).status, 404, rel);
+    }
+});
+
 test("every static route serves its file", async () => {
-    for (const [route, meta] of Object.entries(STATIC_ASSETS)) {
+    for (const [route, meta] of Object.entries(assets)) {
         const res = await app.request(route);
         assert.equal(res.status, 200, route);
         const body = Buffer.from(await res.arrayBuffer());
@@ -223,4 +244,84 @@ test("createSiteApp refuses a missing file", () => {
     const partial = new Map(files);
     partial.delete(NOT_FOUND_HTML);
     assert.throws(() => createSiteApp(partial), /404\.html/);
+});
+
+test("boot fails when data.js names a screenshot the map lacks", () => {
+    const data = structuredClone(profile.data);
+    const project = data.projects.find((p) => p.shots && p.shots.length);
+    project.shots[1].src = "/images/missing.webp";
+    assert.throws(() => createSiteApp(files, createProfile(data)), {
+        message:
+            `static asset map lacks /images/missing.webp, named by ` +
+            `data.js: projects[${project.id}].shots[1].src`,
+    });
+});
+
+test("boot fails when styles.css names a font the map lacks", () => {
+    const partial = new Map(files);
+    assert.ok(partial.delete("fonts/besley-latin.woff2"));
+    assert.throws(() => createSiteApp(partial), {
+        message:
+            "static asset map lacks /fonts/besley-latin.woff2, named by " +
+            "styles.css: @font-face",
+    });
+});
+
+test("boot fails when the map lacks the homepage photo", () => {
+    const i = ROOT_FILES.indexOf("photo.png");
+    assert.notEqual(i, -1);
+    ROOT_FILES.splice(i, 1);
+    try {
+        assert.throws(() => createSiteApp(files), {
+            message:
+                "static asset map lacks /photo.png, named by " +
+                "app.js: the homepage photo",
+        });
+    } finally {
+        ROOT_FILES.splice(i, 0, "photo.png");
+    }
+});
+
+test("boot names every file the map lacks", () => {
+    const data = structuredClone(profile.data);
+    const project = data.projects.find((p) => p.shots && p.shots.length);
+    project.shots[0].src = "/images/a.webp";
+    project.shots[1].src = "/images/b.webp";
+    assert.throws(() => createSiteApp(files, createProfile(data)), {
+        message:
+            "static asset map lacks " +
+            `/images/a.webp, named by data.js: projects[${project.id}].shots[0].src; ` +
+            `/images/b.webp, named by data.js: projects[${project.id}].shots[1].src`,
+    });
+});
+
+test("a file's type sets its route's Content-Type and Cache-Control", () => {
+    assert.deepEqual(
+        staticAssets(["images/new.webp", "fonts/new.woff2", "images/new.png"]),
+        {
+            "/fonts/new.woff2": {
+                file: "fonts/new.woff2",
+                type: "font/woff2",
+                cache: "public, max-age=2592000",
+            },
+            "/images/new.webp": {
+                file: "images/new.webp",
+                type: "image/webp",
+                cache: "public, max-age=86400",
+            },
+        },
+    );
+});
+
+test("a root file of no known type fails boot", () => {
+    ROOT_FILES.push("notes.md");
+    try {
+        const extra = new Map(files).set("notes.md", Buffer.from("x"));
+        assert.throws(
+            () => createSiteApp(extra),
+            /no file type for notes\.md in FILE_TYPES/,
+        );
+    } finally {
+        ROOT_FILES.pop();
+    }
 });
