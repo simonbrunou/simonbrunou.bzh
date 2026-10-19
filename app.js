@@ -125,7 +125,10 @@ import profile, { pick as pickLang, visitorLang } from "./profile.js";
 
     function renderBand(p, first) {
         var ui = D.ui[lang];
-        var sec = el("section", "band band-" + p.id);
+        var sec = el("section", "band band-" + p.id + (profile.isMirrored(p) ? " band-mirrored" : ""));
+        Object.keys(p.palette).forEach(function (key) {
+            sec.style.setProperty("--band-" + key, p.palette[key]);
+        });
         var headingId = "project-" + p.id;
         sec.setAttribute("aria-labelledby", headingId);
 

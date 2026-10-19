@@ -41,8 +41,9 @@ export default {
     },
 
     // Products Simon built and shipped himself, newest first. A project with
-    // screenshots gets a full-width band on the homepage; the others get one
-    // line under the bands.
+    // screenshots gets a full-width band on the homepage, in its palette and
+    // on the other side from the band above it; the others get one line
+    // under the bands.
     projects: [
         {
             id: "diversif",
@@ -59,6 +60,16 @@ export default {
                 fr: "SvelteKit et Postgres. Authentification maison avec passkeys, file d'attente hors ligne pour ne rien perdre sans réseau, contenu sourcé (HCSP, LEAP, EAT). Ni publicité ni mesure d'audience. Auto-hébergé en une seule image Docker.",
             },
             stack: ["SvelteKit", "TypeScript", "Postgres", "Drizzle", "Docker"],
+            // The Band palette, taken from the app itself. The homepage Band
+            // and the CV strip both use it.
+            palette: {
+                ground: "#ffdbbd", // Band and strip background
+                text: "#4a2108", // running text
+                soft: "#692d07", // year, details, stack
+                accent: "#2f4a33", // name, focus ring, selection
+                field: "#6b8e6b", // flat field behind the screenshots
+                shadow: "rgba(38, 24, 10, 0.5)", // under the screenshots
+            },
             // crop.wide: aspect ratio of the visible window on wide screens
             // (the image is cut at the bottom). crop.narrow: the window shown
             // on narrow screens, as an aspect ratio plus its left, top and
@@ -100,6 +111,14 @@ export default {
                 fr: "Phoenix LiveView sur SQLite, dans un seul conteneur. Chaque demande avance dans une machine à états pilotée par des workers en arrière-plan, avec mise à jour en direct via PubSub. Chaque service externe passe par son propre adaptateur, et l'assistant d'installation les vérifie tous avant le premier usage. Remplace Sonarr, Radarr, Seerr et Readarr. Plus de 1\u00a0100 commits depuis juin 2026, version 3.0, sous GPLv3.",
             },
             stack: ["Elixir", "Phoenix LiveView", "SQLite", "Tailwind", "Docker"],
+            palette: {
+                ground: "#0b0c10",
+                text: "#ece8e3",
+                soft: "#b9b6b2",
+                accent: "#f38042",
+                field: "#f38042",
+                shadow: "rgba(30, 10, 0, 0.7)",
+            },
             shots: [
                 {
                     src: "/images/cinder-library.webp",

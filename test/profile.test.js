@@ -28,6 +28,22 @@ test("a Featured project is one with screenshots", () => {
     assert.equal(profile.isFeatured({ ...project("tisanerie"), shots: [] }), false);
 });
 
+test("Bands alternate sides by position: every second one is mirrored", () => {
+    assert.equal(profile.isMirrored(project("diversif")), false);
+    assert.equal(profile.isMirrored(project("cinder")), true);
+    assert.equal(profile.isMirrored(project("tisanerie")), false);
+
+    // A new Featured project at the top flips the Bands under it.
+    const added = copy((d) => {
+        d.projects.unshift({ ...structuredClone(d.projects[0]), id: "new", name: "New" });
+    });
+    const sides = createProfile(added);
+    assert.deepEqual(
+        added.projects.filter(sides.isFeatured).map((p) => [p.id, sides.isMirrored(p)]),
+        [["new", false], ["diversif", true], ["cinder", false]],
+    );
+});
+
 test("the Main job is the longest-held one", () => {
     assert.equal(profile.mainJob.company.en, "BYSTAMP");
 });
@@ -143,13 +159,25 @@ test("the shape check names the missing field and its owner", () => {
         [(d) => d.experience[1].positions.reverse(), "data.js: experience[BYSTAMP].positions must run oldest first"],
         [(d) => (d.experience[2].positions[0].endDate = "2014-01"), "data.js: experience[IUT de Vannes].positions[0] ends before it starts"],
         [(d) => delete d.knowsAbout, "data.js: knowsAbout is missing"],
+        [(d) => delete d.projects[0].palette, "data.js: projects[diversif].palette is missing"],
+        [(d) => delete d.projects[1].palette.field, "data.js: projects[cinder].palette.field is missing"],
+        [
+            (d) => (d.projects[1].palette.accent = "orange"),
+            'data.js: projects[cinder].palette.accent must be a colour like "#ffdbbd" or "rgba(38, 24, 10, 0.5)"',
+        ],
     ];
     for (const [edit, message] of cases) {
         assert.throws(() => createProfile(copy(edit)), { message });
     }
 });
 
-test("a project without screenshots needs no details", () => {
+test("a project without screenshots needs no details and no palette", () => {
     assert.doesNotThrow(() => createProfile(copy((d) => delete d.projects[2].details)));
+    const unfeatured = copy((d) => {
+        d.projects[1].shots = [];
+        delete d.projects[1].details;
+        delete d.projects[1].palette;
+    });
+    assert.doesNotThrow(() => createProfile(unfeatured));
     assert.doesNotThrow(() => createProfile(copy((d) => (d.projects[2].shots = []))));
 });

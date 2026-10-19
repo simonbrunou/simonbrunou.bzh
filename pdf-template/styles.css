@@ -32,10 +32,6 @@
     --rule: rgba(22, 24, 27, 0.22);
     --pad-x: 14mm;
 
-    --peach: #ffdbbd;
-    --sage-deep: #2f4a33;
-    --cinder: #0b0c10;
-    --ember: #f38042;
     --slate: #2f5168;
     --slate-text: #ecedea;
 
@@ -219,22 +215,15 @@ h2::after {
     letter-spacing: 0.01em;
 }
 
-.strip-diversif {
-    background: var(--peach);
-    color: #4a2108;
+/* A featured project, in its palette from data.js, which app.js sets on the
+   strip as --band-<key>. */
+.strip-project {
+    background: var(--band-ground);
+    color: var(--band-text);
 }
 
-.strip-diversif .strip-name {
-    color: var(--sage-deep);
-}
-
-.strip-cinder {
-    background: var(--cinder);
-    color: #ece8e3;
-}
-
-.strip-cinder .strip-name {
-    color: var(--ember);
+.strip-project .strip-name {
+    color: var(--band-accent);
 }
 
 /* The longest-held job (BYSTAMP), as on the homepage's slate band. */
