@@ -46,13 +46,20 @@ test("an employer's years collapse when they start and end in the same year", ()
 });
 
 test("a position's period is derived from its dates, in both languages", () => {
-    for (const job of data.experience) {
-        for (const pos of job.positions) {
-            for (const lang of ["en", "fr"]) {
-                assert.equal(profile.period(pos, lang), pos.period[lang], `${pos.startDate} ${lang}`);
-            }
+    // The literals data.js held before the periods were derived.
+    const periods = [
+        { en: "Feb 2025 – Jul 2025", fr: "Février 2025 – Juillet 2025" },
+        { en: "Jan 2017 – Jul 2017", fr: "Janvier 2017 – Juillet 2017" },
+        { en: "Jul 2017 – Feb 2025", fr: "Juillet 2017 – Février 2025" },
+        { en: "Mar 2014 – Jun 2014", fr: "Mars 2014 – Juin 2014" },
+    ];
+    const positions = data.experience.flatMap((job) => job.positions);
+    assert.equal(positions.length, periods.length);
+    positions.forEach((pos, i) => {
+        for (const lang of ["en", "fr"]) {
+            assert.equal(profile.period(pos, lang), periods[i][lang], `${pos.startDate} ${lang}`);
         }
-    }
+    });
 });
 
 test("skill groups follow data.skills, each with its label", () => {

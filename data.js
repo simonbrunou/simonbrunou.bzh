@@ -154,10 +154,6 @@ export default {
                     role: { en: "Fullstack developer", fr: "Développeur fullstack" },
                     startDate: "2025-02",
                     endDate: "2025-07",
-                    period: {
-                        en: "Feb 2025 – Jul 2025",
-                        fr: "Février 2025 – Juillet 2025",
-                    },
                     description: {
                         en: [
                             "Built mobile companion POC application in Dart and Flutter: interaction with connected device, user account management, and web services consumption",
@@ -182,10 +178,6 @@ export default {
                     role: { en: "Intern", fr: "Stage de fin d'études" },
                     startDate: "2017-01",
                     endDate: "2017-07",
-                    period: {
-                        en: "Jan 2017 – Jul 2017",
-                        fr: "Janvier 2017 – Juillet 2017",
-                    },
                     description: {
                         en: [
                             "Android mobile app development in Java/Kotlin and iOS in Objective-C/Swift",
@@ -205,10 +197,6 @@ export default {
                     role: { en: "Fullstack developer", fr: "Développeur fullstack" },
                     startDate: "2017-07",
                     endDate: "2025-02",
-                    period: {
-                        en: "Jul 2017 – Feb 2025",
-                        fr: "Juillet 2017 – Février 2025",
-                    },
                     description: {
                         en: [
                             "PDF signing app: Android (Kotlin) and iOS (Swift) mobile apps, then Flutter (Dart), for signing PDF documents via a Bluetooth-connected stamp",
@@ -251,10 +239,6 @@ export default {
                     role: { en: "Intern", fr: "Stage" },
                     startDate: "2014-03",
                     endDate: "2014-06",
-                    period: {
-                        en: "Mar 2014 – Jun 2014",
-                        fr: "Mars 2014 – Juin 2014",
-                    },
                     description: {
                         en: [
                             "Maintenance and evolution of a native Android app presenting the IUT for open days and trade fairs",
