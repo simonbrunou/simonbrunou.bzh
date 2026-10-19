@@ -1,6 +1,7 @@
 // Shared data for simonbrunou.bzh and the CV.
 // Edit this file to update both the website and the CV PDF.
-window.RESUME_DATA = {
+// profile.js reads it and derives the rest (see AGENTS.md).
+export default {
     personal: {
         name: "Simon Brunou",
         firstName: "Simon",
@@ -8,9 +9,12 @@ window.RESUME_DATA = {
         email: "simon.brunou@proton.me",
         phone: "+33621041865",
         phoneDisplay: { en: "+33 621 041 865", fr: "06 21 04 18 65" },
-        location: {
-            en: "Saint-Nolff, Brittany, France",
-            fr: "Saint-Nolff, Bretagne, France",
+        // Shown as "Saint-Nolff, Brittany, France", and given to search
+        // engines as the postal address in the JSON-LD.
+        address: {
+            locality: "Saint-Nolff",
+            region: { en: "Brittany", fr: "Bretagne" },
+            country: { code: "FR", name: { en: "France", fr: "France" } },
         },
         githubUrl: "https://github.com/simonbrunou",
         githubDisplay: "github.com/simonbrunou",

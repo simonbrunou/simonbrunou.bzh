@@ -35,8 +35,8 @@ export const STATIC_ASSETS = {
         type: "application/javascript; charset=utf-8",
         cache: "public, max-age=0, must-revalidate",
     },
-    "/render.js": {
-        file: "render.js",
+    "/profile.js": {
+        file: "profile.js",
         type: "application/javascript; charset=utf-8",
         cache: "public, max-age=0, must-revalidate",
     },

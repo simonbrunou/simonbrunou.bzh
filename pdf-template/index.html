@@ -65,8 +65,9 @@
             </section>
         </div>
 
-        <script src="/data.js"></script>
-        <script src="/render.js"></script>
-        <script src="app.js"></script>
+        <!-- ES modules. app.js imports profile.js, which imports data.js; all three are listed so the browser fetches them in parallel. -->
+        <script type="module" src="/data.js"></script>
+        <script type="module" src="/profile.js"></script>
+        <script type="module" src="app.js"></script>
     </body>
 </html>

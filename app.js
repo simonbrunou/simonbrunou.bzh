@@ -1,27 +1,18 @@
-// Homepage renderer (Bands). Builds the whole page from window.RESUME_DATA
-// into #page, and rebuilds it when the visitor switches language.
+// Homepage renderer (Bands). Builds the whole page from the Profile
+// (profile.js) into #page, and rebuilds it when the Visitor switches language.
 // DOM is built with createElement and textContent only, never innerHTML.
+import profile, { pick as pickLang, visitorLang } from "./profile.js";
+
 (function () {
     "use strict";
 
-    var D = window.RESUME_DATA;
+    var D = profile.data;
     var root = document.getElementById("page");
     var announcer = document.getElementById("a11y-announcer");
-    var lang = initialLang();
+    var lang = visitorLang(window);
 
     function pick(value) {
-        return window.SBRender.pickLang(value, lang);
-    }
-
-    // ?lang= (hreflang arrivals, shared links) wins over the stored choice,
-    // which wins over English.
-    function initialLang() {
-        var fromUrl = new URLSearchParams(window.location.search).get("lang");
-        if (fromUrl === "en" || fromUrl === "fr") return fromUrl;
-        try {
-            if (localStorage.getItem("lang") === "fr") return "fr";
-        } catch (_) {}
-        return "en";
+        return pickLang(value, lang);
     }
 
     function el(tag, cls, text) {
@@ -46,17 +37,6 @@
 
     function hostOf(url) {
         return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    }
-
-    function yearOf(date) {
-        return date.slice(0, 4);
-    }
-
-    // Months between the first position's start and the last one's end.
-    function tenure(job) {
-        var first = job.positions[0].startDate.split("-");
-        var last = job.positions[job.positions.length - 1].endDate.split("-");
-        return (last[0] - first[0]) * 12 + (last[1] - first[1]);
     }
 
     function setLang(next) {
@@ -105,7 +85,7 @@
         h1.id = "name";
         who.appendChild(h1);
         who.appendChild(el("p", "role", pick(D.title)));
-        who.appendChild(el("p", "loc", pick(D.personal.location)));
+        who.appendChild(el("p", "loc", profile.location(lang)));
         wrap.appendChild(who);
 
         var about = el("div", "about");
@@ -201,18 +181,14 @@
 
         var head = el("div", "job-head");
         head.appendChild(el("h3", "display job-co", pick(job.company)));
-        if (isMain) {
-            var first = job.positions[0];
-            var last = job.positions[job.positions.length - 1];
-            head.appendChild(el("span", "year", yearOf(first.startDate) + "\u2013" + yearOf(last.endDate)));
-        }
+        if (isMain) head.appendChild(el("span", "year", profile.employerYears(job)));
         grid.appendChild(head);
 
         var meta = el("ul", "job-meta");
         job.positions.forEach(function (pos) {
             var li = el("li", "job-pos");
             li.appendChild(el("span", "job-role", pick(pos.role)));
-            li.appendChild(el("span", "job-period", pick(pos.period)));
+            li.appendChild(el("span", "job-period", profile.period(pos, lang)));
             meta.appendChild(li);
         });
         grid.appendChild(meta);
@@ -223,7 +199,7 @@
         det.appendChild(el("summary", "", ui.detail_label));
         var grouped = job.positions.length > 1;
         job.positions.forEach(function (pos) {
-            if (grouped) det.appendChild(el("p", "job-more-role", pick(pos.role) + ", " + pick(pos.period)));
+            if (grouped) det.appendChild(el("p", "job-more-role", pick(pos.role) + ", " + profile.period(pos, lang)));
             var ul = el("ul");
             pick(pos.description).forEach(function (b) {
                 ul.appendChild(el("li", "", b));
@@ -246,13 +222,9 @@
         head.appendChild(h);
         sec.appendChild(head);
 
-        // The longest-held job gets its own slate band.
-        var mainIdx = 0;
-        D.experience.forEach(function (job, i) {
-            if (tenure(job) > tenure(D.experience[mainIdx])) mainIdx = i;
-        });
-        D.experience.forEach(function (job, i) {
-            sec.appendChild(renderJob(job, i === mainIdx));
+        // The main job gets its own slate band.
+        D.experience.forEach(function (job) {
+            sec.appendChild(renderJob(job, job === profile.mainJob));
         });
         return sec;
     }
@@ -266,10 +238,10 @@
         h.id = "facts-title";
         wrap.appendChild(h);
 
-        ["languages", "frameworks", "tools"].forEach(function (key) {
-            var block = el("div", "skill skill-" + key);
-            block.appendChild(el("h3", "fact-label", pick(D.skillCategoryLabels[key])));
-            block.appendChild(el("p", "display skill-run", D.skills[key].join(", ")));
+        profile.skillGroups.forEach(function (group) {
+            var block = el("div", "skill skill-" + group.key);
+            block.appendChild(el("h3", "fact-label", pick(group.label)));
+            block.appendChild(el("p", "display skill-run", group.skills.join(", ")));
             wrap.appendChild(block);
         });
 
@@ -332,17 +304,27 @@
         return foot;
     }
 
+    // One Person block in <head>, rewritten in the Visitor's language.
+    function renderJsonLd() {
+        var block = document.head.querySelector('script[type="application/ld+json"]');
+        if (!block) {
+            block = document.createElement("script");
+            block.type = "application/ld+json";
+            document.head.appendChild(block);
+        }
+        block.textContent = JSON.stringify(profile.personJsonLd(lang));
+    }
+
     function render() {
         document.documentElement.lang = lang;
         document.title = D.ui[lang].page_title;
+        renderJsonLd();
 
         var main = el("main");
         main.appendChild(renderIntro());
-        var banded = D.projects.filter(function (p) {
-            return p.shots && p.shots.length;
-        });
+        var banded = D.projects.filter(profile.isFeatured);
         var rest = D.projects.filter(function (p) {
-            return !(p.shots && p.shots.length);
+            return !profile.isFeatured(p);
         });
         banded.forEach(function (p, i) {
             main.appendChild(renderBand(p, i === 0));
@@ -357,5 +339,4 @@
     }
 
     render();
-    window.SBRender.injectJsonLd(D, lang);
 })();
