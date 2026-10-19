@@ -6,6 +6,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # The job drives the runner's own Docker daemon, which other jobs share:
+      # names carry the run id so two runs never collide.
+      IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}
+      CONTAINER: simonbrunou-bzh-ci-${{ github.run_id }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -26,3 +31,30 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3999/healthz)
           kill "$pid" 2>/dev/null || true
           test "$code" = "200"
+      # Coolify builds the Dockerfile on every deploy. Building and running the
+      # image here makes a broken Dockerfile, or a served file missing from its
+      # COPY lines, fail the PR instead of the deploy.
+      - name: Build the production image
+        run: docker build --tag "$IMAGE" .
+      # Docker runs the Dockerfile HEALTHCHECK, the same wget of
+      # 127.0.0.1:3000/healthz that Coolify's own check falls back to.
+      - name: Run the image until Docker reports it healthy
+        run: |
+          docker rm -f "$CONTAINER" 2>/dev/null || true
+          docker run -d --name "$CONTAINER" "$IMAGE"
+          for i in $(seq 1 60); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' "$CONTAINER")
+            test "$status" = healthy && exit 0
+            test "$status" = unhealthy && break
+            sleep 1
+          done
+          echo "container is $status" >&2
+          docker logs "$CONTAINER" >&2
+          exit 1
+      - name: Check routes, files and permissions inside the image
+        run: docker exec -i "$CONTAINER" node --input-type=module - < scripts/check-image.js
+      - name: Remove the container and image
+        if: always()
+        run: |
+          docker rm -f "$CONTAINER" || true
+          docker image rm -f "$IMAGE" || true

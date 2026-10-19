@@ -1,34 +1,46 @@
-# syntax=docker/dockerfile:1.28
-FROM node:24-alpine AS deps
+# syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
+
+# Both stages start from this one pinned base, so Renovate bumps one digest.
+FROM node:24-alpine@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS base
 WORKDIR /app
-COPY package.json package-lock.json* ./
+
+FROM base AS deps
+# No glob on the lockfile: the build fails without it, and `npm ci` fails when
+# it disagrees with package.json.
+COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --omit=dev --no-audit --no-fund
+    npm ci --omit=dev --no-audit --no-fund
 
-FROM node:24-alpine AS runtime
-WORKDIR /app
-
-RUN apk add --no-cache ca-certificates dumb-init \
-    && addgroup -S app && adduser -S app -G app
-
+FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0
 
+# No `apk add`. The server makes no outbound requests, so it needs no CA
+# certificates. Node runs as PID 1 without dumb-init: server.js handles
+# SIGTERM and SIGINT and starts no child process, so there is nothing to reap.
+
+# These COPY lines are the allowlist of what ships: server.js, site.js,
+# package.json, production node_modules, and every file site.js serves. That
+# is HTML_PAGES, NOT_FOUND_HTML and ROOT_FILES by name, and the images and
+# fonts by the extension ASSET_DIRS gives them, so the *.webp.json sidecars
+# and OFL-*.txt licences stay out. A file added to ROOT_FILES needs a line
+# here too; CI runs scripts/check-image.js in the image to catch drift.
+# The files stay owned by root, so the server cannot change them.
 COPY --from=deps /app/node_modules ./node_modules
-COPY --chown=app:app . .
+COPY package.json server.js site.js ./
+COPY index.html 404.html data.js profile.js app.js styles.css \
+     photo.png favicon.svg simon-brunou-cv.pdf robots.txt sitemap.xml ./
+COPY images/*.webp images/
+COPY fonts/*.woff2 fonts/
 
-# Drop dev / build artefacts that shouldn't ship.
-# pdf-template/ + scripts/ are build-time only — the runtime serves the
-# already-built simon-brunou-cv.pdf at the repo root. test/ runs in CI only.
-RUN rm -rf .git .github .claude .wrangler README.md Dockerfile .dockerignore .env* \
-        pdf-template scripts test \
-    && chown -R app:app /app
-
-USER app
+# The base image's unprivileged user.
+USER node
 EXPOSE 3000
+# Coolify replaces this with its own check of the same URL (curl, falling back
+# to wget), so busybox wget must stay in the image. 127.0.0.1, not localhost:
+# in Alpine localhost resolves to ::1 first, and the server listens on IPv4.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1
 
-ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]

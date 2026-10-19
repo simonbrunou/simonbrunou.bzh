@@ -60,7 +60,7 @@ Fonts (Big Shoulders Display, Besley) are self-hosted under
    switch. `404.html` reuses `styles.css`.
 2. `pdf-template/{index.html,app.js,render-outcome.js,styles.css}` —
    build-time template rendered once to `simon-brunou-cv.pdf`. **Not served in
-   production** (the Dockerfile strips this directory). French-only,
+   production** (the Dockerfile does not copy it). French-only,
    print-styled, no JSON-LD.
 
 Both pages load `data.js`, `profile.js` and their `app.js` as
@@ -79,7 +79,7 @@ outcome that `pdf-template/render-outcome.js` writes on `<html>`, then
 snapshots to A4 PDF with `printBackground: true`. On a failed render it logs
 the reason and exits 1 (see "The CV render outcome" below).
 
-**Server — `server.js` + `site.js` (Hono on Node 22).** `site.js` is the site
+**Server — `server.js` + `site.js` (Hono on Node 24).** `site.js` is the site
 app: it holds the routes, headers and CSP machinery. It exports
 `createSiteApp(files)` and `loadSiteFiles(root)`, plus `ROOT_FILES`,
 `staticAssets`, `HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the
@@ -110,8 +110,9 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   `Cache-Control` per file extension. A new screenshot or font needs no edit
   to `site.js`, only a line in `STATIC_HEADERS` in `test/site.test.js`,
   which lists every route the site serves. A new root file needs a
-  `ROOT_FILES` entry, a new extension a `FILE_TYPES` entry, a new asset
-  directory an `ASSET_DIRS` entry. The `*.webp.json` provenance sidecars and
+  `ROOT_FILES` entry and a `COPY` line in the `Dockerfile`, a new extension
+  a `FILE_TYPES` entry, a new asset directory an `ASSET_DIRS` entry and a
+  `COPY` line. The `*.webp.json` provenance sidecars and
   `OFL-*.txt` licences next to the assets are not served. No request reaches
   the filesystem, so there is no directory traversal. Boot fails, naming the
   file, when a `shots[].src` in `data.js`, the homepage photo, `/styles.css`
@@ -122,12 +123,23 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   entry becomes a route with the nonce treatment. `404.html` is served via
   `app.notFound(...)` with the same machinery.
 
-**Deployment — Coolify + Docker.** Build runs `npm install --omit=dev`, then
-ships a browser-free Alpine image. `puppeteer-core` is a devDependency only
-(no Chromium in production). Traefik fronts the container; `HEALTHCHECK` hits
-`/healthz`. `pdf-template/`, `scripts/` and `test/` are removed from the
-runtime image in the Dockerfile. CI runs `npm test`, then boots
-`node server.js` and probes `/healthz`.
+**Deployment — Coolify + Docker.** Coolify (application 4) builds the
+`Dockerfile` with its Dockerfile build pack on every push to `main`, and
+Traefik fronts the container. The image is Alpine with Node 24 and no
+browser: `puppeteer-core` is a devDependency only. Dependencies install with
+`npm ci --omit=dev` from the lockfile. The `COPY` lines are the allowlist of
+what ships: `server.js`, `site.js`, `package.json`, production
+`node_modules`, and every file `site.js` serves. The files belong to root and
+the server runs as `node`, so it cannot change them. Coolify replaces the
+Dockerfile `HEALTHCHECK` with its own check of
+`http://127.0.0.1:3000/healthz` (`curl`, falling back to the image's busybox
+`wget`). Its health check host must stay `127.0.0.1`: in Alpine `localhost`
+resolves to `::1` first and the server listens on IPv4 only.
+
+CI runs `npm test`, boots `node server.js` and probes `/healthz`. It then
+builds the image, waits for Docker to report it healthy, and runs
+`scripts/check-image.js` inside it: every route answers, `/app` holds exactly
+the allowlist, and nothing under `/app` is writable.
 
 ## Things that have bitten us
 
@@ -167,6 +179,16 @@ runtime image in the Dockerfile. CI runs `npm test`, then boots
   editing HTML, CSS, JS or assets. Screenshots in `images/` are served with a
   one-day `max-age`, so a browser keeps showing the old image after a swap;
   disable the cache when checking one.
+- **Coolify ignored the Dockerfile until 2026-10-19.** Its railpack build
+  pack built the image without it, so production ran as root with every repo
+  file inside. Application 4 now uses the Dockerfile build pack; keep it, or
+  Dockerfile changes stop reaching production.
+- **Coolify's health check host must be `127.0.0.1`.** Coolify runs its own
+  `curl … || wget …` check inside the container instead of the Dockerfile
+  `HEALTHCHECK`. In Alpine `localhost` resolves to `::1` first and the server
+  listens on IPv4 `0.0.0.0` only, so a `localhost` check is refused and
+  Coolify rolls the deploy back (deploy 2481). The image must also keep
+  `curl` or `wget`; busybox `wget` is the one it has.
 
 ## graphify
 

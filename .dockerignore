@@ -1,15 +1,6 @@
-node_modules
-npm-debug.log
+# The Dockerfile's COPY lines decide what ships in the image. This file only
+# keeps the bulk and the secrets out of the build context.
 .git
-.gitignore
-.github
-.claude
-.wrangler
+node_modules
 .env
 .env.*
-!.env.example
-.DS_Store
-*.log
-coverage
-.vscode
-.idea

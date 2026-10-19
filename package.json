@@ -19,7 +19,7 @@
     "build:pdf": "node scripts/build-pdf.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.0",
