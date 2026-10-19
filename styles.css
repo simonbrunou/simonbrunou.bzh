@@ -36,17 +36,6 @@
     --slate-text: #ecedea;
     --slate-soft: #c5d2dc;
 
-    --peach: #ffdbbd;
-    --sage: #6b8e6b;
-    --sage-deep: #2f4a33;
-    --brown: #4a2108;
-    --brown-soft: #692d07;
-
-    --cinder-ground: #0b0c10;
-    --ember: #f38042;
-    --cinder-text: #ece8e3;
-    --cinder-soft: #b9b6b2;
-
     --contact-text: #cfd1cc;
     --contact-soft: #b3b6b1;
 
@@ -258,19 +247,30 @@ main:focus {
 /* Bands ------------------------------------------------------------ */
 /* Text column aligned with the page wrap; the screenshots take the rest of
    the width and run off the band edge. A flat field of the product's second
-   colour sits behind them. */
+   colour sits behind them. The colours are the project's palette in
+   data.js, which app.js sets on the band as --band-<key>. */
 .band {
     --field-left: calc(var(--edge) + var(--textw) + 28px);
     position: relative;
     overflow: hidden;
     display: grid;
     grid-template-columns: var(--edge) var(--textw) minmax(0, 1fr);
+    background: var(--band-ground);
+    color: var(--band-text);
+    --ring: var(--band-accent);
+}
+.band ::selection {
+    background: var(--band-accent);
+    color: var(--band-ground);
 }
 .band::before {
     content: "";
     position: absolute;
     top: 0;
     bottom: 0;
+    right: 0;
+    left: var(--field-left);
+    background: var(--band-field);
 }
 .band-text {
     grid-column: 2;
@@ -289,6 +289,20 @@ main:focus {
     padding: 72px 0 72px 56px;
 }
 
+/* Every second band is mirrored (profile.js): text on the right, the field
+   and the screenshots on the left. */
+.band-mirrored {
+    grid-template-columns: minmax(0, 1fr) var(--textw) var(--edge);
+}
+.band-mirrored::before {
+    left: 0;
+    right: var(--field-left);
+}
+.band-mirrored .band-shots {
+    grid-column: 1;
+    padding: 72px 56px 72px 0;
+}
+
 .name-row {
     display: flex;
     align-items: baseline;
@@ -297,6 +311,7 @@ main:focus {
 }
 .pname {
     font-size: clamp(3.5rem, 9vw, 6rem);
+    color: var(--band-accent);
 }
 .year {
     font-size: 1.25rem;
@@ -327,10 +342,16 @@ main:focus {
     display: inline-block;
     padding-block: 6px;
 }
+.band .year,
+.band .details,
+.band .stack {
+    color: var(--band-soft);
+}
 
 .shot {
     display: block;
     max-width: none;
+    box-shadow: 0 28px 48px -22px var(--band-shadow);
 }
 .crop {
     aspect-ratio: var(--ard, 1.6);
@@ -343,89 +364,43 @@ main:focus {
     height: auto;
 }
 
-/* Diversif: peach ground, sage field on the right. */
-.band-diversif {
-    background: var(--peach);
-    color: var(--brown);
-    --ring: var(--sage-deep);
-}
-.band-diversif ::selection {
-    background: var(--sage-deep);
-    color: var(--peach);
-}
-.band-diversif::before {
-    right: 0;
-    left: var(--field-left);
-    background: var(--sage);
-}
-.band-diversif .pname {
-    color: var(--sage-deep);
-}
-.band-diversif .year,
-.band-diversif .details,
-.band-diversif .stack {
-    color: var(--brown-soft);
-}
-.band-diversif .shot {
-    box-shadow: 0 28px 48px -22px rgba(38, 24, 10, 0.5);
-}
-.band-diversif .shot:first-child {
-    width: 116%;
-}
-.band-diversif .shot + .shot {
-    width: 98%;
-    margin-left: 18%;
-    margin-top: -88px;
+/* Wide screens (the exact complement of the 900px query below): the
+   screenshots overlap and run off the band edge. Odd and even shots take
+   turns, so a band holds any number of them. */
+@media not all and (max-width: 900px) {
+    .shot:nth-child(odd) {
+        width: 116%;
+    }
+    .shot:nth-child(even) {
+        width: 98%;
+        margin-left: 18%;
+    }
+    .shot + .shot {
+        margin-top: -88px;
+    }
+    .band-mirrored .shot:nth-child(odd) {
+        width: 91%;
+        margin-left: 9%;
+    }
+    .band-mirrored .shot:nth-child(even),
+    .band-mirrored .shot:only-child {
+        width: 116%;
+        margin-left: -16%;
+    }
 }
 
-/* Cinder: near-black ground, ember field on the left, mirrored. */
-.band-cinder {
-    grid-template-columns: minmax(0, 1fr) var(--textw) var(--edge);
-    background: var(--cinder-ground);
-    color: var(--cinder-text);
-    --ring: var(--ember);
-}
-.band-cinder ::selection {
-    background: var(--ember);
-    color: var(--cinder-ground);
-}
-.band-cinder::before {
-    left: 0;
-    right: var(--field-left);
-    background: var(--ember);
-}
-.band-cinder .band-text {
-    grid-column: 2;
-}
-.band-cinder .band-shots {
-    grid-column: 1;
-    padding: 72px 56px 72px 0;
-}
-.band-cinder .pname,
+/* Cinder: a faint outline separates its dark screenshots from the dark
+   ground, and the main link takes the accent. Each later shot is
+   positioned so it paints over the outline of the one before. */
 .band-cinder .plink-main {
-    color: var(--ember);
-}
-.band-cinder .year,
-.band-cinder .details,
-.band-cinder .stack {
-    color: var(--cinder-soft);
-}
-.band-cinder .shot {
-    box-shadow: 0 28px 48px -22px rgba(30, 10, 0, 0.7);
+    color: var(--band-accent);
 }
 .band-cinder .crop {
     outline: 1px solid rgba(255, 255, 255, 0.12);
     outline-offset: -1px;
 }
-.band-cinder .shot:first-child {
-    width: 91%;
-    margin-left: 9%;
-}
 .band-cinder .shot + .shot {
     position: relative;
-    width: 116%;
-    margin-left: -16%;
-    margin-top: -88px;
 }
 
 /* The one motion on the page: as a band scrolls into view, its screenshots
@@ -439,7 +414,7 @@ main:focus {
             animation-timeline: view();
             animation-range: entry 10% cover 40%;
         }
-        .band-cinder .band-shots {
+        .band-mirrored .band-shots {
             animation-name: shots-in-left;
         }
     }
@@ -816,8 +791,7 @@ main:focus {
         margin-top: 28px;
     }
 
-    .band,
-    .band-cinder {
+    .band {
         display: block;
     }
     .band::before {
@@ -827,23 +801,11 @@ main:focus {
         padding: 56px var(--gutter) 40px;
     }
     .band-shots,
-    .band-cinder .band-shots {
+    .band-mirrored .band-shots {
         display: grid;
         gap: 16px;
         padding: 28px var(--gutter) 36px;
-    }
-    .band-diversif .band-shots {
-        background: var(--sage);
-    }
-    .band-cinder .band-shots {
-        background: var(--ember);
-    }
-    .band-diversif .shot:first-child,
-    .band-diversif .shot + .shot,
-    .band-cinder .shot:first-child,
-    .band-cinder .shot + .shot {
-        width: 100%;
-        margin: 0;
+        background: var(--band-field);
     }
     .crop {
         aspect-ratio: var(--arm, 1.6);

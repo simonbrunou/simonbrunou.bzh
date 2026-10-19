@@ -84,7 +84,12 @@ import { recordOutcome } from './render-outcome.js';
         }
 
         var box = el('article', 'project');
-        box.appendChild(strip('strip-' + p.id, p.name, p.year));
+        // The project's Band palette, as on the homepage.
+        var head = strip('strip-project', p.name, p.year);
+        Object.keys(p.palette).forEach(function (key) {
+            head.style.setProperty('--band-' + key, p.palette[key]);
+        });
+        box.appendChild(head);
         var body = el('div', 'project-body');
         body.appendChild(el('p', 'summary', pick(p.summary, lang)));
         body.appendChild(el('p', 'details', pick(p.details, lang)));

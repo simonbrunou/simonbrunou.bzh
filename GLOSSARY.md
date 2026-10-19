@@ -13,8 +13,12 @@ A product Simon built and shipped himself, shown first on the homepage as the ma
 _Avoid_: open source, side project, portfolio item
 
 **Band**:
-A full-width homepage section in one Featured project's own colours, with its screenshots running off the edge. The Main job gets a slate band. The design language is named Bands after it.
+A full-width homepage section in one Featured project's own colours, its Band palette, with its screenshots running off the edge. Bands alternate sides by position: every second one is mirrored and runs its screenshots off the left edge. The Main job gets a slate band. The design language is named Bands after it.
 _Avoid_: card, panel, project tile
+
+**Band palette**:
+The colours of one Featured project, taken from its app: ground, text, soft text, accent, the field behind the screenshots and the screenshot shadow. Written on the project in `data.js`; its Band and its CV strip both use it.
+_Avoid_: theme, brand colours
 
 **Main job**:
 The job Simon held longest, counted from the start of the first position there to the end of the last. It gets the slate Band on the homepage and the slate strip on the CV.

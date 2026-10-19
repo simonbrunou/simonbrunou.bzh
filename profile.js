@@ -8,6 +8,10 @@ import content from "./data.js";
 
 const LANGS = ["en", "fr"];
 
+// The colours of a Band palette (GLOSSARY.md). The renderers set each one
+// as --band-<key> on the Band and on the CV strip.
+const PALETTE = ["ground", "text", "soft", "accent", "field", "shadow"];
+
 const MONTHS = {
     en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     fr: [
@@ -75,6 +79,14 @@ function period(position, lang) {
 // "data.js: projects[cinder].stack is missing".
 export function createProfile(data) {
     checkShape(data);
+
+    // Bands alternate sides by position among the Featured projects: the
+    // first runs its screenshots off the right edge, the second is mirrored
+    // and runs them off the left, and so on.
+    const featured = data.projects.filter(isFeatured);
+    function isMirrored(project) {
+        return featured.findIndex((p) => p.id === project.id) % 2 === 1;
+    }
 
     // The Main job: the longest-held one; the first one listed wins a tie.
     const mainJob = data.experience.reduce((main, job) => (tenure(job) > tenure(main) ? job : main));
@@ -151,6 +163,7 @@ export function createProfile(data) {
     return {
         data,
         isFeatured,
+        isMirrored,
         mainJob,
         employerYears,
         period,
@@ -176,6 +189,9 @@ function checkShape(data) {
     const year = (v, path) => expect(v, path, 'a year like "2017"', (x) => /^\d{4}$/.test(x));
     const month = (v, path) =>
         expect(v, path, 'a month like "2017-07"', (x) => /^\d{4}-(0[1-9]|1[0-2])$/.test(x));
+    const colour = (v, path) =>
+        expect(v, path, 'a colour like "#ffdbbd" or "rgba(38, 24, 10, 0.5)"', (x) =>
+            /^(#[0-9a-f]{6}|rgba\(\d{1,3}, \d{1,3}, \d{1,3}, (0|1|0?\.\d+)\))$/i.test(x));
     const list = (v, path) => expect(v, path, "a non-empty list", (x) => Array.isArray(x) && x.length > 0);
     const strings = (v, path) => list(v, path).forEach((s, i) => str(s, `${path}[${i}]`));
     // A non-empty list of objects.
@@ -210,7 +226,11 @@ function checkShape(data) {
         strings(p.stack, `${at}.stack`);
         if (p.shots === undefined) return;
         expect(p.shots, `${at}.shots`, "a list", Array.isArray);
-        if (p.shots.length) text(p.details, `${at}.details`);
+        if (p.shots.length) {
+            text(p.details, `${at}.details`);
+            const palette = object(p.palette, `${at}.palette`);
+            PALETTE.forEach((key) => colour(palette[key], `${at}.palette.${key}`));
+        }
         p.shots.forEach((shot, j) => {
             const s = `${at}.shots[${j}]`;
             object(shot, s);

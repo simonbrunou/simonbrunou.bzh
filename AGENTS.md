@@ -44,9 +44,11 @@ copies (`test/profile.test.js`). No `vm` or adapter is involved.
 
 **Design — Bands** (`docs/adr/0001-replace-iris.md`, `DESIGN.md`). Each
 project with `shots` in `data.js` gets a full-width band in its own app's
-colours; projects without shots get one line under the bands. A new banded
-project needs its own `.band-<id>` colours in `styles.css`. The Main job gets
-the slate band. Fonts (Big Shoulders Display, Besley) are self-hosted under
+colours; projects without shots get one line under the bands. Those colours
+are the project's `palette` in `data.js`, which the band and its CV strip
+share, so a new banded project needs no CSS. Bands alternate sides by
+position (`isMirrored` in `profile.js`). The Main job gets the slate band.
+Fonts (Big Shoulders Display, Besley) are self-hosted under
 `fonts/`; screenshots live in `images/` as WebP.
 
 **Two rendering targets, one Profile.**
