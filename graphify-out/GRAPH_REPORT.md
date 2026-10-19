@@ -1,4 +1,4 @@
-# Graph Report - t3-8d3fa25e  (2026-10-19)
+# Graph Report - simonbrunou.bzh  (2026-10-19)
 
 ## Corpus Check
 - 32 files · ~44,912 words
@@ -21,7 +21,7 @@
 - Iris Replacement Decision
 - Bands Design System
 - Homepage Renderer (app.js)
-- site.test.js
+- Site App and CSP (site.js)
 - PDF Build Script
 - Diversif Home Screenshot
 - CV Template Renderer
@@ -37,7 +37,7 @@
 - CSP Nonce Hook
 - PDF Rebuild Hook
 - Bands Palette Rule
-- profile.js
+- Profile (profile.js)
 - Sitemap
 
 ## God Nodes (most connected - your core abstractions)
@@ -99,7 +99,7 @@ Nodes (16): Cinder band (dark/ember), Diversif band (peach/sage), Creative North
 Cohesion: 0.39
 Nodes (15): el(), hostOf(), link(), pick(), render(), renderBand(), renderContact(), renderExperience() (+7 more)
 
-### Community 5 - "site.test.js"
+### Community 5 - "Site App and CSP (site.js)"
 Cohesion: 0.09
 Nodes (27): @hono/node-server, app, __dirname, log(), shutdown(), ASSET_DIRS, assetReferences(), BASELINE_HEADERS (+19 more)
 
@@ -143,7 +143,7 @@ Nodes (3): Typography: Big Shoulders Display + Besley, Besley OFL license, Big S
 Cohesion: 0.67
 Nodes (3): Domain docs guidance, docs/adr ADRs, GLOSSARY.md
 
-### Community 23 - "profile.js"
+### Community 23 - "Profile (profile.js)"
 Cohesion: 0.12
 Nodes (17): checkShape(), expect(), fail(), createProfile(), location(), personJsonLd(), employerYears(), isFeatured() (+9 more)
 

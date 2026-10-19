@@ -19,6 +19,11 @@ pnpm-debug.log*
 # graphify per-clone runtime state (interpreter path, scan root)
 graphify-out/.graphify_python
 graphify-out/.graphify_root
+# graphify's dated backups, auto-generated pending community names and
+# the per-clone label signature
+graphify-out/20*/
+graphify-out/.graphify_labels.pending.json
+graphify-out/.graphify_labels.json.sig
 
 # misc
 .DS_Store

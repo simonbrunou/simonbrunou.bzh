@@ -4,6 +4,7 @@
   "2": "Iris Replacement Decision",
   "3": "Bands Design System",
   "4": "Homepage Renderer (app.js)",
+  "5": "Site App and CSP (site.js)",
   "6": "PDF Build Script",
   "7": "Diversif Home Screenshot",
   "8": "CV Template Renderer",
@@ -20,6 +21,7 @@
   "20": "PDF Rebuild Hook",
   "21": "Bands Palette Rule",
   "22": "CLAUDE.md",
+  "23": "Profile (profile.js)",
   "24": "Shots-Only Shadow Rule",
   "25": "Sitemap"
 }
