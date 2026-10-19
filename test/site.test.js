@@ -248,7 +248,7 @@ test("createSiteApp refuses a missing file", () => {
 
 test("boot fails when data.js names a screenshot the map lacks", () => {
     const data = structuredClone(profile.data);
-    const project = data.projects.find((p) => p.shots && p.shots.length);
+    const project = data.projects.find(profile.isFeatured);
     project.shots[1].src = "/images/missing.webp";
     assert.throws(() => createSiteApp(files, createProfile(data)), {
         message:
@@ -282,9 +282,20 @@ test("boot fails when the map lacks the homepage photo", () => {
     }
 });
 
+// The boot check names the photo and the stylesheet itself, as the pages do.
+test("the pages ask for the photo and stylesheet the boot check guards", () => {
+    assert.ok(source("app.js").includes('"/photo.png"'), "app.js");
+    for (const rel of ["index.html", NOT_FOUND_HTML]) {
+        assert.ok(
+            source(rel).includes('<link rel="stylesheet" href="/styles.css"'),
+            rel,
+        );
+    }
+});
+
 test("boot names every file the map lacks", () => {
     const data = structuredClone(profile.data);
-    const project = data.projects.find((p) => p.shots && p.shots.length);
+    const project = data.projects.find(profile.isFeatured);
     project.shots[0].src = "/images/a.webp";
     project.shots[1].src = "/images/b.webp";
     assert.throws(() => createSiteApp(files, createProfile(data)), {

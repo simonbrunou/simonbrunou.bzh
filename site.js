@@ -44,13 +44,13 @@ export const ROOT_FILES = [
 // Directories served whole, one file type each: every images/*.webp and
 // fonts/*.woff2 there at boot. Other files in them (the *.webp.json
 // provenance sidecars, the OFL-*.txt licences) are not served.
-export const ASSET_DIRS = {
+const ASSET_DIRS = {
     images: ".webp",
     fonts: ".woff2",
 };
 
 // Content-Type and Cache-Control for each file type the site serves.
-export const FILE_TYPES = {
+const FILE_TYPES = {
     ".js": {
         type: "application/javascript; charset=utf-8",
         cache: "public, max-age=0, must-revalidate",
@@ -89,8 +89,8 @@ export const FILE_TYPES = {
     },
 };
 
-// Whether rel, relative to the site root, is a root file or a file of its
-// directory's type in one of ASSET_DIRS.
+// Whether rel, relative to the site root, is in ROOT_FILES or has the
+// extension ASSET_DIRS gives its directory.
 function isStaticAsset(rel) {
     if (ROOT_FILES.includes(rel)) return true;
     const dir = path.posix.dirname(rel);
@@ -142,12 +142,12 @@ export function injectNonce(html, nonce) {
 }
 
 // Paths, relative to the site root, of the files the app needs by name.
-function namedFilePaths() {
+function requiredFilePaths() {
     return [...Object.values(HTML_PAGES), NOT_FOUND_HTML, ...ROOT_FILES];
 }
 
-// Reads the named files, and every file of its directory's type in
-// ASSET_DIRS.
+// Reads the required files, and every file in ASSET_DIRS that the map
+// serves.
 export async function loadSiteFiles(root) {
     const listed = await Promise.all(
         Object.keys(ASSET_DIRS).map(async (dir) =>
@@ -157,7 +157,7 @@ export async function loadSiteFiles(root) {
         ),
     );
     const entries = await Promise.all(
-        [...namedFilePaths(), ...listed.flat()].map(async (rel) => [
+        [...requiredFilePaths(), ...listed.flat()].map(async (rel) => [
             rel,
             await readFile(path.join(root, rel)),
         ]),
@@ -179,8 +179,8 @@ const CSS_URL_RE = /url\(\s*(["']?)([^"')]+)\1\s*\)/g;
 // the 404 page.
 function assetReferences(profile, assets, files) {
     const refs = [];
-    for (const project of profile.data.projects) {
-        (project.shots || []).forEach((shot, j) => {
+    for (const project of profile.data.projects.filter(profile.isFeatured)) {
+        project.shots.forEach((shot, j) => {
             const at = `projects[${project.id}].shots[${j}].src`;
             refs.push([shot.src, `data.js: ${at}`]);
         });
@@ -198,20 +198,22 @@ function assetReferences(profile, assets, files) {
     return refs;
 }
 
-// `files` maps each path from namedFilePaths() and each listed asset to its
-// bytes, as loadSiteFiles() returns them. The app never touches the
-// filesystem. Throws when a file the homepage asks for has no route.
+// `files` maps each path from requiredFilePaths() and each listed asset to
+// its bytes, as loadSiteFiles() returns them. The app never touches the
+// filesystem. `profile` defaults to the Profile of the data.js next to this
+// file; tests pass edited ones. Throws when a file the homepage asks for
+// has no route.
 export function createSiteApp(files, profile = siteProfile) {
-    const missing = namedFilePaths().filter((rel) => !files.has(rel));
+    const missing = requiredFilePaths().filter((rel) => !files.has(rel));
     if (missing.length > 0) {
         throw new Error(`site files not loaded: ${missing.join(", ")}`);
     }
     const assets = staticAssets(files.keys());
-    const lacking = assetReferences(profile, assets, files)
+    const unrouted = assetReferences(profile, assets, files)
         .filter(([route]) => !Object.hasOwn(assets, route))
         .map(([route, by]) => `${route}, named by ${by}`);
-    if (lacking.length > 0) {
-        throw new Error(`static asset map lacks ${lacking.join("; ")}`);
+    if (unrouted.length > 0) {
+        throw new Error(`static asset map lacks ${unrouted.join("; ")}`);
     }
 
     const html = (rel) => files.get(rel).toString("utf8");
