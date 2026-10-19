@@ -6,14 +6,16 @@ This file provides guidance to coding agents (Claude Code, Codex, OpenCode, Copi
 
 - `npm run dev` — start the server in watch mode (Hono on `:3000`)
 - `npm start` — production start (no watch)
+- `npm test` — run `test/*.test.js` with `node --test`. The site app tests
+  send requests in-process, so they need no port or browser.
 - `npm run build:pdf` — re-render `simon-brunou-cv.pdf` from `pdf-template/`
   using Puppeteer. Requires a local Chromium (`google-chrome-stable`,
   `chromium`, or `chromium-browser` on PATH, or set `CHROMIUM_PATH`).
   The PDF is committed to the repo; rerun and commit after editing `data.js`
   or anything under `pdf-template/`.
 
-There is no test suite, no linter, no bundler. Vanilla HTML/CSS/JS served by
-a tiny Node server.
+There is no linter and no bundler. Vanilla HTML/CSS/JS served by a tiny Node
+server.
 
 ## Architecture
 
@@ -52,8 +54,15 @@ PDF with `printBackground: true`. The sentinel is load-bearing — don't drop
 either gate or the PDF races (image gate → missing photo; font gate → system
 fallback glyphs instead of Big Shoulders Display / Besley).
 
-**Server — `server.js` (Hono on Node 22).** Reads every asset into memory at
-boot, then serves from cache. Key concerns:
+**Server — `server.js` + `site.js` (Hono on Node 22).** `site.js` is the site
+app: it holds the routes, headers and CSP machinery. It exports
+`createSiteApp(files)` and `loadSiteFiles(root)`, plus `STATIC_ASSETS`,
+`HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the tests. Importing it
+reads no file and opens no port. `server.js` is the entry point (`npm start`, Docker `CMD`,
+the CI probe): it loads every served file into memory once, builds the app
+from them, listens, and handles signals. `test/site.test.js` drives the app
+in-process with `app.request(...)` and holds the CSP nonce rules below as
+assertions, so run `npm test` after touching `site.js`. Key concerns:
 
 - **Per-request CSP nonce.** `BASE_CSP` is rewritten on each HTML response to
   inject `'nonce-<random>' 'strict-dynamic'` into `script-src`. Every
@@ -66,18 +75,21 @@ boot, then serves from cache. Key concerns:
   does here: CSP3 browsers ignore `'self'`, so only the nonced tags run, and
   any `<script>` element that running page JS creates and appends runs
   without a nonce.
-- **Static asset map** — `STATIC_ASSETS` is the allowlist of routes; adding a
-  new file (a screenshot in `images/`, a font in `fonts/`) means adding an
-  entry here. There is no directory traversal. The CSP allows only `'self'`
-  for styles and fonts, so no third-party font CDN and no inline styles.
-- **`HTML_PAGES`** lists pages that get the nonce treatment. `404.html` is
-  served via `app.notFound(...)` with the same machinery.
+- **Static asset map** — `STATIC_ASSETS` in `site.js` is the allowlist of
+  routes; adding a new file (a screenshot in `images/`, a font in `fonts/`)
+  means adding an entry here. There is no directory traversal. The CSP allows
+  only `'self'` for styles and fonts, so no third-party font CDN and no
+  inline styles.
+- **`HTML_PAGES`** in `site.js` maps each page route to its HTML file; every
+  entry becomes a route with the nonce treatment. `404.html` is served via
+  `app.notFound(...)` with the same machinery.
 
 **Deployment — Coolify + Docker.** Build runs `npm install --omit=dev`, then
 ships a browser-free Alpine image. `puppeteer-core` is a devDependency only
 (no Chromium in production). Traefik fronts the container; `HEALTHCHECK` hits
-`/healthz`. `pdf-template/` and `scripts/` are removed from the runtime image
-in the Dockerfile.
+`/healthz`. `pdf-template/`, `scripts/` and `test/` are removed from the
+runtime image in the Dockerfile. CI runs `npm test`, then boots
+`node server.js` and probes `/healthz`.
 
 ## Things that have bitten us
 
