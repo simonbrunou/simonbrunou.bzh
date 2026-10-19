@@ -246,7 +246,7 @@ Ink field, headline, short text, giant display mailto (hover inverts to stone gr
 - Two fixed A4 pages (`.page` 211mm × 296.9mm, `overflow: hidden`, `@page { size: A4; margin: 0 }`), white paper, ink text, Besley 9.5pt / 1.38, `print-color-adjust: exact`.
 - Header: 44pt display name, 20mm photo, contact row; 1.5pt ink rule under it. Section `h2` 17pt display caps with a trailing 0.75pt rule.
 - **Strips**: each featured project and the longest job open with a full-bleed strip (negative margins to the page edge) in their homepage colours: `.strip-diversif` peach/brown with sage-deep name, `.strip-cinder` cinder/cinder-text with ember name, `.strip-main` slate/slate-text. Strip names 25pt display; dates 11pt 600.
-- **Overflow guard**: after fonts and images load, `pdf-template/app.js` sets `data-render-error` on `<html>` if any page's `scrollHeight` exceeds its height; the PDF build fails on it. Fix by moving content between pages, never by shrinking type.
+- **Overflow guard**: after fonts and images load, `pdf-template/render-outcome.js` sets `data-render-error` on `<html>` if any page's `scrollHeight` exceeds its height; the PDF build fails on it. Fix by moving content between pages, never by shrinking type.
 
 ### Motion
 One scroll-driven animation (`styles.css`, `@supports (animation-timeline: view())`, only with `prefers-reduced-motion: no-preference` and `min-width: 901px`): `.band-shots` translate from 7% (−7% for mirrored bands) to 0 over `entry 10% cover 40%`. Shots are fully visible throughout; unsupported browsers show them in place. Reduced motion disables all animation and transition. Forced colours hide band fields and force button borders to `ButtonText`.
