@@ -1,7 +1,7 @@
 // CV renderer. Fills pdf-template/index.html from the Profile (profile.js),
 // in French.
 import profile, { pick } from '../profile.js';
-import { pagesFilled } from './render-outcome.js';
+import { recordOutcome } from './render-outcome.js';
 
 (function () {
     var D = profile.data;
@@ -172,7 +172,7 @@ import { pagesFilled } from './render-outcome.js';
         .map(function (i) { return pick(i, lang); })
         .join(', ');
 
-    // render-outcome.js waits for the images and fonts, checks the pages and
-    // records the outcome for build-pdf.js.
-    pagesFilled();
+    // The pages are filled. render-outcome.js waits for the images and fonts,
+    // checks the pages and records the outcome for build-pdf.js.
+    recordOutcome();
 })();

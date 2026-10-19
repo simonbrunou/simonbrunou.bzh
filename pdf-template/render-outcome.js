@@ -20,16 +20,19 @@ function fail(reason) {
     settle('data-render-error', reason);
 }
 
-// A URL without the origin of the build's static server, whose port changes
-// on every build: "/profile.js".
-function path(url) {
+// The build's static server picks a new port on every build, so reasons
+// name "/profile.js" rather than "http://127.0.0.1:41235/profile.js".
+function withoutOrigin(url) {
     return url.replace(location.origin, '');
 }
 
 // No preventDefault() in these listeners: Chrome would count the error as
 // handled, and build-pdf.js would get no pageerror for it.
 window.addEventListener('error', function (event) {
-    fail(event.message + ' at ' + path(event.filename) + ':' + event.lineno + ':' + event.colno);
+    var where = event.filename
+        ? ' at ' + withoutOrigin(event.filename) + ':' + event.lineno + ':' + event.colno
+        : '';
+    fail(event.message + where);
 });
 window.addEventListener('unhandledrejection', function (event) {
     fail('Uncaught (in promise) ' + event.reason);
@@ -43,28 +46,26 @@ window.addEventListener('unhandledrejection', function (event) {
 //     can ship with system fallback glyphs instead of Big Shoulders Display
 //     and Besley.
 // Then it checks that no page overflows.
-export function pagesFilled() {
-    var images = Array.prototype.map.call(document.images, function (img) {
+export function recordOutcome() {
+    var images = Array.from(document.images, function (img) {
         return img.decode().catch(function () {
-            throw new Error('image failed to load: ' + path(img.currentSrc || img.src));
+            throw new Error('image failed to load: ' + withoutOrigin(img.currentSrc || img.src));
         });
     });
     var faces = Array.from(document.fonts);
-    var fonts = Promise.all(faces.map(function (face) {
-        return face.load().catch(function () {
-            throw new Error('font failed to load: ' + face.family + ' ' + face.weight);
-        });
-    })).then(function () {
-        if (!faces.length) throw new Error('no web fonts declared; did pdf-template/styles.css load?');
-        return document.fonts.ready;
-    });
+    var fonts = !faces.length
+        ? Promise.reject(new Error('no web fonts declared; did pdf-template/styles.css load?'))
+        : Promise.all(faces.map(function (face) {
+              return face.load().catch(function () {
+                  throw new Error('font failed to load: ' + face.family + ' ' + face.weight);
+              });
+          })).then(function () { return document.fonts.ready; });
 
-    Promise.all(images.concat(fonts))
+    Promise.all(images.concat([fonts]))
         .then(function () {
             // Each .page has a fixed A4 height with overflow hidden, so
             // content that outgrows a page would be clipped silently.
-            var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
-            var overflowing = pages
+            var overflowing = Array.from(document.querySelectorAll('.page'))
                 .map(function (page, i) { return page.scrollHeight > page.clientHeight + 1 ? i + 1 : 0; })
                 .filter(Boolean);
             if (overflowing.length) {

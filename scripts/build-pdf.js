@@ -22,7 +22,7 @@ const OUTPUT = path.join(ROOT, "simon-brunou-cv.pdf");
 
 // pdf-template/render-outcome.js writes the outcome of the render on <html>:
 // data-render-complete, or data-render-error with the reason it failed.
-const OUTCOME = "html[data-render-complete], html[data-render-error]";
+const OUTCOME_SELECTOR = "html[data-render-complete], html[data-render-error]";
 const OUTCOME_TIMEOUT_MS = 10_000;
 
 const MIME = {
@@ -94,20 +94,28 @@ function startStaticServer() {
 // The reason the render failed, or null once the CV is ready to print.
 // pageError resolves with the first uncaught exception in the page. The
 // template records those itself, so the pageerror gives the reason only when
-// the template could not, as with a syntax error in render-outcome.js.
+// the template recorded no outcome, as with a syntax error in
+// render-outcome.js.
 async function renderFailure(page, pageError) {
-    const outcome = page.waitForSelector(OUTCOME, { timeout: OUTCOME_TIMEOUT_MS }).then(
+    const outcome = page.waitForSelector(OUTCOME_SELECTOR, { timeout: OUTCOME_TIMEOUT_MS }).then(
         () => null,
-        () => `no render outcome after ${OUTCOME_TIMEOUT_MS / 1000} s`,
+        () =>
+            `no render outcome after ${OUTCOME_TIMEOUT_MS / 1000} s; ` +
+            "did a module in pdf-template/index.html fail to load?",
     );
     const uncaught = pageError.then((err) =>
         err instanceof Error ? `Uncaught ${err.stack}` : `Uncaught ${err}`,
     );
     const fallback = await Promise.race([outcome, uncaught]);
-    const recorded = await page.evaluate(() =>
-        document.documentElement.getAttribute("data-render-error"),
-    );
-    return recorded || fallback;
+    const recorded = await page.evaluate(() => {
+        const root = document.documentElement;
+        return {
+            complete: root.hasAttribute("data-render-complete"),
+            error: root.getAttribute("data-render-error"),
+        };
+    });
+    if (recorded.complete) return null;
+    return recorded.error || fallback;
 }
 
 async function main() {
