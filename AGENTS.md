@@ -83,8 +83,9 @@ the reason and exits 1 (see "The CV render outcome" below).
 app: it holds the routes, headers and CSP machinery. It exports
 `createSiteApp(files)` and `loadSiteFiles(root)`, plus `ROOT_FILES`,
 `staticAssets`, `HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the
-tests. Importing it reads no file and opens no port. It imports `profile.js`
-for the boot check below, so a broken `data.js` also fails the import.
+tests and `scripts/check-image.js`. Importing it reads no file and opens no
+port. It imports `profile.js` for the boot check below, so a broken
+`data.js` also fails the import.
 `server.js` is the entry point (`npm start`, Docker `CMD`,
 the CI probe): it loads every served file into memory once, builds the app
 from them, listens, and handles signals. `test/site.test.js` drives the app
@@ -138,8 +139,9 @@ resolves to `::1` first and the server listens on IPv4 only.
 
 CI runs `npm test`, boots `node server.js` and probes `/healthz`. It then
 builds the image, waits for Docker to report it healthy, and runs
-`scripts/check-image.js` inside it: every route answers, `/app` holds exactly
-the allowlist, and nothing under `/app` is writable.
+`scripts/check-image.js` inside it: every route answers, `/app` outside
+`node_modules` holds exactly the allowlist, and nothing under `/app` is
+writable.
 
 ## Things that have bitten us
 

@@ -3,16 +3,17 @@
 //
 //   docker exec -i <container> node --input-type=module - < scripts/check-image.js
 //
-// It fails when a route answers with the wrong status, when /app holds a file
-// other than the Dockerfile's allowlist, or when the server could change
-// its own files.
+// It fails when a route answers with the wrong status, when the files under
+// /app (node_modules aside) differ from what the server needs (server.js,
+// site.js, package.json and every file site.js serves), when the server runs
+// as root, or when it could change anything under /app.
 import { access, constants, readdir } from "node:fs/promises";
 import path from "node:path";
 // Absolute: code read from stdin resolves relative imports against the cwd.
 import { HTML_PAGES, NOT_FOUND_HTML, STATIC_ASSETS } from "/app/site.js";
 
-const APP = "/app";
-const BASE = "http://127.0.0.1:3000";
+const APP_DIR = "/app";
+const ORIGIN = "http://127.0.0.1:3000";
 const failures = [];
 
 const routes = [
@@ -22,7 +23,7 @@ const routes = [
     ...Object.keys(STATIC_ASSETS).map((route) => [route, 200]),
 ];
 for (const [route, expected] of routes) {
-    const res = await fetch(BASE + route);
+    const res = await fetch(ORIGIN + route);
     if (res.status !== expected) {
         failures.push(`GET ${route}: ${res.status}, expected ${expected}`);
     }
@@ -38,9 +39,9 @@ const allowed = new Set([
     ...Object.values(STATIC_ASSETS).map((asset) => asset.file),
 ]);
 const entries = (
-    await readdir(APP, { recursive: true, withFileTypes: true })
+    await readdir(APP_DIR, { recursive: true, withFileTypes: true })
 ).map((entry) => ({
-    rel: path.relative(APP, path.join(entry.parentPath, entry.name)),
+    rel: path.relative(APP_DIR, path.join(entry.parentPath, entry.name)),
     isDir: entry.isDirectory(),
 }));
 const shipped = entries
@@ -57,7 +58,7 @@ if (process.getuid() === 0) failures.push("the server runs as root");
 // Covers /app itself, so the server cannot add files either.
 for (const rel of ["", ...entries.map((e) => e.rel)]) {
     try {
-        await access(path.join(APP, rel), constants.W_OK);
+        await access(path.join(APP_DIR, rel), constants.W_OK);
         failures.push(`/app/${rel} is writable by the server`);
     } catch (err) {
         if (err.code !== "EACCES") throw err;
