@@ -55,9 +55,10 @@ either gate or the PDF races (image gate → missing photo; font gate → system
 fallback glyphs instead of Big Shoulders Display / Besley).
 
 **Server — `server.js` + `site.js` (Hono on Node 22).** `site.js` is the site
-app: it holds the routes, headers and CSP machinery and exports
-`createSiteApp(files)` and `loadSiteFiles(root)`. Importing it reads no file
-and opens no port. `server.js` is the entry point (`npm start`, Docker `CMD`,
+app: it holds the routes, headers and CSP machinery. It exports
+`createSiteApp(files)` and `loadSiteFiles(root)`, plus `STATIC_ASSETS`,
+`HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the tests. Importing it
+reads no file and opens no port. `server.js` is the entry point (`npm start`, Docker `CMD`,
 the CI probe): it loads every served file into memory once, builds the app
 from them, listens, and handles signals. `test/site.test.js` drives the app
 in-process with `app.request(...)` and holds the CSP nonce rules below as

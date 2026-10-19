@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
 
-export const BASE_CSP =
+const BASE_CSP =
     "default-src 'self'; " +
     "script-src 'self'; " +
     "style-src 'self'; " +
@@ -16,7 +16,7 @@ export const BASE_CSP =
     "object-src 'none'; " +
     "upgrade-insecure-requests";
 
-export const BASELINE_HEADERS = {
+const BASELINE_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -117,7 +117,7 @@ function generateNonce() {
     return randomBytes(16).toString("base64");
 }
 
-export function cspWithNonce(nonce) {
+function cspWithNonce(nonce) {
     return BASE_CSP.replace(
         /script-src ([^;]+)/,
         (_, parts) =>
@@ -133,7 +133,7 @@ export function injectNonce(html, nonce) {
 }
 
 // Paths, relative to the site root, of every file the app serves.
-export function siteFiles() {
+function siteFilePaths() {
     return [
         ...Object.values(HTML_PAGES),
         NOT_FOUND_HTML,
@@ -143,7 +143,7 @@ export function siteFiles() {
 
 export async function loadSiteFiles(root) {
     const entries = await Promise.all(
-        siteFiles().map(async (rel) => [
+        siteFilePaths().map(async (rel) => [
             rel,
             await readFile(path.join(root, rel)),
         ]),
@@ -151,10 +151,10 @@ export async function loadSiteFiles(root) {
     return new Map(entries);
 }
 
-// `files` maps each path from siteFiles() to its bytes, as loadSiteFiles()
-// returns them. The app never touches the filesystem.
+// `files` maps each path from siteFilePaths() to its bytes, as
+// loadSiteFiles() returns them. The app never touches the filesystem.
 export function createSiteApp(files) {
-    const missing = siteFiles().filter((rel) => !files.has(rel));
+    const missing = siteFilePaths().filter((rel) => !files.has(rel));
     if (missing.length > 0) {
         throw new Error(`site files not loaded: ${missing.join(", ")}`);
     }

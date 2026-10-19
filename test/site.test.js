@@ -69,10 +69,7 @@ const STATIC_HEADERS = {
 };
 
 // Every HTML response the site can send: each page, and the 404 page.
-const HTML_RESPONSES = [
-    ...Object.entries(HTML_PAGES).map(([route, rel]) => [route, rel, 200]),
-    ["/nope", NOT_FOUND_HTML, 404],
-];
+const HTML_RESPONSES = [...Object.entries(HTML_PAGES), ["/nope", NOT_FOUND_HTML]];
 
 // 16 random bytes, base64-encoded.
 const NONCE_RE = /'nonce-([A-Za-z0-9+/]{22}==)'/;
@@ -131,11 +128,26 @@ test("HTML responses are private, no-store", async () => {
     }
 });
 
-test("page routes come from HTML_PAGES", async () => {
+test("each HTML_PAGES route serves its page with the nonce", async () => {
     for (const [route, rel] of Object.entries(HTML_PAGES)) {
         const res = await app.request(route);
         assert.equal(res.status, 200, route);
         assert.equal(await res.text(), injectNonce(source(rel), nonceOf(res)));
+    }
+});
+
+test("adding an HTML_PAGES entry adds a page route", async () => {
+    assert.equal((await app.request("/extra")).status, 404);
+    HTML_PAGES["/extra"] = "index.html";
+    try {
+        const res = await createSiteApp(files).request("/extra");
+        assert.equal(res.status, 200);
+        assert.equal(
+            await res.text(),
+            injectNonce(source("index.html"), nonceOf(res)),
+        );
+    } finally {
+        delete HTML_PAGES["/extra"];
     }
 });
 
@@ -157,7 +169,12 @@ test("an unknown path returns the 404 page with the nonce rules", async () => {
 });
 
 test("baseline security headers are on every response", async () => {
-    for (const route of ["/", "/nope", "/healthz", "/data.js", "/photo.png"]) {
+    const routes = [
+        ...HTML_RESPONSES.map(([route]) => route),
+        "/healthz",
+        ...Object.keys(STATIC_ASSETS),
+    ];
+    for (const route of routes) {
         const res = await app.request(route);
         for (const [name, value] of Object.entries(BASELINE)) {
             assert.equal(res.headers.get(name), value, `${route} ${name}`);
@@ -175,12 +192,10 @@ test("static routes keep today's Content-Type and Cache-Control", async () => {
     }
 });
 
-test("every static route serves its file with its declared headers", async () => {
+test("every static route serves its file", async () => {
     for (const [route, meta] of Object.entries(STATIC_ASSETS)) {
         const res = await app.request(route);
         assert.equal(res.status, 200, route);
-        assert.equal(res.headers.get("Content-Type"), meta.type, route);
-        assert.equal(res.headers.get("Cache-Control"), meta.cache, route);
         const body = Buffer.from(await res.arrayBuffer());
         assert.ok(body.equals(files.get(meta.file)), route);
     }
