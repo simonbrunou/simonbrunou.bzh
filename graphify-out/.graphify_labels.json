@@ -1,1 +1,25 @@
-{"0": "package.json Manifest", "1": "Site Architecture Docs", "2": "Iris Replacement Decision", "3": "Bands Design System", "4": "Homepage Renderer (app.js)", "5": "Hono Server and CSP", "6": "PDF Build Script", "7": "Diversif Home Screenshot", "8": "CV Template Renderer", "9": "Cinder Dashboard Screenshot", "10": "Cinder Library Screenshot", "11": "Renovate Config", "12": "Diversif Allergens Screenshot", "13": "Shared Render Helpers", "14": "Forgejo Issue Tracker", "15": "Self-hosted Fonts", "16": "Domain Docs", "17": "SB Favicon", "18": "Coolify Deployment", "19": "CSP Nonce Hook", "20": "PDF Rebuild Hook", "21": "Bands Palette Rule", "22": "CLAUDE.md", "23": "data.js", "24": "Shots-Only Shadow Rule", "25": "Sitemap"}
+{
+  "0": "package.json Manifest",
+  "1": "Site Architecture Docs",
+  "2": "Iris Replacement Decision",
+  "3": "Bands Design System",
+  "4": "Homepage Renderer (app.js)",
+  "6": "PDF Build Script",
+  "7": "Diversif Home Screenshot",
+  "8": "CV Template Renderer",
+  "9": "Cinder Dashboard Screenshot",
+  "10": "Cinder Library Screenshot",
+  "11": "Renovate Config",
+  "12": "Diversif Allergens Screenshot",
+  "14": "Forgejo Issue Tracker",
+  "15": "Self-hosted Fonts",
+  "16": "Domain Docs",
+  "17": "SB Favicon",
+  "18": "Coolify Deployment",
+  "19": "CSP Nonce Hook",
+  "20": "PDF Rebuild Hook",
+  "21": "Bands Palette Rule",
+  "22": "CLAUDE.md",
+  "24": "Shots-Only Shadow Rule",
+  "25": "Sitemap"
+}
