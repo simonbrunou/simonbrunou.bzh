@@ -10,17 +10,21 @@
 import { access, constants, readdir } from "node:fs/promises";
 import path from "node:path";
 // Absolute: code read from stdin resolves relative imports against the cwd.
-import { HTML_PAGES, NOT_FOUND_HTML, STATIC_ASSETS } from "/app/site.js";
+import { HTML_PAGES, loadSiteFiles, staticAssets } from "/app/site.js";
 
 const APP_DIR = "/app";
 const ORIGIN = "http://127.0.0.1:3000";
 const failures = [];
 
+// The files the server loads at boot: the pages, ROOT_FILES, and every image
+// and font it serves.
+const siteFiles = await loadSiteFiles(APP_DIR);
+
 const routes = [
     ["/healthz", 200],
     ...Object.keys(HTML_PAGES).map((route) => [route, 200]),
     ["/nope", 404],
-    ...Object.keys(STATIC_ASSETS).map((route) => [route, 200]),
+    ...Object.keys(staticAssets(siteFiles.keys())).map((route) => [route, 200]),
 ];
 for (const [route, expected] of routes) {
     const res = await fetch(ORIGIN + route);
@@ -34,9 +38,7 @@ const allowed = new Set([
     "package.json",
     "server.js",
     "site.js",
-    ...Object.values(HTML_PAGES),
-    NOT_FOUND_HTML,
-    ...Object.values(STATIC_ASSETS).map((asset) => asset.file),
+    ...siteFiles.keys(),
 ]);
 const entries = (
     await readdir(APP_DIR, { recursive: true, withFileTypes: true })
