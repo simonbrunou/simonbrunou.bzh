@@ -132,6 +132,16 @@ runtime image in the Dockerfile. CI runs `npm test`, then boots
 - **Cloudflare proxy options break CSP.** Rocket Loader and Auto Minify
   inject/rewrite scripts in a way that defeats the strict-dynamic nonce
   policy — they must stay **off** in the Cloudflare dashboard for this site.
+- **Cloudflare Browser Cache TTL must stay on "Respect Existing Headers".**
+  Any other value overrides the server's `max-age=0, must-revalidate` on
+  `data.js`, `profile.js`, `app.js` and `styles.css`. `index.html` stays
+  `no-store`, so a returning Visitor would run the new page with old copies
+  of those files. With a 4-hour TTL (`max-age=14400`), the move to ES modules
+  (#104) meant a browser still holding the old `data.js` or `app.js` showed
+  a blank homepage, as reproduced against production (#118). Reverting does
+  not fix that: it moves the breakage to whoever loaded the new files.
+  Check that `curl -sI https://simonbrunou.bzh/app.js` shows
+  `max-age=0, must-revalidate`.
 - **Cloudflare Email Obfuscation is on.** It rewrites any email address in
   static HTML into `[email protected]` plus a decoder script, and the CSP
   blocks that script, so the visitor sees `[email protected]`. Wrap every
