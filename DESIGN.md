@@ -148,8 +148,8 @@ A neutral stone/ink frame carrying borrowed product palettes, each confined to i
 - **Ink** (#16181b): body text, solid buttons, focus ring default, scrollbar thumb, selection background, and the closing contact block ground.
 - **Stone** (#e6e7e3): page ground (`html`, `body`), text on ink.
 
-### Product band pairs (each lives only inside its band / CV strip)
-Each is the project's `palette` in `data.js`, not a token in the stylesheets.
+### Band palettes (each lives only inside its band / CV strip)
+In code, each is the project's `palette` in `data.js`; the stylesheets hold no product colours. The values below are the same ones.
 - **Diversif**: Peach ground (#ffdbbd), Brown text (#4a2108), Brown-soft secondary text (#692d07), Sage-deep name and ring (#2f4a33), Sage field behind shots (#6b8e6b).
 - **Cinder**: Cinder ground (#0b0c10), Cinder-text (#ece8e3), Cinder-soft secondary (#b9b6b2), Ember name, main link, ring and field (#f38042).
 
@@ -255,7 +255,7 @@ One scroll-driven animation (`styles.css`, `@supports (animation-timeline: view(
 ## Adding a banded project
 
 1. In `data.js`, add `shots` to the project: each `{ src, width, height, alt: { en, fr }, crop: { wide: W / visibleH, narrow: { ratio, x, y, w } } }` (`narrow` x/y/w are fractions of the image). WebP in `images/` with its `.json` provenance sidecar. Any project with shots becomes a band automatically, on the side its position gives it.
-2. In `data.js`, add the project's `palette`, taken from the app itself: `ground` (band and strip background), `text`, `soft` (year, details, stack), `accent` (name, `--ring`, selection, strip name), `field` (behind the shots) and `shadow` (under the shots, tinted to the ground). Each is `#rrggbb`; the shadow may be `rgba(…)`. The shape check in `profile.js` requires all six. `app.js` sets them on the band and `pdf-template/app.js` on the CV strip as `--band-<key>`, so the band and the strip need no CSS.
+2. In `data.js`, add the project's `palette`, taken from the app itself: `ground` (band and strip background), `text`, `soft` (year, details, stack), `accent` (name, `--ring`, selection, strip name), `field` (behind the shots) and `shadow` (under the shots, tinted to the ground). Each is `#rrggbb` or `rgba(r, g, b, a)`; the shadow usually needs the alpha. The shape check in `profile.js` requires all six. `app.js` sets them on the band and `pdf-template/app.js` on the CV strip as `--band-<key>`, so the band and the strip need no CSS.
 3. Only a trait no other band has goes in a `.band-<id>` block in `styles.css`, such as Cinder's outline around dark screenshots and its accent main link. Then run `npm run build:pdf` and check the overflow guard still passes: page 1 has little room for another project.
 
 ## Do's and Don'ts

@@ -31,6 +31,7 @@ test("a Featured project is one with screenshots", () => {
 test("Bands alternate sides by position: every second one is mirrored", () => {
     assert.equal(profile.isMirrored(project("diversif")), false);
     assert.equal(profile.isMirrored(project("cinder")), true);
+    assert.equal(profile.isMirrored({ ...project("cinder") }), true);
     assert.equal(profile.isMirrored(project("tisanerie")), false);
 
     // A new Featured project at the top flips the Bands under it.

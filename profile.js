@@ -85,7 +85,7 @@ export function createProfile(data) {
     // and runs them off the left, and so on.
     const featured = data.projects.filter(isFeatured);
     function isMirrored(project) {
-        return featured.indexOf(project) % 2 === 1;
+        return featured.findIndex((p) => p.id === project.id) % 2 === 1;
     }
 
     // The Main job: the longest-held one; the first one listed wins a tie.

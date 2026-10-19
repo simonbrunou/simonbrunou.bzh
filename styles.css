@@ -364,9 +364,10 @@ main:focus {
     height: auto;
 }
 
-/* Wide screens: the screenshots overlap and run off the band edge. Odd and
-   even shots take turns, so a band holds any number of them. */
-@media (width > 900px) {
+/* Wide screens (the exact complement of the 900px query below): the
+   screenshots overlap and run off the band edge. Odd and even shots take
+   turns, so a band holds any number of them. */
+@media not all and (max-width: 900px) {
     .shot:nth-child(odd) {
         width: 116%;
     }
@@ -381,21 +382,25 @@ main:focus {
         width: 91%;
         margin-left: 9%;
     }
-    .band-mirrored .shot:nth-child(even) {
-        position: relative;
+    .band-mirrored .shot:nth-child(even),
+    .band-mirrored .shot:only-child {
         width: 116%;
         margin-left: -16%;
     }
 }
 
 /* Cinder: a faint outline separates its dark screenshots from the dark
-   ground, and the main link takes the accent. */
+   ground, and the main link takes the accent. Each later shot is
+   positioned so it paints over the outline of the one before. */
 .band-cinder .plink-main {
     color: var(--band-accent);
 }
 .band-cinder .crop {
     outline: 1px solid rgba(255, 255, 255, 0.12);
     outline-offset: -1px;
+}
+.band-cinder .shot + .shot {
+    position: relative;
 }
 
 /* The one motion on the page: as a band scrolls into view, its screenshots
