@@ -1,6 +1,6 @@
 // The Profile: the content of data.js plus every rule derived from it.
-// The homepage (app.js), the CV (pdf-template/app.js) and Node (tests, the
-// server) all ask this module instead of working the rules out again.
+// The homepage (app.js), the CV (pdf-template/app.js) and the tests in Node
+// all ask this module instead of working the rules out again.
 //
 // An ES module so the browser and Node load the same file. It must not
 // touch window or document when imported: Node has neither.
@@ -15,9 +15,6 @@ const MONTHS = {
         "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
     ],
 };
-
-// Subjects for search engines, listed after the skills in the JSON-LD.
-const EXTRA_TOPICS = ["Mobile Development", "Fullstack Development", "DevOps"];
 
 // A { en, fr } value in the given language, English when that language is
 // missing. Anything else comes back as is.
@@ -40,48 +37,52 @@ export function visitorLang(win) {
     return "en";
 }
 
+// A Featured project is one with screenshots (GLOSSARY.md).
+function isFeatured(project) {
+    return Boolean(project.shots && project.shots.length);
+}
+
+// A job runs from its first position's start to its last one's end
+// (positions run oldest first).
+function jobDates(job) {
+    return [job.positions[0].startDate, job.positions[job.positions.length - 1].endDate];
+}
+
+// Months the job lasted.
+function tenure(job) {
+    const [start, end] = jobDates(job).map((date) => date.split("-"));
+    return (end[0] - start[0]) * 12 + (end[1] - start[1]);
+}
+
+// "2017–2025", or "2025" when the job started and ended the same year.
+function employerYears(job) {
+    const [from, to] = jobDates(job).map((date) => date.slice(0, 4));
+    return from === to ? from : from + "–" + to;
+}
+
+function monthYear(date, lang) {
+    const [year, month] = date.split("-");
+    return pick(MONTHS, lang)[month - 1] + " " + year;
+}
+
+// "Feb 2025 – Jul 2025" in English, "Février 2025 – Juillet 2025" in French.
+function period(position, lang) {
+    return monthYear(position.startDate, lang) + " – " + monthYear(position.endDate, lang);
+}
+
 // Checks the shape of data and returns the Profile. Throws on the first
 // field a renderer needs and data lacks, naming its owner:
 // "data.js: projects[cinder].stack is missing".
 export function createProfile(data) {
     checkShape(data);
 
-    // A Featured project is one with screenshots (GLOSSARY.md).
-    function isFeatured(project) {
-        return Boolean(project.shots && project.shots.length);
-    }
-
-    // Months from the first position's start to the last one's end.
-    function tenure(job) {
-        const first = job.positions[0].startDate.split("-");
-        const last = job.positions[job.positions.length - 1].endDate.split("-");
-        return (last[0] - first[0]) * 12 + (last[1] - first[1]);
-    }
-
-    // The longest-held job; the first one listed wins a tie.
+    // The Main job: the longest-held one; the first one listed wins a tie.
     const mainJob = data.experience.reduce((main, job) => (tenure(job) > tenure(main) ? job : main));
-
-    // "2017–2025", or "2025" when the job started and ended the same year.
-    function employerYears(job) {
-        const from = job.positions[0].startDate.slice(0, 4);
-        const to = job.positions[job.positions.length - 1].endDate.slice(0, 4);
-        return from === to ? from : from + "–" + to;
-    }
-
-    function monthYear(date, lang) {
-        const [year, month] = date.split("-");
-        return pick(MONTHS, lang)[month - 1] + " " + year;
-    }
-
-    // "Feb 2025 – Jul 2025" in English, "Février 2025 – Juillet 2025" in French.
-    function period(position, lang) {
-        return monthYear(position.startDate, lang) + " – " + monthYear(position.endDate, lang);
-    }
 
     // "Saint-Nolff, Brittany, France".
     function location(lang) {
-        const a = data.personal.address;
-        return [a.locality, pick(a.region, lang), pick(a.country.name, lang)].join(", ");
+        const address = data.personal.address;
+        return [address.locality, pick(address.region, lang), pick(address.country.name, lang)].join(", ");
     }
 
     // One group per key of data.skills, in data order, with its label.
@@ -115,7 +116,7 @@ export function createProfile(data) {
                 name: pick(l.name, lang),
                 alternateName: l.code,
             })),
-            knowsAbout: skillGroups.flatMap((g) => g.skills).concat(EXTRA_TOPICS),
+            knowsAbout: skillGroups.flatMap((g) => g.skills).concat(data.knowsAbout),
             hasOccupation: data.experience.flatMap((job) =>
                 job.positions.map((pos) => ({
                     "@type": "Role",
@@ -160,11 +161,12 @@ export function createProfile(data) {
 }
 
 function checkShape(data) {
+    function fail(path, problem) {
+        throw new Error(`data.js: ${path} ${problem}`);
+    }
     function expect(value, path, kind, ok) {
-        if (value === undefined || value === null || value === "") {
-            throw new Error(`data.js: ${path} is missing`);
-        }
-        if (!ok(value)) throw new Error(`data.js: ${path} must be ${kind}`);
+        if (value === undefined || value === null || value === "") fail(path, "is missing");
+        if (!ok(value)) fail(path, `must be ${kind}`);
         return value;
     }
     const isObject = (v) => typeof v === "object" && !Array.isArray(v);
@@ -176,6 +178,11 @@ function checkShape(data) {
         expect(v, path, 'a month like "2017-07"', (x) => /^\d{4}-(0[1-9]|1[0-2])$/.test(x));
     const list = (v, path) => expect(v, path, "a non-empty list", (x) => Array.isArray(x) && x.length > 0);
     const strings = (v, path) => list(v, path).forEach((s, i) => str(s, `${path}[${i}]`));
+    // A non-empty list of objects.
+    const entries = (v, path) => {
+        list(v, path).forEach((item, i) => object(item, `${path}[${i}]`));
+        return v;
+    };
     // { en, fr } with a string, or a list of strings, in each language.
     const bilingual = (v, path) => expect(v, path, "{ en, fr }", isObject);
     const text = (v, path) => LANGS.forEach((l) => str(bilingual(v, path)[l], `${path}.${l}`));
@@ -194,7 +201,7 @@ function checkShape(data) {
     text(data.title, "title");
     lines(data.about, "about");
 
-    list(data.projects, "projects").forEach((p, i) => {
+    entries(data.projects, "projects").forEach((p, i) => {
         const at = `projects[${p.id || i}]`;
         ["id", "name", "repoUrl"].forEach((key) => str(p[key], `${at}.${key}`));
         if (p.url !== undefined) str(p.url, `${at}.url`);
@@ -206,6 +213,7 @@ function checkShape(data) {
         if (p.shots.length) text(p.details, `${at}.details`);
         p.shots.forEach((shot, j) => {
             const s = `${at}.shots[${j}]`;
+            object(shot, s);
             str(shot.src, `${s}.src`);
             num(shot.width, `${s}.width`);
             num(shot.height, `${s}.height`);
@@ -216,25 +224,31 @@ function checkShape(data) {
         });
     });
 
-    list(data.experience, "experience").forEach((job, i) => {
+    entries(data.experience, "experience").forEach((job, i) => {
         const at = `experience[${(job.company && job.company.en) || i}]`;
         text(job.company, `${at}.company`);
         text(job.summary, `${at}.summary`);
-        list(job.positions, `${at}.positions`).forEach((pos, j) => {
+        entries(job.positions, `${at}.positions`).forEach((pos, j) => {
             const p = `${at}.positions[${j}]`;
             text(pos.role, `${p}.role`);
             month(pos.startDate, `${p}.startDate`);
             month(pos.endDate, `${p}.endDate`);
+            if (pos.endDate < pos.startDate) fail(p, "ends before it starts");
             lines(pos.description, `${p}.description`);
         });
+        // The Main job and the employer years read the first and last position.
+        if (job.positions.some((pos, j) => j > 0 && pos.startDate < job.positions[j - 1].startDate)) {
+            fail(`${at}.positions`, "must run oldest first");
+        }
     });
 
     Object.keys(object(data.skills, "skills")).forEach((key) => {
         strings(data.skills[key], `skills.${key}`);
         text((data.skillCategoryLabels || {})[key], `skillCategoryLabels.${key}`);
     });
+    strings(data.knowsAbout, "knowsAbout");
 
-    list(data.education, "education").forEach((e, i) => {
+    entries(data.education, "education").forEach((e, i) => {
         const at = `education[${i}]`;
         text(e.degree, `${at}.degree`);
         str(e.school, `${at}.school`);
@@ -242,7 +256,7 @@ function checkShape(data) {
         year(e.endYear, `${at}.endYear`);
     });
 
-    list(data.languages, "languages").forEach((l, i) => {
+    entries(data.languages, "languages").forEach((l, i) => {
         const at = `languages[${l.code || i}]`;
         str(l.code, `${at}.code`);
         text(l.name, `${at}.name`);

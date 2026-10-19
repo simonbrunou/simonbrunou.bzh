@@ -153,7 +153,7 @@ A neutral stone/ink frame carrying borrowed product palettes, each confined to i
 - **Cinder**: Cinder ground (#0b0c10), Cinder-text (#ece8e3), Cinder-soft secondary (#b9b6b2), Ember name, main link, ring and field (#f38042).
 
 ### Secondary fields
-- **Slate** (#2f5168) with Slate-text (#ecedea) and Slate-soft (#c5d2dc): the longest-held job only (`.job-main`, chosen by tenure in `app.js`; `.strip-main` on the CV).
+- **Slate** (#2f5168) with Slate-text (#ecedea) and Slate-soft (#c5d2dc): the Main job only (`.job-main`, chosen in `profile.js`; `.strip-main` on the CV).
 - **Concrete** (#d3d5cf): the facts field (skills, education, languages).
 
 ### Neutral

@@ -24,16 +24,15 @@ test("a Featured project is one with screenshots", () => {
         data.projects.filter(profile.isFeatured).map((p) => p.id),
         ["diversif", "cinder"],
     );
-    const p = createProfile(copy(() => {}));
-    assert.equal(p.isFeatured({ ...project("tisanerie"), details: project("cinder").details }), false);
-    assert.equal(p.isFeatured({ ...project("tisanerie"), shots: [] }), false);
+    assert.equal(profile.isFeatured({ ...project("tisanerie"), details: project("cinder").details }), false);
+    assert.equal(profile.isFeatured({ ...project("tisanerie"), shots: [] }), false);
 });
 
-test("the main job is the longest-held one", () => {
+test("the Main job is the longest-held one", () => {
     assert.equal(profile.mainJob.company.en, "BYSTAMP");
 });
 
-test("on a tie for the main job, the first one listed wins", () => {
+test("on a tie for the Main job, the first one listed wins", () => {
     const tied = copy((d) => {
         // BYSTAMP runs from 2017-01 to 2025-02.
         d.experience[0].positions = [{ ...d.experience[0].positions[0], startDate: "2017-01", endDate: "2025-02" }];
@@ -140,6 +139,10 @@ test("the shape check names the missing field and its owner", () => {
         [(d) => delete d.skillCategoryLabels.tools, "data.js: skillCategoryLabels.tools is missing"],
         [(d) => delete d.ui.fr.cta_cv, "data.js: ui.fr.cta_cv is missing"],
         [(d) => (d.title = "Developer"), "data.js: title must be { en, fr }"],
+        [(d) => (d.projects[0] = null), "data.js: projects[0] is missing"],
+        [(d) => d.experience[1].positions.reverse(), "data.js: experience[BYSTAMP].positions must run oldest first"],
+        [(d) => (d.experience[2].positions[0].endDate = "2014-01"), "data.js: experience[IUT de Vannes].positions[0] ends before it starts"],
+        [(d) => delete d.knowsAbout, "data.js: knowsAbout is missing"],
     ];
     for (const [edit, message] of cases) {
         assert.throws(() => createProfile(copy(edit)), { message });

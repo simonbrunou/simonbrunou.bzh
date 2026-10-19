@@ -222,7 +222,7 @@ import profile, { pick as pickLang, visitorLang } from "./profile.js";
         head.appendChild(h);
         sec.appendChild(head);
 
-        // The main job gets its own slate band.
+        // The Main job gets its own slate band.
         D.experience.forEach(function (job) {
             sec.appendChild(renderJob(job, job === profile.mainJob));
         });

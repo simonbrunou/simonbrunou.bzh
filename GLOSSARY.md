@@ -9,7 +9,7 @@ A recruiter or prospective client who already has Simon's name or CV and is deci
 _Avoid_: user, audience, reader
 
 **Featured project**:
-A product Simon built and shipped himself, shown first on the homepage as the main evidence of his work.
+A product Simon built and shipped himself, shown first on the homepage as the main evidence of his work. In `data.js`, a project with screenshots (`shots`); the others get one line under the Bands.
 _Avoid_: open source, side project, portfolio item
 
 **Band**:

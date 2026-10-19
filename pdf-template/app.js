@@ -102,7 +102,7 @@ import profile, { pick } from '../profile.js';
     });
 
     // Expérience
-    // The main job gets the slate strip, as on the homepage.
+    // The Main job gets the slate strip, as on the homepage.
     // Page 1 ends with the first employer; the others open page 2.
     var expBox = clear('resume-experience');
     var expMore = clear('resume-experience-more');

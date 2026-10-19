@@ -293,6 +293,10 @@ export default {
         tools: { en: "Tools & DevOps", fr: "Outils" },
     },
 
+    // More subjects for search engines, listed after the skills in the
+    // JSON-LD. Not shown on the page.
+    knowsAbout: ["Mobile Development", "Fullstack Development", "DevOps"],
+
     education: [
         {
             degree: {
