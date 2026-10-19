@@ -123,7 +123,7 @@ components:
 
 # Design System: simonbrunou.bzh
 
-Sources: `styles.css` (homepage and 404), `app.js` (rendering), `data.js` (content and screenshot crops), `pdf-template/styles.css` + `pdf-template/app.js` (CV), `docs/adr/0001-replace-iris.md` (why this replaced Iris).
+Sources: `styles.css` (homepage and 404), `app.js` (rendering), `data.js` (content, band palettes and screenshot crops), `pdf-template/styles.css` + `pdf-template/app.js` (CV), `docs/adr/0001-replace-iris.md` (why this replaced Iris).
 
 ## Overview
 
@@ -149,6 +149,7 @@ A neutral stone/ink frame carrying borrowed product palettes, each confined to i
 - **Stone** (#e6e7e3): page ground (`html`, `body`), text on ink.
 
 ### Product band pairs (each lives only inside its band / CV strip)
+Each is the project's `palette` in `data.js`, not a token in the stylesheets.
 - **Diversif**: Peach ground (#ffdbbd), Brown text (#4a2108), Brown-soft secondary text (#692d07), Sage-deep name and ring (#2f4a33), Sage field behind shots (#6b8e6b).
 - **Cinder**: Cinder ground (#0b0c10), Cinder-text (#ece8e3), Cinder-soft secondary (#b9b6b2), Ember name, main link, ring and field (#f38042).
 
@@ -194,7 +195,7 @@ A neutral stone/ink frame carrying borrowed product palettes, each confined to i
 
 - `.wrap`: max `1240px + 2 × gutter`, inline padding `--gutter: clamp(20px, 4.5vw, 64px)`. `--edge = max(gutter, (100vw − 1240px)/2)` is the wrap's left edge measured from the viewport.
 - **Band grid** (`.band`): `grid-template-columns: var(--edge) var(--textw) 1fr` with `--textw: clamp(380px, 38vw, 560px)`, so band text aligns exactly with the page wrap while shots take the rest. A `::before` field of the product's second colour starts at `--field-left = edge + textw + 28px` and runs to the viewport edge; shots sit over it, overflow the band (`overflow: hidden` clips them), and overlap each other with `margin-top: -88px`.
-- **Mirroring**: the next band reverses columns (`.band-cinder`: `1fr textw edge`, field on the left, shots offset leftward). Featured bands alternate sides.
+- **Mirroring**: every second Featured band is mirrored (`profile.isMirrored` in `profile.js`, class `.band-mirrored`): columns reverse to `1fr textw edge`, the field moves to the left and the shots are offset leftward. The side comes from the band's position, so Featured bands alternate sides in whatever order `data.js` lists them. Shot widths and offsets go with the side, not the project; odd and even shots take turns, so a band holds any number of screenshots.
 - **Section rhythm**: 112px between major sections (experience top, facts margin, contact padding); 80px ≤900px. Band text 80/88px vertical padding.
 - **Experience rows**: 3-column grid (`1fr 15rem 34rem`), 44px rows between `--rule` hairlines; slate row is 2-column (`15rem 46rem`) with full-width head.
 - **Breakpoint 900px**: everything stacks to one column. Bands become text first, then shots on a solid field of the band's second colour (`::before` hidden), shots at 100% width with 16px gap, each cropped to a narrow window via `--arm/--cx/--cy/--cw/--r` from `data.js` `crop.narrow`. Buttons go full-width centred in contact.
@@ -245,7 +246,7 @@ Ink field, headline, short text, giant display mailto (hover inverts to stone gr
 ### CV (pdf-template/)
 - Two fixed A4 pages (`.page` 211mm × 296.9mm, `overflow: hidden`, `@page { size: A4; margin: 0 }`), white paper, ink text, Besley 9.5pt / 1.38, `print-color-adjust: exact`.
 - Header: 44pt display name, 20mm photo, contact row; 1.5pt ink rule under it. Section `h2` 17pt display caps with a trailing 0.75pt rule.
-- **Strips**: each featured project and the longest job open with a full-bleed strip (negative margins to the page edge) in their homepage colours: `.strip-diversif` peach/brown with sage-deep name, `.strip-cinder` cinder/cinder-text with ember name, `.strip-main` slate/slate-text. Strip names 25pt display; dates 11pt 600.
+- **Strips**: each featured project and the longest job open with a full-bleed strip (negative margins to the page edge) in their homepage colours: `.strip-project` takes the project's palette (ground, text, accent name; Diversif peach/brown with sage-deep name, Cinder cinder/cinder-text with ember name), `.strip-main` slate/slate-text. Strip names 25pt display; dates 11pt 600.
 - **Overflow guard**: after fonts and images load, `pdf-template/render-outcome.js` sets `data-render-error` on `<html>` if any page's `scrollHeight` exceeds its height; the PDF build fails on it. Fix by moving content between pages, never by shrinking type.
 
 ### Motion
@@ -253,9 +254,9 @@ One scroll-driven animation (`styles.css`, `@supports (animation-timeline: view(
 
 ## Adding a banded project
 
-1. In `data.js`, add `shots` to the project: each `{ src, width, height, alt: { en, fr }, crop: { wide: W / visibleH, narrow: { ratio, x, y, w } } }` (`narrow` x/y/w are fractions of the image). WebP in `images/` with its `.json` provenance sidecar. Any project with shots becomes a band automatically.
-2. In `styles.css`, add a `.band-<id>` block mirroring `.band-diversif` / `.band-cinder`: ground and text colours, `--ring`, `::selection`, `::before` field side and colour, `.pname` colour, `.year/.details/.stack` soft colour, shot shadow tinted to the ground, shot widths/offsets, and in the 900px query the `.band-shots` field background. Alternate field side from the previous band (mirrored bands use the Cinder grid columns and `shots-in-left`). Add colour tokens to `:root`.
-3. In `pdf-template/styles.css`, add `.strip-<id>` with the same pair, then check the overflow guard still passes.
+1. In `data.js`, add `shots` to the project: each `{ src, width, height, alt: { en, fr }, crop: { wide: W / visibleH, narrow: { ratio, x, y, w } } }` (`narrow` x/y/w are fractions of the image). WebP in `images/` with its `.json` provenance sidecar. Any project with shots becomes a band automatically, on the side its position gives it.
+2. In `data.js`, add the project's `palette`, taken from the app itself: `ground` (band and strip background), `text`, `soft` (year, details, stack), `accent` (name, `--ring`, selection, strip name), `field` (behind the shots) and `shadow` (under the shots, tinted to the ground). Each is `#rrggbb`; the shadow may be `rgba(…)`. The shape check in `profile.js` requires all six. `app.js` sets them on the band and `pdf-template/app.js` on the CV strip as `--band-<key>`, so the band and the strip need no CSS.
+3. Only a trait no other band has goes in a `.band-<id>` block in `styles.css`, such as Cinder's outline around dark screenshots and its accent main link. Then run `npm run build:pdf` and check the overflow guard still passes: page 1 has little room for another project.
 
 ## Do's and Don'ts
 
