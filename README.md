@@ -57,8 +57,9 @@ docker run --rm -p 3000:3000 simonbrunou-bzh
 
 The runtime image is browser-free — Puppeteer is a devDependency and the PDF
 is baked into the image as a static asset. The Dockerfile copies only the
-server and the files it serves, so a new root file needs a `COPY` line there
-as well as its `ROOT_FILES` entry in `site.js`. Screenshots and fonts are
+server and the files it serves, so a new page or root file needs a `COPY`
+line there as well as its `HTML_PAGES` or `ROOT_FILES` entry in `site.js`.
+Screenshots and fonts are
 copied by extension (`images/*.webp`, `fonts/*.woff2`), as the server serves
 them.
 

@@ -112,8 +112,9 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   to `site.js`, only a line in `STATIC_HEADERS` in `test/site.test.js`,
   which lists every route the site serves. A new root file needs a
   `ROOT_FILES` entry and a `COPY` line in the `Dockerfile`, a new extension
-  a `FILE_TYPES` entry, a new asset directory an `ASSET_DIRS` entry and a
-  `COPY` line. The `*.webp.json` provenance sidecars and
+  a `FILE_TYPES` entry, a new asset directory or a changed extension for
+  one an `ASSET_DIRS` entry and a matching `COPY` glob. The `*.webp.json`
+  provenance sidecars and
   `OFL-*.txt` licences next to the assets are not served. No request reaches
   the filesystem, so there is no directory traversal. Boot fails, naming the
   file, when a `shots[].src` in `data.js`, the homepage photo, `/styles.css`
@@ -121,7 +122,8 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   `'self'` for styles and fonts, so no third-party font CDN and no inline
   styles.
 - **`HTML_PAGES`** in `site.js` maps each page route to its HTML file; every
-  entry becomes a route with the nonce treatment. `404.html` is served via
+  entry becomes a route with the nonce treatment, and its file needs a
+  `COPY` line in the `Dockerfile`. `404.html` is served via
   `app.notFound(...)` with the same machinery.
 
 **Deployment — Coolify + Docker.** Coolify (application 4) builds the
@@ -130,7 +132,8 @@ Traefik fronts the container. The image is Alpine with Node 24 and no
 browser: `puppeteer-core` is a devDependency only. Dependencies install with
 `npm ci --omit=dev` from the lockfile. The `COPY` lines are the allowlist of
 what ships: `server.js`, `site.js`, `package.json`, production
-`node_modules`, and every file `site.js` serves. The files belong to root and
+`node_modules`, and every file `site.js` serves (`profile.js` and `data.js`
+are also imports of `site.js`). The files belong to root and
 the server runs as `node`, so it cannot change them. Coolify replaces the
 Dockerfile `HEALTHCHECK` with its own check of
 `http://127.0.0.1:3000/healthz` (`curl`, falling back to the image's busybox
@@ -139,9 +142,10 @@ resolves to `::1` first and the server listens on IPv4 only.
 
 CI runs `npm test`, boots `node server.js` and probes `/healthz`. It then
 builds the image, waits for Docker to report it healthy, and runs
-`scripts/check-image.js` inside it: every route answers, `/app` outside
-`node_modules` holds exactly the allowlist, and nothing under `/app` is
-writable.
+`scripts/check-image.js` inside it against the files the checkout's
+`site.js` serves: each of their routes answers, `/app` outside
+`node_modules` holds exactly those files plus `server.js`, `site.js` and
+`package.json`, and nothing under `/app` is writable.
 
 ## Things that have bitten us
 

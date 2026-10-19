@@ -1,30 +1,38 @@
 // Checks a running container of the production image from the inside. CI
-// pipes it into the container's node, which runs as the image's user:
+// lists the files the checkout serves, then pipes this script into the
+// container's node, which runs as the image's user:
 //
-//   docker exec -i <container> node --input-type=module - < scripts/check-image.js
+//   SITE_FILES=$(node --input-type=module -e 'import { loadSiteFiles } from
+//       "./site.js"; console.log(JSON.stringify([...(await loadSiteFiles(".")).keys()]))')
+//   docker exec -i -e SITE_FILES="$SITE_FILES" <container> \
+//       node --input-type=module - < scripts/check-image.js
 //
 // It fails when a route answers with the wrong status, when the files under
 // /app (node_modules aside) differ from what the server needs (server.js,
-// site.js, package.json and every file site.js serves), when the server runs
-// as root, or when it could change anything under /app.
+// site.js, package.json and every file the checkout serves), when the server
+// runs as root, or when it could change anything under /app.
 import { access, constants, readdir } from "node:fs/promises";
 import path from "node:path";
 // Absolute: code read from stdin resolves relative imports against the cwd.
-import { HTML_PAGES, loadSiteFiles, staticAssets } from "/app/site.js";
+import { HTML_PAGES, staticAssets } from "/app/site.js";
 
 const APP_DIR = "/app";
 const ORIGIN = "http://127.0.0.1:3000";
 const failures = [];
 
-// The files the server loads at boot: the pages, ROOT_FILES, and every image
-// and font it serves.
-const siteFiles = await loadSiteFiles(APP_DIR);
+// The pages, ROOT_FILES, and every image and font the checkout serves. They
+// come from the checkout, not from /app, so a file the image lacks shows up.
+if (!process.env.SITE_FILES) {
+    console.error("SITE_FILES is not set; see the usage at the top");
+    process.exit(1);
+}
+const siteFiles = JSON.parse(process.env.SITE_FILES);
 
 const routes = [
     ["/healthz", 200],
     ...Object.keys(HTML_PAGES).map((route) => [route, 200]),
     ["/nope", 404],
-    ...Object.keys(staticAssets(siteFiles.keys())).map((route) => [route, 200]),
+    ...Object.keys(staticAssets(siteFiles)).map((route) => [route, 200]),
 ];
 for (const [route, expected] of routes) {
     const res = await fetch(ORIGIN + route);
@@ -38,7 +46,7 @@ const allowed = new Set([
     "package.json",
     "server.js",
     "site.js",
-    ...siteFiles.keys(),
+    ...siteFiles,
 ]);
 const entries = (
     await readdir(APP_DIR, { recursive: true, withFileTypes: true })

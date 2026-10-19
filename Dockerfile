@@ -22,10 +22,12 @@ ENV NODE_ENV=production \
 
 # These COPY lines are the allowlist of what ships: server.js, site.js,
 # package.json, production node_modules, and every file site.js serves. That
-# is HTML_PAGES, NOT_FOUND_HTML and ROOT_FILES by name, and the images and
-# fonts by the extension ASSET_DIRS gives them, so the *.webp.json sidecars
-# and OFL-*.txt licences stay out. A file added to ROOT_FILES needs a line
-# here too; CI runs scripts/check-image.js in the image to catch drift.
+# is HTML_PAGES, NOT_FOUND_HTML and ROOT_FILES by name (site.js also imports
+# profile.js, which imports data.js), and the images and fonts by the
+# extension ASSET_DIRS gives them, so the *.webp.json sidecars and OFL-*.txt
+# licences stay out. A new page or ROOT_FILES entry needs a line here too,
+# and a new ASSET_DIRS directory or extension a matching glob; CI runs
+# scripts/check-image.js in the image to catch drift.
 # The files stay owned by root, so the server cannot change them.
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json server.js site.js ./
