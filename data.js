@@ -1,6 +1,7 @@
 // Shared data for simonbrunou.bzh and the CV.
 // Edit this file to update both the website and the CV PDF.
-window.RESUME_DATA = {
+// profile.js reads it and derives the rest (see AGENTS.md).
+export default {
     personal: {
         name: "Simon Brunou",
         firstName: "Simon",
@@ -8,9 +9,12 @@ window.RESUME_DATA = {
         email: "simon.brunou@proton.me",
         phone: "+33621041865",
         phoneDisplay: { en: "+33 621 041 865", fr: "06 21 04 18 65" },
-        location: {
-            en: "Saint-Nolff, Brittany, France",
-            fr: "Saint-Nolff, Bretagne, France",
+        // Shown as "Saint-Nolff, Brittany, France", and given to search
+        // engines as the postal address in the JSON-LD.
+        address: {
+            locality: "Saint-Nolff",
+            region: { en: "Brittany", fr: "Bretagne" },
+            country: { code: "FR", name: { en: "France", fr: "France" } },
         },
         githubUrl: "https://github.com/simonbrunou",
         githubDisplay: "github.com/simonbrunou",
@@ -150,10 +154,6 @@ window.RESUME_DATA = {
                     role: { en: "Fullstack developer", fr: "Développeur fullstack" },
                     startDate: "2025-02",
                     endDate: "2025-07",
-                    period: {
-                        en: "Feb 2025 – Jul 2025",
-                        fr: "Février 2025 – Juillet 2025",
-                    },
                     description: {
                         en: [
                             "Built mobile companion POC application in Dart and Flutter: interaction with connected device, user account management, and web services consumption",
@@ -178,10 +178,6 @@ window.RESUME_DATA = {
                     role: { en: "Intern", fr: "Stage de fin d'études" },
                     startDate: "2017-01",
                     endDate: "2017-07",
-                    period: {
-                        en: "Jan 2017 – Jul 2017",
-                        fr: "Janvier 2017 – Juillet 2017",
-                    },
                     description: {
                         en: [
                             "Android mobile app development in Java/Kotlin and iOS in Objective-C/Swift",
@@ -201,10 +197,6 @@ window.RESUME_DATA = {
                     role: { en: "Fullstack developer", fr: "Développeur fullstack" },
                     startDate: "2017-07",
                     endDate: "2025-02",
-                    period: {
-                        en: "Jul 2017 – Feb 2025",
-                        fr: "Juillet 2017 – Février 2025",
-                    },
                     description: {
                         en: [
                             "PDF signing app: Android (Kotlin) and iOS (Swift) mobile apps, then Flutter (Dart), for signing PDF documents via a Bluetooth-connected stamp",
@@ -247,10 +239,6 @@ window.RESUME_DATA = {
                     role: { en: "Intern", fr: "Stage" },
                     startDate: "2014-03",
                     endDate: "2014-06",
-                    period: {
-                        en: "Mar 2014 – Jun 2014",
-                        fr: "Mars 2014 – Juin 2014",
-                    },
                     description: {
                         en: [
                             "Maintenance and evolution of a native Android app presenting the IUT for open days and trade fairs",
@@ -304,6 +292,10 @@ window.RESUME_DATA = {
         frameworks: { en: "Frameworks", fr: "Frameworks" },
         tools: { en: "Tools & DevOps", fr: "Outils" },
     },
+
+    // More subjects for search engines, listed after the skills in the
+    // JSON-LD. Not shown on the page.
+    knowsAbout: ["Mobile Development", "Fullstack Development", "DevOps"],
 
     education: [
         {

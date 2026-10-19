@@ -36,6 +36,9 @@
         </footer>
 
         <script>
+            // Same rule as visitorLang() in /profile.js. Kept inline because a
+            // module would wait for a fetch, and a French Visitor would see the
+            // English page first.
             (function () {
                 var lang = "en";
                 try {

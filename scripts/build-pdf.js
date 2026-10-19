@@ -2,7 +2,7 @@
 //
 // Spins up a tiny static server bound to 127.0.0.1 that exposes
 // pdf-template/ at /pdf-template/ and the repo-root shared assets
-// (data.js, render.js, photo.png) at their absolute URLs, then drives
+// (data.js, profile.js, photo.png) at their absolute URLs, then drives
 // Puppeteer at it. Output: simon-brunou-cv.pdf at the repo root.
 //
 // Usage: npm run build:pdf

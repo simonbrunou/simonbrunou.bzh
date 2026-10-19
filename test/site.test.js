@@ -46,7 +46,7 @@ const JS = "application/javascript; charset=utf-8";
 const REVALIDATE = "public, max-age=0, must-revalidate";
 const STATIC_HEADERS = {
     "/data.js": [JS, REVALIDATE],
-    "/render.js": [JS, REVALIDATE],
+    "/profile.js": [JS, REVALIDATE],
     "/app.js": [JS, REVALIDATE],
     "/styles.css": ["text/css; charset=utf-8", REVALIDATE],
     "/photo.png": [

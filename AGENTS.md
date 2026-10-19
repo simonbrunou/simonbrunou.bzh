@@ -7,43 +7,66 @@ This file provides guidance to coding agents (Claude Code, Codex, OpenCode, Copi
 - `npm run dev` — start the server in watch mode (Hono on `:3000`)
 - `npm start` — production start (no watch)
 - `npm test` — run `test/*.test.js` with `node --test`. The site app tests
-  send requests in-process, so they need no port or browser.
+  send requests in-process and the Profile tests import `profile.js`, so
+  they need no port or browser.
 - `npm run build:pdf` — re-render `simon-brunou-cv.pdf` from `pdf-template/`
   using Puppeteer. Requires a local Chromium (`google-chrome-stable`,
   `chromium`, or `chromium-browser` on PATH, or set `CHROMIUM_PATH`).
-  The PDF is committed to the repo; rerun and commit after editing `data.js`
-  or anything under `pdf-template/`.
+  The PDF is committed to the repo; rerun and commit after editing `data.js`,
+  `profile.js` or anything under `pdf-template/`.
 
 There is no linter and no bundler. Vanilla HTML/CSS/JS served by a tiny Node
 server.
 
 ## Architecture
 
-**Single source of truth — `data.js`.** Defines `window.RESUME_DATA` (personal
-info, about paragraphs, projects with their screenshots, experience grouped by
-employer with positions oldest first, skills, education, languages, interests,
-UI strings). Consumed by the live site and the PDF template. Most content
-changes start here.
+**Single source of truth — `data.js`.** An ES module whose default export is
+the content: personal info, about paragraphs, projects with their
+screenshots, experience grouped by employer with positions oldest first,
+skills, education, languages, interests, UI strings. Most content changes
+start here. Only `profile.js` imports it.
+
+**Rules — `profile.js`.** Builds the Profile (GLOSSARY.md) from `data.js` and
+owns every rule derived from it: which projects are Featured projects
+(non-empty `shots`), the Main job, employer years, position periods (derived
+from `startDate`/`endDate`; `data.js` holds no period text), the location,
+skill groups, `pick` for the language, `visitorLang` and the Person JSON-LD.
+Both renderers ask it, so a new rule goes here, not in a renderer. Building
+the Profile checks the shape of `data.js` and throws with the field and its
+owner (`data.js: projects[cinder].stack is missing`), so a broken edit fails
+`npm test` in CI before it blanks the homepage. The module must not touch
+`window` or `document` when imported.
+
+**Node loads the data with `import`.** `import profile from "./profile.js"`
+gives the Profile of `data.js`, with the raw content on `profile.data`.
+`createProfile(data)` builds one from any object; tests use it on edited
+copies (`test/profile.test.js`). No `vm` or adapter is involved.
 
 **Design — Bands** (`docs/adr/0001-replace-iris.md`, `DESIGN.md`). Each
 project with `shots` in `data.js` gets a full-width band in its own app's
 colours; projects without shots get one line under the bands. A new banded
-project needs its own `.band-<id>` colours in `styles.css`. The longest-held
-job gets the slate band. Fonts (Big Shoulders Display, Besley) are
-self-hosted under `fonts/`; screenshots live in `images/` as WebP.
+project needs its own `.band-<id>` colours in `styles.css`. The Main job gets
+the slate band. Fonts (Big Shoulders Display, Besley) are self-hosted under
+`fonts/`; screenshots live in `images/` as WebP.
 
-**Two rendering targets, one data model.**
+**Two rendering targets, one Profile.**
 
 1. `index.html` + `app.js` + `styles.css` — the live site at `/`. `app.js`
-   builds the whole page from `data.js` into `#page`. Bilingual (EN/FR),
-   client-side language toggle that also rewrites `?lang=`. JSON-LD `Person`
-   block injected at runtime. `404.html` reuses `styles.css`.
+   builds the whole page from the Profile into `#page`. Bilingual (EN/FR),
+   client-side language toggle that also rewrites `?lang=`. `app.js` keeps
+   one JSON-LD `Person` block in `<head>` and rewrites it on a language
+   switch. `404.html` reuses `styles.css`.
 2. `pdf-template/{index.html,app.js,styles.css}` — build-time template
    rendered once to `simon-brunou-cv.pdf`. **Not served in production** (the
-   Dockerfile strips this directory). French-only, print-styled.
+   Dockerfile strips this directory). French-only, print-styled, no JSON-LD.
 
-`render.js` is loaded by both pages and exposes shared helpers on
-`window.SBRender`: `pickLang`, `buildPersonJsonLd`, `injectJsonLd`.
+Both pages load `data.js`, `profile.js` and their `app.js` as
+`<script type="module">`. Listing all three lets the browser fetch them in
+parallel instead of following the imports one round trip at a time. List a
+new module the same way: a `<link rel="modulepreload">` would need a nonce
+the server does not add. `404.html` keeps its inline language check, a twin
+of `visitorLang`: as a module it would wait for a fetch, and a French Visitor
+would see the English page first.
 
 **PDF generation flow** (`scripts/build-pdf.js`): spins up a tiny static HTTP
 server on a random localhost port that exposes `pdf-template/` and the repo
@@ -68,8 +91,10 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   inject `'nonce-<random>' 'strict-dynamic'` into `script-src`. Every
   `<script` tag in the served HTML is decorated with the matching `nonce=…`
   attribute. HTML responses are forced to `Cache-Control: private, no-store`
-  so a shared cache can't replay a nonce to multiple visitors. The JSON-LD
-  block that `render.js` injects needs no nonce: a
+  so a shared cache can't replay a nonce to multiple visitors. Modules that a
+  nonced `<script type="module">` imports inherit its nonce, so `import`
+  works under this policy. The JSON-LD block that `app.js` injects needs no
+  nonce: a
   `type="application/ld+json"` script is a data block the browser never
   executes, so `script-src` does not apply to it. What `'strict-dynamic'`
   does here: CSP3 browsers ignore `'self'`, so only the nonced tags run, and

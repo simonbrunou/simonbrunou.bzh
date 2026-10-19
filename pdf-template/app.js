@@ -1,7 +1,10 @@
+// CV renderer. Fills pdf-template/index.html from the Profile (profile.js),
+// in French.
+import profile, { pick } from '../profile.js';
+
 (function () {
-    var D = window.RESUME_DATA;
+    var D = profile.data;
     var lang = 'fr';
-    var pick = window.SBRender.pickLang;
 
     function el(tag, className, text) {
         var node = document.createElement(tag);
@@ -25,7 +28,7 @@
     // Header
     var P = D.personal;
     document.getElementById('resume-role').textContent = pick(D.title, lang);
-    document.getElementById('resume-location').textContent = pick(P.location, lang);
+    document.getElementById('resume-location').textContent = profile.location(lang);
 
     var contact = clear('resume-contact');
     function addContact(node) {
@@ -62,8 +65,8 @@
     }
 
     var projBox = clear('resume-projects');
-    (D.projects || []).forEach(function (p) {
-        if (!p.details) {
+    D.projects.forEach(function (p) {
+        if (!profile.isFeatured(p)) {
             var row = el('div', 'project-line');
             row.appendChild(el('h3', 'line-name', p.name));
             var text = el('p', 'line-text');
@@ -99,37 +102,19 @@
     });
 
     // Expérience
-    function span(positions) {
-        var from = positions[0].startDate.slice(0, 4);
-        var to = positions[positions.length - 1].endDate.slice(0, 4);
-        return from === to ? from : from + '\u2013' + to;
-    }
-
-    // Months between the first position's start and the last one's end.
-    function tenure(e) {
-        var first = e.positions[0].startDate.split('-');
-        var last = e.positions[e.positions.length - 1].endDate.split('-');
-        return (last[0] - first[0]) * 12 + (last[1] - first[1]);
-    }
-
-    // The longest-held job gets the slate strip, as on the homepage.
-    var mainIdx = 0;
-    D.experience.forEach(function (e, i) {
-        if (tenure(e) > tenure(D.experience[mainIdx])) mainIdx = i;
-    });
-
+    // The Main job gets the slate strip, as on the homepage.
     // Page 1 ends with the first employer; the others open page 2.
     var expBox = clear('resume-experience');
     var expMore = clear('resume-experience-more');
     D.experience.forEach(function (e, index) {
         var company = pick(e.company, lang);
         var box = el('article', 'employer');
-        if (index === mainIdx) {
-            box.appendChild(strip('strip-main', company, span(e.positions)));
+        if (e === profile.mainJob) {
+            box.appendChild(strip('strip-main', company, profile.employerYears(e)));
         } else {
             var head = el('div', 'employer-head');
             head.appendChild(el('h3', 'employer-name', company));
-            head.appendChild(el('span', 'date', span(e.positions)));
+            head.appendChild(el('span', 'date', profile.employerYears(e)));
             box.appendChild(head);
         }
 
@@ -138,7 +123,7 @@
             var posBox = el('div', 'position');
             var h = el('div', 'position-head');
             h.appendChild(el('h4', 'role-name', pick(pos.role, lang)));
-            h.appendChild(el('span', 'date', pick(pos.period, lang)));
+            h.appendChild(el('span', 'date', profile.period(pos, lang)));
             posBox.appendChild(h);
             var ul = el('ul', 'bullets');
             pick(pos.description, lang).forEach(function (line) {
@@ -153,10 +138,10 @@
 
     // Compétences
     var skills = clear('resume-skills');
-    ['languages', 'frameworks', 'tools'].forEach(function (key) {
+    profile.skillGroups.forEach(function (group) {
         var row = el('div', 'skills-row');
-        row.appendChild(el('h3', 'skills-label', pick(D.skillCategoryLabels[key], lang)));
-        row.appendChild(el('p', 'skills-list', D.skills[key].join(', ')));
+        row.appendChild(el('h3', 'skills-label', pick(group.label, lang)));
+        row.appendChild(el('p', 'skills-list', group.skills.join(', ')));
         skills.appendChild(row);
     });
 
@@ -185,8 +170,6 @@
     document.getElementById('resume-interests').textContent = D.interests
         .map(function (i) { return pick(i, lang); })
         .join(', ');
-
-    SBRender.injectJsonLd(D, lang);
 
     // build-pdf.js waits on html[data-render-complete] before snapshotting,
     // so the sentinel must gate on every resource the rendered PDF depends on:
