@@ -79,9 +79,11 @@ fallback glyphs instead of Big Shoulders Display / Besley).
 
 **Server — `server.js` + `site.js` (Hono on Node 22).** `site.js` is the site
 app: it holds the routes, headers and CSP machinery. It exports
-`createSiteApp(files)` and `loadSiteFiles(root)`, plus `STATIC_ASSETS`,
-`HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the tests. Importing it
-reads no file and opens no port. `server.js` is the entry point (`npm start`, Docker `CMD`,
+`createSiteApp(files)` and `loadSiteFiles(root)`, plus `ROOT_FILES`,
+`staticAssets`, `HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the
+tests. Importing it reads no file and opens no port. It imports `profile.js`
+for the boot check below, so a broken `data.js` also fails the import.
+`server.js` is the entry point (`npm start`, Docker `CMD`,
 the CI probe): it loads every served file into memory once, builds the app
 from them, listens, and handles signals. `test/site.test.js` drives the app
 in-process with `app.request(...)` and holds the CSP nonce rules below as
@@ -100,11 +102,20 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
   does here: CSP3 browsers ignore `'self'`, so only the nonced tags run, and
   any `<script>` element that running page JS creates and appends runs
   without a nonce.
-- **Static asset map** — `STATIC_ASSETS` in `site.js` is the allowlist of
-  routes; adding a new file (a screenshot in `images/`, a font in `fonts/`)
-  means adding an entry here. There is no directory traversal. The CSP allows
-  only `'self'` for styles and fonts, so no third-party font CDN and no
-  inline styles.
+- **Static asset map.** `site.js` builds the allowlist of non-HTML routes
+  once at boot: every `images/*.webp`, every `fonts/*.woff2`, and the root
+  files named in `ROOT_FILES`. `FILE_TYPES` sets `Content-Type` and
+  `Cache-Control` per file extension. A new screenshot or font needs no edit
+  to `site.js`, only a line in `STATIC_HEADERS` in `test/site.test.js`,
+  which lists every route the site serves. A new root file needs a
+  `ROOT_FILES` entry, a new extension a `FILE_TYPES` entry, a new asset
+  directory an `ASSET_DIRS` entry. The `*.webp.json` provenance sidecars and
+  `OFL-*.txt` licences next to the assets are not served. No request reaches
+  the filesystem, so there is no directory traversal. Boot fails, naming the
+  file, when a `shots[].src` in `data.js`, the homepage photo, `/styles.css`
+  or a font in its `@font-face` rules has no route. The CSP allows only
+  `'self'` for styles and fonts, so no third-party font CDN and no inline
+  styles.
 - **`HTML_PAGES`** in `site.js` maps each page route to its HTML file; every
   entry becomes a route with the nonce treatment. `404.html` is served via
   `app.notFound(...)` with the same machinery.
