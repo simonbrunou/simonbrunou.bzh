@@ -59,8 +59,13 @@ boot, then serves from cache. Key concerns:
   inject `'nonce-<random>' 'strict-dynamic'` into `script-src`. Every
   `<script` tag in the served HTML is decorated with the matching `nonce=…`
   attribute. HTML responses are forced to `Cache-Control: private, no-store`
-  so a shared cache can't replay a nonce to multiple visitors. `'strict-dynamic'`
-  is required so `render.js` can inject the JSON-LD `<script>` block at runtime.
+  so a shared cache can't replay a nonce to multiple visitors. The JSON-LD
+  block that `render.js` injects needs no nonce: a
+  `type="application/ld+json"` script is a data block the browser never
+  executes, so `script-src` does not apply to it. What `'strict-dynamic'`
+  does here: CSP3 browsers ignore `'self'`, so only the nonced tags run, and
+  any `<script>` element that running page JS creates and appends runs
+  without a nonce.
 - **Static asset map** — `STATIC_ASSETS` is the allowlist of routes; adding a
   new file (a screenshot in `images/`, a font in `fonts/`) means adding an
   entry here. There is no directory traversal. The CSP allows only `'self'`
