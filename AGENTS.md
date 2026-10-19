@@ -56,26 +56,26 @@ the slate band. Fonts (Big Shoulders Display, Besley) are self-hosted under
    client-side language toggle that also rewrites `?lang=`. `app.js` keeps
    one JSON-LD `Person` block in `<head>` and rewrites it on a language
    switch. `404.html` reuses `styles.css`.
-2. `pdf-template/{index.html,app.js,styles.css}` — build-time template
-   rendered once to `simon-brunou-cv.pdf`. **Not served in production** (the
-   Dockerfile strips this directory). French-only, print-styled, no JSON-LD.
+2. `pdf-template/{index.html,app.js,render-outcome.js,styles.css}` —
+   build-time template rendered once to `simon-brunou-cv.pdf`. **Not served in
+   production** (the Dockerfile strips this directory). French-only,
+   print-styled, no JSON-LD.
 
 Both pages load `data.js`, `profile.js` and their `app.js` as
 `<script type="module">`. Listing all three lets the browser fetch them in
 parallel instead of following the imports one round trip at a time. List a
 new module the same way: a `<link rel="modulepreload">` would need a nonce
-the server does not add. `404.html` keeps its inline language check, a twin
-of `visitorLang`: as a module it would wait for a fetch, and a French Visitor
-would see the English page first.
+the server does not add. The CV lists `pdf-template/render-outcome.js`
+before the others (see "The CV render outcome" below). `404.html` keeps its
+inline language check, a twin of `visitorLang`: as a module it would wait for
+a fetch, and a French Visitor would see the English page first.
 
 **PDF generation flow** (`scripts/build-pdf.js`): spins up a tiny static HTTP
 server on a random localhost port that exposes `pdf-template/` and the repo
-root, drives headless Chrome at `/pdf-template/`, waits for the
-`html[data-render-complete]` sentinel set by `pdf-template/app.js` once all
-images **and** `document.fonts.ready` have resolved, then snapshots to A4
-PDF with `printBackground: true`. The sentinel is load-bearing — don't drop
-either gate or the PDF races (image gate → missing photo; font gate → system
-fallback glyphs instead of Big Shoulders Display / Besley).
+root, drives headless Chrome at `/pdf-template/`, waits for the render
+outcome that `pdf-template/render-outcome.js` writes on `<html>`, then
+snapshots to A4 PDF with `printBackground: true`. On a failed render it logs
+the reason and exits 1 (see "The CV render outcome" below).
 
 **Server — `server.js` + `site.js` (Hono on Node 22).** `site.js` is the site
 app: it holds the routes, headers and CSP machinery. It exports
@@ -137,18 +137,20 @@ runtime image in the Dockerfile. CI runs `npm test`, then boots
   blocks that script, so the visitor sees `[email protected]`. Wrap every
   static address in `<!--email_off-->…<!--/email_off-->` (see `404.html`).
   Addresses that `app.js` writes at runtime are not affected.
-- **The `data-render-complete` sentinel** is required by `scripts/build-pdf.js`
-  to know when the page is fully painted. If you refactor `pdf-template/app.js`
-  and drop the image-load barrier, the PDF will sometimes ship without the
-  profile photo. If you drop the `document.fonts.ready` barrier, the PDF will
-  sometimes ship with system-fallback glyphs instead of Big Shoulders Display /
-  Besley (the woff2 files load lazily, so DOMContentLoaded alone is not
-  enough).
-- **The CV is two fixed A4 pages.** Each `.page` in `pdf-template/` has a set
-  height with overflow hidden, and page 1 ends after the first employer. When
-  content outgrows a page, `pdf-template/app.js` sets `data-render-error`
-  instead of the sentinel and `npm run build:pdf` fails; move content between
-  pages rather than shrinking type.
+- **The CV render outcome.** `pdf-template/render-outcome.js` sets
+  `data-render-complete` on `<html>` once every image has decoded and every
+  web font has loaded, and `scripts/build-pdf.js` writes the PDF right after.
+  Keep both gates: without the image gate the PDF sometimes ships without the
+  photo, without the font gate it ships with system fallback glyphs instead
+  of Big Shoulders Display and Besley (the woff2 files load lazily, so
+  DOMContentLoaded is not enough). The CV is two fixed A4 pages: each `.page`
+  has a set height with overflow hidden, and page 1 ends after the first
+  employer. A page that overflows, an uncaught exception, or an image or font
+  that fails to load sets `data-render-error` with the reason instead, and
+  `npm run build:pdf` logs the reason and exits 1. Move content between pages
+  rather than shrinking type. `render-outcome.js` stays the first module in
+  `pdf-template/index.html`: `profile.js` throws its shape-check error while
+  it is imported, and a listener added later would miss it.
 - **The dev server caches every file at boot.** Restart `npm run dev` after
   editing HTML, CSS, JS or assets. Screenshots in `images/` are served with a
   one-day `max-age`, so a browser keeps showing the old image after a swap;

@@ -66,6 +66,8 @@
         </div>
 
         <!-- ES modules. app.js imports profile.js, which imports data.js; all three are listed so the browser fetches them in parallel. -->
+        <!-- render-outcome.js comes first: modules run in this order, and its error listener must be in place before profile.js checks data.js. -->
+        <script type="module" src="render-outcome.js"></script>
         <script type="module" src="/data.js"></script>
         <script type="module" src="/profile.js"></script>
         <script type="module" src="app.js"></script>
