@@ -13,8 +13,16 @@ A product Simon built and shipped himself, shown first on the homepage as the ma
 _Avoid_: open source, side project, portfolio item
 
 **Band**:
-A full-width homepage section in one Featured project's own colours, with its screenshots running off the edge. The longest-held job gets a slate band. The design language is named Bands after it.
+A full-width homepage section in one Featured project's own colours, with its screenshots running off the edge. The Main job gets a slate band. The design language is named Bands after it.
 _Avoid_: card, panel, project tile
+
+**Main job**:
+The job Simon held longest, counted from the start of the first position there to the end of the last. It gets the slate Band on the homepage and the slate strip on the CV.
+_Avoid_: main employer, current job
+
+**Profile**:
+Everything the homepage and the CV say about Simon: contact details, projects, jobs, skills, education, spoken languages. Written in `data.js`; `profile.js` derives the rest, such as which projects are Featured projects and which job is the Main job. Not the CV's "Profil" heading, which holds only the about paragraphs.
+_Avoid_: resume data, site data
 
 **CV**:
 The downloadable PDF document generated from the shared data, in French.

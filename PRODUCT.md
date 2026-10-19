@@ -29,7 +29,7 @@ Two things another fullstack developer could not easily claim together:
 
 ## Capabilities and Constraints
 
-- Static site served by a small Node/Hono server with a per-request CSP nonce (`'strict-dynamic'`). Vanilla HTML, CSS and JS, no bundler. `npm test` checks the server's responses in-process. New assets must be added to the server's static allowlist.
+- Static site served by a small Node/Hono server with a per-request CSP nonce (`'strict-dynamic'`). Vanilla HTML, CSS and JS, no bundler. `npm test` checks the server's responses in-process, and the shape of `data.js` and the rules derived from it. New assets must be added to the server's static allowlist.
 - The CV PDF is rendered at build time from `pdf-template/` with Puppeteer and committed.
 - Cloudflare Rocket Loader and Auto Minify must stay off (they break the CSP).
 
