@@ -20,10 +20,10 @@ service serves the static site. The FR CV ships as a pre-built PDF
   `simon-brunou-cv.pdf` by `scripts/build-pdf.js` (Puppeteer + headless Chrome).
 - **Server** (`server.js` loads the files and listens; `site.js` is the app):
   - Hono on Node 24 (`@hono/node-server`)
-  - Per-request CSP nonce stitched into `script-src` (alongside
-    `'strict-dynamic'`) and onto every `<script>` tag. The JSON-LD block
-    that `app.js` injects needs neither: it is a data block the browser
-    never executes. HTML responses are forced to `Cache-Control: private,
+  - Per-request CSP nonce: `script-src` allows only that nonce, and the
+    server stitches it onto every `<script>` tag. The JSON-LD block that
+    `app.js` injects needs none: it is a data block the browser never
+    executes. HTML responses are forced to `Cache-Control: private,
     no-store` so a shared cache can't replay a nonce to multiple users.
   - Serves `simon-brunou-cv.pdf` as a normal static asset.
   - `GET /healthz` for the container healthcheck.
