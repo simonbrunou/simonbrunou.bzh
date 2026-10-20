@@ -282,7 +282,30 @@ Rules:
 
 ## Merge authority
 
-Agents may merge their own PR without asking once all three hold: a code review ran on the diff (the `code-review` skill or the `pr-review-toolkit:code-reviewer` agent) and its real findings are fixed; CI is green on the pushed SHA; the branch is up to date with `origin/main`. The production deploy that the merge triggers is accepted. Ask first only when the PR drops or rewrites stored data (a destructive migration, a backfill that overwrites rows).
+Agents may merge their own PR without asking once all three hold:
+
+- A code review ran on the diff (the `code-review` skill or the
+  `pr-review-toolkit:code-reviewer` agent), and the agent fixed its real
+  findings.
+- CI is green on the pushed SHA.
+- The pushed SHA has no conflict with `origin/main`. Run `git fetch origin`,
+  then check that `git merge-tree --write-tree origin/main HEAD` exits 0 with
+  `HEAD` at the pushed SHA.
+
+A branch behind `origin/main` merges as it is. Two PRs that pass on their own
+can still break `main` together. The owner accepted that risk
+(simonbrunou/homelab-stacks#218), since the CI run that the second merge
+starts on `main` shows the breakage.
+
+On a conflict, merge `origin/main` into the branch, resolve it, run
+`npm test`, and push. Merge once CI is green on the new head. Resolve a
+conflict on `simon-brunou-cv.pdf` by rerunning `npm run build:pdf` on the
+merged tree. CI never rebuilds the PDF, so keeping either side ships it
+without the other PR's CV change.
+
+The go-ahead to merge covers the production deploy that the merge triggers.
+Ask first only when the PR drops or rewrites stored data (a destructive
+migration, a backfill that overwrites rows).
 
 ## Agent skills
 
