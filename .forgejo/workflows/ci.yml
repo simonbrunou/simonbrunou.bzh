@@ -58,6 +58,15 @@ jobs:
         run: |
           site_files=$(node --input-type=module -e 'import { loadSiteFiles } from "./site.js"; console.log(JSON.stringify([...(await loadSiteFiles(".")).keys()]))')
           docker exec -i -e SITE_FILES="$site_files" "$CONTAINER" node --input-type=module - < scripts/check-image.js
+      # Coolify stops the old container on every deploy. The init must pass
+      # SIGTERM on and node must exit 0; a forced kill after the timeout
+      # exits 137.
+      - name: Stop the container and expect a clean exit
+        run: |
+          docker stop "$CONTAINER"
+          code=$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER")
+          echo "exit code: $code"
+          test "$code" = 0
       - name: Remove the container and image
         if: always()
         run: |

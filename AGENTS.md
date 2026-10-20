@@ -137,9 +137,11 @@ what ships: `server.js`, `site.js`, `package.json`, production
 are also imports of `site.js`). The files belong to root and
 the server runs as `node`, so it cannot change them. Coolify runs the
 container with `--cap-drop=ALL --init`, set in application 4's custom
-Docker options (outside the repo, #123): the server holds no Linux
-capability, and Docker's init is PID 1, forwarding signals to node and
-reaping orphans, which is why the image has no dumb-init. Coolify replaces
+Docker options (outside the repo, #123). `--cap-drop=ALL` empties the
+capability bounding set, so no process in the container can gain a
+capability, even through `docker exec -u root`. With `--init`, Docker's
+init is PID 1: it forwards signals to node and reaps orphans. That is why
+the image has no dumb-init. Coolify replaces
 the Dockerfile `HEALTHCHECK` with its own check of
 `http://127.0.0.1:3000/healthz` (`curl`, falling back to the image's busybox
 `wget`). Its health check host must stay `127.0.0.1`: in Alpine `localhost`
@@ -151,7 +153,9 @@ Docker to report it healthy, and runs
 `scripts/check-image.js` inside it against the files the checkout's
 `site.js` serves: each of their routes answers, `/app` outside
 `node_modules` holds exactly those files plus `server.js`, `site.js` and
-`package.json`, and nothing under `/app` is writable.
+`package.json`, and nothing under `/app` is writable. Last, it runs
+`docker stop` and expects exit code 0, as when Coolify replaces the
+container on a deploy.
 
 ## Things that have bitten us
 
@@ -207,9 +211,9 @@ Docker to report it healthy, and runs
   few more), without a warning. It also cuts most values at their first
   hyphen. So `--read-only` is dropped, and
   `--security-opt=no-new-privileges` becomes `security_opt: ["no"]`, an
-  invalid value (#123). Before adding an option to application 4, run
-  `convertDockerRunToCompose('<options>')` in the `coolify` container and
-  read what it returns.
+  invalid value (#123). Before adding an option to application 4, check
+  what Coolify makes of it in CT 104: `docker exec coolify php artisan
+  tinker --execute="echo json_encode(convertDockerRunToCompose('<options>'));"`.
 
 ## graphify
 

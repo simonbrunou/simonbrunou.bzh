@@ -52,10 +52,10 @@ commit the regenerated file.
 
 ```sh
 docker build -t simonbrunou-bzh .
-docker run --rm --init --cap-drop=ALL -p 3000:3000 simonbrunou-bzh
+docker run --rm --cap-drop=ALL --init -p 3000:3000 simonbrunou-bzh
 ```
 
-`--init` and `--cap-drop=ALL` match how production runs the container.
+`--cap-drop=ALL --init` matches how production runs the container.
 
 The runtime image is browser-free — Puppeteer is a devDependency and the PDF
 is baked into the image as a static asset. The Dockerfile copies only the
