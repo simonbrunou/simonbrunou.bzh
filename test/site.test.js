@@ -23,7 +23,7 @@ const source = (rel) => files.get(rel).toString("utf8");
 // Today's policy, written out by hand. Changing the CSP means changing this.
 const expectedCsp = (nonce) =>
     "default-src 'self'; " +
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'; ` +
+    `script-src 'nonce-${nonce}'; ` +
     "style-src 'self'; " +
     "img-src 'self'; " +
     "font-src 'self'; " +
@@ -87,7 +87,7 @@ function nonceOf(res) {
     return match[1];
 }
 
-test("CSP script-src holds a per-request nonce and 'strict-dynamic'", async () => {
+test("CSP script-src allows only the per-request nonce", async () => {
     for (const [route] of HTML_RESPONSES) {
         const res = await app.request(route);
         const nonce = nonceOf(res);

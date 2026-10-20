@@ -92,19 +92,20 @@ from them, listens, and handles signals. `test/site.test.js` drives the app
 in-process with `app.request(...)` and holds the CSP nonce rules below as
 assertions, so run `npm test` after touching `site.js`. Key concerns:
 
-- **Per-request CSP nonce.** `BASE_CSP` is rewritten on each HTML response to
-  inject `'nonce-<random>' 'strict-dynamic'` into `script-src`. Every
-  `<script` tag in the served HTML is decorated with the matching `nonce=…`
-  attribute. HTML responses are forced to `Cache-Control: private, no-store`
-  so a shared cache can't replay a nonce to multiple visitors. Modules that a
-  nonced `<script type="module">` imports inherit its nonce, so `import`
-  works under this policy. The JSON-LD block that `app.js` injects needs no
-  nonce: a
-  `type="application/ld+json"` script is a data block the browser never
-  executes, so `script-src` does not apply to it. What `'strict-dynamic'`
-  does here: CSP3 browsers ignore `'self'`, so only the nonced tags run, and
-  any `<script>` element that running page JS creates and appends runs
-  without a nonce.
+- **Per-request CSP nonce.** On each HTML response `script-src` is
+  `'nonce-<random>'` alone, with no `'self'` and no `'strict-dynamic'`
+  (`docs/adr/0002-scripts-run-by-nonce-only.md`). Every `<script` tag in the
+  served HTML is decorated with the matching `nonce=…` attribute. HTML
+  responses are forced to `Cache-Control: private, no-store` so a shared
+  cache can't replay a nonce to multiple visitors. Modules that a nonced
+  `<script type="module">` imports inherit its nonce, so `import` works
+  under this policy. The JSON-LD block that `app.js` injects needs no nonce:
+  a `type="application/ld+json"` script is a data block the browser never
+  executes, so `script-src` does not apply to it. A `<script>` element that
+  page JS creates runs only if the code sets its `nonce`. Cloudflare writes
+  the Web Analytics beacon tag with the nonce, and its JS Detections loader
+  sets it on the scripts it creates; check the browser console after
+  turning on any other Cloudflare feature that adds scripts.
 - **Static asset map.** `site.js` builds the allowlist of non-HTML routes
   once at boot: every `images/*.webp`, every `fonts/*.woff2`, and the root
   files named in `ROOT_FILES`. `FILE_TYPES` sets `Content-Type` and
@@ -150,8 +151,8 @@ builds the image, waits for Docker to report it healthy, and runs
 ## Things that have bitten us
 
 - **Cloudflare proxy options break CSP.** Rocket Loader and Auto Minify
-  inject/rewrite scripts in a way that defeats the strict-dynamic nonce
-  policy — they must stay **off** in the Cloudflare dashboard for this site.
+  inject/rewrite scripts in a way that defeats the nonce policy — they must
+  stay **off** in the Cloudflare dashboard for this site.
 - **Cloudflare Browser Cache TTL must stay on "Respect Existing Headers".**
   Any other value overrides the server's `max-age=0, must-revalidate` on
   `data.js`, `profile.js`, `app.js` and `styles.css`. `index.html` stays

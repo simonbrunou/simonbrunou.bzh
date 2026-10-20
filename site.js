@@ -4,9 +4,10 @@ import { randomBytes } from "node:crypto";
 import path from "node:path";
 import siteProfile from "./profile.js";
 
+// cspWithNonce fills in script-src on each HTML response.
 const BASE_CSP =
     "default-src 'self'; " +
-    "script-src 'self'; " +
+    "script-src 'none'; " +
     "style-src 'self'; " +
     "img-src 'self'; " +
     "font-src 'self'; " +
@@ -126,12 +127,10 @@ function generateNonce() {
     return randomBytes(16).toString("base64");
 }
 
+// Only the nonce: no 'self' and no 'strict-dynamic', so a script runs only
+// if its tag carries the nonce (docs/adr/0002-scripts-run-by-nonce-only.md).
 function cspWithNonce(nonce) {
-    return BASE_CSP.replace(
-        /script-src ([^;]+)/,
-        (_, parts) =>
-            `script-src ${parts.trim()} 'nonce-${nonce}' 'strict-dynamic'`,
-    );
+    return BASE_CSP.replace(/script-src [^;]+/, `script-src 'nonce-${nonce}'`);
 }
 
 // Match <script when followed by whitespace or '>' so we don't mangle
