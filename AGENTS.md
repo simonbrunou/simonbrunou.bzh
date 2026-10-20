@@ -158,8 +158,10 @@ Docker to report it healthy, and runs
 container on a deploy.
 
 **Operating production.** Coolify (`coolify` and its Postgres `coolify-db`)
-runs in CT 104 and the site container in CT 105; reach both through
-`pct exec` from the Proxmox host.
+runs in CT 104 and the site container in CT 105. Run the commands below in a
+root shell inside that container (`pct enter 104` or `pct enter 105` on the
+Proxmox host). Typed through `ssh` or `pct exec` instead, the host shell
+parses their quotes and pipes first.
 
 - **Latest deploys**, in CT 104:
 
@@ -173,17 +175,17 @@ runs in CT 104 and the site container in CT 105; reach both through
 - **Running container**, in CT 105:
   `docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}"`. The site's
   container is the one whose image tag is the full SHA of the deployed commit.
-- **Queue a deploy** the way the UI does. Change application 4 through
-  Coolify's PHP (its model and helpers), not with SQL. Save this as
-  `deploy.php`:
+- **Queue a deploy** of the current `main` with no new commit, for example
+  after changing application 4's settings, which apply only on the next
+  deploy. Do it the way the UI does: change application 4 through Coolify's
+  PHP (its model and helpers), not with SQL. Save this as `deploy.php`:
 
   ```php
   $app = App\Models\Application::find(4);
   queue_application_deployment(application: $app, deployment_uuid: new_public_id(), force_rebuild: false);
   ```
 
-  and pipe it into tinker in CT 104 (a file spares quoting `$` through ssh,
-  `pct` and `sh`):
+  and pipe it into tinker in CT 104 (a file spares quoting the PHP's `$`):
 
   ```sh
   docker exec -i coolify sh -c 'cat > /tmp/x.php && php artisan tinker --execute="$(cat /tmp/x.php)"' < deploy.php
