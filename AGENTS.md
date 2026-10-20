@@ -157,6 +157,48 @@ Docker to report it healthy, and runs
 `docker stop` and expects exit code 0, as when Coolify replaces the
 container on a deploy.
 
+**Operating production.** Coolify (`coolify` and its Postgres `coolify-db`)
+runs in CT 104 and the site container in CT 105. Run the commands below in a
+root shell inside that container (`pct enter 104` or `pct enter 105` on the
+Proxmox host). Typed through `ssh` or `pct exec` instead, the host shell
+parses their quotes and pipes first.
+
+- **Latest deploys**, in CT 104:
+
+  ```sh
+  echo "select id,status,left(commit,8),created_at from application_deployment_queues where application_id='4' order by id desc limit 3;" |
+    docker exec -i coolify-db psql -U coolify -d coolify -At -F "|"
+  ```
+
+  A deploy's build log is its row's `logs` column, a JSON array of entries
+  whose `output` holds each line.
+- **Running container**, in CT 105:
+  `docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}"`. The site's
+  container is the one whose image tag is the full SHA of the deployed commit.
+- **Queue a deploy** of the current `main` with no new commit, for example
+  after changing application 4's settings, which apply only on the next
+  deploy. Do it the way the UI does: change application 4 through Coolify's
+  PHP (its model and helpers), not with SQL. Save this as `deploy.php`:
+
+  ```php
+  $app = App\Models\Application::find(4);
+  queue_application_deployment(application: $app, deployment_uuid: new_public_id(), force_rebuild: false);
+  ```
+
+  and pipe it into tinker in CT 104 (a file spares quoting the PHP's `$`):
+
+  ```sh
+  docker exec -i coolify sh -c 'cat > /tmp/x.php && php artisan tinker --execute="$(cat /tmp/x.php)"' < deploy.php
+  ```
+
+  The new row then shows in the latest deploys.
+- **Browser checks against production** from the home LAN log one console
+  error: its Pi-hole resolves `static.cloudflareinsights.com` (the Web
+  Analytics beacon) to `0.0.0.0`, so the beacon fails with
+  `ERR_CONNECTION_REFUSED`, not a CSP violation. For a clean console, start
+  Chrome with `--host-resolver-rules="MAP static.cloudflareinsights.com <ip>"`,
+  taking `<ip>` from `dig +short @1.1.1.1 static.cloudflareinsights.com`.
+
 ## Things that have bitten us
 
 - **Cloudflare proxy options break CSP.** Rocket Loader and Auto Minify
@@ -191,6 +233,19 @@ container on a deploy.
   rather than shrinking type. `render-outcome.js` stays the first module in
   `pdf-template/index.html`: `profile.js` throws its shape-check error while
   it is imported, and a listener added later would miss it.
+- **Homepage pixel diffs need the same image and font gates.** Two full-page
+  Puppeteer captures of the same code at 390x844 differed by 30k to 100k
+  pixels (found during #104): `renderShot` in `app.js` gives every Band
+  screenshot `decoding="async"` and all but the first band's first one
+  `loading="lazy"`, so a shot can be loaded but not yet painted when the
+  capture runs. Before `page.screenshot({ fullPage: true })`, set lazy images
+  to eager, wait for `document.fonts.ready` and every `img.complete`, then
+  `await Promise.all([...document.images].map((i) => i.decode().catch(() => {})))`
+  and two `requestAnimationFrame`s. Capture with `deviceScaleFactor: 1` and
+  `prefers-reduced-motion: reduce` emulated, which stops the Band shots'
+  scroll-driven animation (above 900px) and every transition. Capture the
+  base and the change twice each, and trust a non-zero diff only when both
+  runs of each match.
 - **The dev server caches every file at boot.** Restart `npm run dev` after
   editing HTML, CSS, JS or assets. Screenshots in `images/` are served with a
   one-day `max-age`, so a browser keeps showing the old image after a swap;
