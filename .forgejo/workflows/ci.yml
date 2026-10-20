@@ -37,11 +37,12 @@ jobs:
       - name: Build the production image
         run: docker build --tag "$IMAGE" .
       # Docker runs the Dockerfile HEALTHCHECK, the same wget of
-      # 127.0.0.1:3000/healthz that Coolify's own check falls back to.
+      # 127.0.0.1:3000/healthz that Coolify's own check falls back to. The
+      # run flags are the ones production uses (AGENTS.md, Deployment).
       - name: Run the image until Docker reports it healthy
         run: |
           docker rm -f "$CONTAINER" 2>/dev/null || true
-          docker run -d --name "$CONTAINER" "$IMAGE"
+          docker run -d --name "$CONTAINER" --cap-drop=ALL --init "$IMAGE"
           for i in $(seq 1 60); do
             status=$(docker inspect --format '{{.State.Health.Status}}' "$CONTAINER")
             test "$status" = healthy && exit 0

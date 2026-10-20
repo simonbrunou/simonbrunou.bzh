@@ -52,8 +52,10 @@ commit the regenerated file.
 
 ```sh
 docker build -t simonbrunou-bzh .
-docker run --rm -p 3000:3000 simonbrunou-bzh
+docker run --rm --init --cap-drop=ALL -p 3000:3000 simonbrunou-bzh
 ```
+
+`--init` and `--cap-drop=ALL` match how production runs the container.
 
 The runtime image is browser-free — Puppeteer is a devDependency and the PDF
 is baked into the image as a static asset. The Dockerfile copies only the
@@ -72,7 +74,9 @@ them.
 4. **Healthcheck**: Coolify runs its own check instead of the Dockerfile
    `HEALTHCHECK`. Path `/healthz`, port `3000`, host `127.0.0.1`. Not
    `localhost`: Alpine resolves it to `::1` and the server listens on IPv4.
-5. **Domain**: set in Coolify; Traefik handles TLS via Let's Encrypt.
+5. **Custom Docker options**: `--cap-drop=ALL --init`. The image has no
+   init of its own.
+6. **Domain**: set in Coolify; Traefik handles TLS via Let's Encrypt.
 
 Pushing to `main` (with a Coolify Git webhook configured) triggers a rebuild.
 

@@ -135,14 +135,19 @@ browser: `puppeteer-core` is a devDependency only. Dependencies install with
 what ships: `server.js`, `site.js`, `package.json`, production
 `node_modules`, and every file `site.js` serves (`profile.js` and `data.js`
 are also imports of `site.js`). The files belong to root and
-the server runs as `node`, so it cannot change them. Coolify replaces the
-Dockerfile `HEALTHCHECK` with its own check of
+the server runs as `node`, so it cannot change them. Coolify runs the
+container with `--cap-drop=ALL --init`, set in application 4's custom
+Docker options (outside the repo, #123): the server holds no Linux
+capability, and Docker's init is PID 1, forwarding signals to node and
+reaping orphans, which is why the image has no dumb-init. Coolify replaces
+the Dockerfile `HEALTHCHECK` with its own check of
 `http://127.0.0.1:3000/healthz` (`curl`, falling back to the image's busybox
 `wget`). Its health check host must stay `127.0.0.1`: in Alpine `localhost`
 resolves to `::1` first and the server listens on IPv4 only.
 
 CI runs `npm test`, boots `node server.js` and probes `/healthz`. It then
-builds the image, waits for Docker to report it healthy, and runs
+builds the image, runs it with the same `--cap-drop=ALL --init`, waits for
+Docker to report it healthy, and runs
 `scripts/check-image.js` inside it against the files the checkout's
 `site.js` serves: each of their routes answers, `/app` outside
 `node_modules` holds exactly those files plus `server.js`, `site.js` and
@@ -196,6 +201,15 @@ builds the image, waits for Docker to report it healthy, and runs
   listens on IPv4 `0.0.0.0` only, so a `localhost` check is refused and
   Coolify rolls the deploy back (deploy 2481). The image must also keep
   `curl` or `wget`; busybox `wget` is the one it has.
+- **Coolify drops or mangles some custom Docker options.** Coolify 4.4.6
+  turns the run options into compose keys and keeps only the flags it maps
+  (`--cap-add`, `--cap-drop`, `--security-opt`, `--init`, `--ulimit` and a
+  few more), without a warning. It also cuts most values at their first
+  hyphen. So `--read-only` is dropped, and
+  `--security-opt=no-new-privileges` becomes `security_opt: ["no"]`, an
+  invalid value (#123). Before adding an option to application 4, run
+  `convertDockerRunToCompose('<options>')` in the `coolify` container and
+  read what it returns.
 
 ## graphify
 

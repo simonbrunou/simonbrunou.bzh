@@ -17,8 +17,10 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0
 
 # No `apk add`. The server makes no outbound requests, so it needs no CA
-# certificates. Node runs as PID 1 without dumb-init: server.js handles
-# SIGTERM and SIGINT and starts no child process, so there is nothing to reap.
+# certificates. No dumb-init either: production runs the container with
+# `--init` (AGENTS.md, Deployment), whose init reaps orphans such as those a
+# `docker exec` health check can leave. Run without it, node is PID 1 and
+# still stops on SIGTERM and SIGINT, but reaps nothing.
 
 # These COPY lines are the allowlist of what ships: server.js, site.js,
 # package.json, production node_modules, and every file site.js serves. That
