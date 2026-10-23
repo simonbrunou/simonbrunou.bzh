@@ -159,13 +159,14 @@ container on a deploy.
 
 **Operating production.** Coolify (`coolify` and its Postgres `coolify-db`)
 runs in CT 104 and the site container in CT 105, both on the Proxmox host
-`root@192.168.1.195`. The checks below come in two forms. Type the
-in-container form in a root shell inside that container (`pct enter 104` or
-`pct enter 105` on the Proxmox host): typed through `ssh` or `pct exec`, the
-host shell would parse its quotes and pipes first. Run the remote form from a
-control host such as sbrn, which has root ssh to the Proxmox host. It feeds
-the SQL in on stdin and puts the remote command in single quotes, so only the
-Proxmox host's shell parses it.
+192.168.1.195. In Coolify the site is application 4, uuid
+`q104frwri03kmi3jzid62x4g`. The commands below without `ssh` go in a root
+shell inside that container (`pct enter 104` or `pct enter 105` on the
+Proxmox host). Typed through `ssh` or `pct exec` instead, the host shell
+parses their quotes and pipes first. The commands that start with
+`ssh root@192.168.1.195` run from a control host such as sbrn, which has root
+ssh to the Proxmox host. They feed the SQL in on stdin and put the remote
+command in single quotes, so only the Proxmox host's shell parses it.
 
 - **Latest deploys**, in CT 104:
 
@@ -194,27 +195,26 @@ Proxmox host's shell parses it.
   ```
 
   CT 105 also runs Coolify's proxy, sentinel and buildkit containers. The
-  site's container is named `q104frwri03kmi3jzid62x4g-<UTC timestamp>`, and
-  its image tag is the full SHA of the deployed commit.
+  site's container is named `<uuid>-<UTC timestamp>`, and its image tag is the
+  full SHA of the deployed commit.
 - **Wait for the deploy of a commit**, from a control host, with
   homelab-stacks' read-only `scripts/coolify-deploy-status.sh` (the clone at
-  `~/Projects/homelab-stacks` on sbrn). Pass this site's Coolify application
-  uuid and the merge SHA:
+  `~/Projects/homelab-stacks` on sbrn). Given the site's uuid and the merge
+  commit's SHA, it checks that commit's deploy row and key build-log lines,
+  then that the container on CT 105 runs an image tagged with that SHA and is
+  `healthy`:
 
   ```sh
   ~/Projects/homelab-stacks/scripts/coolify-deploy-status.sh q104frwri03kmi3jzid62x4g <sha>
   ```
 
-  It prints the last three deploys and the key build-log lines of that
-  commit's deploy, then checks that the container on CT 105 runs an image
-  tagged with that SHA and that its health is `healthy`. Its last line is the
-  verdict: `OK` (exit 0), `FAIL` (exit 1) or `PENDING` (exit 3), which means
-  the deploy is still queued or in progress. To wait after a merge, re-run it
-  while it exits 3:
+  Its last line is the verdict, `OK` (exit 0), `FAIL` (exit 1) or `PENDING`
+  (exit 3). `PENDING` means the deploy is still queued or in progress. To wait
+  after a merge, rerun the script while it exits 3:
 
   ```sh
-  sha=<merge sha>
-  for i in $(seq 1 24); do
+  sha=<sha>
+  for i in $(seq 1 22); do
     sleep 20
     out=$(~/Projects/homelab-stacks/scripts/coolify-deploy-status.sh q104frwri03kmi3jzid62x4g "$sha")
     rc=$?
@@ -224,11 +224,12 @@ Proxmox host's shell parses it.
   ```
 
   The loop sleeps before its first check because Coolify queues the deploy a
-  few seconds after the merge, and until then the script prints
-  `FAIL: no deployment of <sha> for simonbrunou.bzh`. It gives up after about
-  9 minutes, so one run fits a 10-minute command timeout. Deploys since
-  2026-10-19 took 60 s at the median and 144 s at most, longer when several
-  merges queue at once. If it still prints `PENDING`, run the loop again.
+  few seconds after the merge. Until then the script prints
+  `FAIL: no deployment of <sha> for simonbrunou.bzh`. If the loop ends on that
+  line right after a merge, run it again. It runs for at most about 9
+  minutes, so give the command a 10-minute timeout. Since 2026-10-19 a deploy
+  alone has taken 40 to 95 s, and one queued behind another merge up to
+  144 s. If the loop ends on `PENDING`, run it again.
 - **Queue a deploy** of the current `main` with no new commit, for example
   after changing application 4's settings, which apply only on the next
   deploy. Do it the way the UI does: change application 4 through Coolify's
