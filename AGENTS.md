@@ -158,10 +158,16 @@ Docker to report it healthy, and runs
 container on a deploy.
 
 **Operating production.** Coolify (`coolify` and its Postgres `coolify-db`)
-runs in CT 104 and the site container in CT 105. Run the commands below in a
-root shell inside that container (`pct enter 104` or `pct enter 105` on the
-Proxmox host). Typed through `ssh` or `pct exec` instead, the host shell
-parses their quotes and pipes first.
+runs in CT 104 and the site container in CT 105, both on the Proxmox host
+192.168.1.195. In Coolify the site is application 4, uuid
+`q104frwri03kmi3jzid62x4g`. Each check below says where it runs. "In CT 104"
+or "in CT 105" means a root shell inside that container (`pct enter 104` or
+`pct enter 105` on the Proxmox host). If you type those commands through
+`ssh` or `pct exec` instead, the host shell parses their quotes and pipes
+first. "From a control host" means a host such as sbrn, which has root ssh to
+the Proxmox host as `root@192.168.1.195`. There the remote command sits in
+single quotes and any SQL goes in on stdin, so only the Proxmox host's shell
+parses the command.
 
 - **Latest deploys**, in CT 104:
 
@@ -170,11 +176,62 @@ parses their quotes and pipes first.
     docker exec -i coolify-db psql -U coolify -d coolify -At -F "|"
   ```
 
-  A deploy's build log is its row's `logs` column, a JSON array of entries
-  whose `output` holds each line.
+  or from a control host:
+
+  ```sh
+  echo "select id,status,left(commit,8),created_at from application_deployment_queues where application_id='4' order by id desc limit 3;" |
+    ssh root@192.168.1.195 'pct exec 104 -- docker exec -i coolify-db psql -U coolify -d coolify -At -F "|"'
+  ```
+
+  Each row reads `id|status|commit|created_at`, with `created_at` in UTC, for
+  example `2592|finished|2c57f33e|2026-10-22 18:30:08`. A deploy's build log
+  is its row's `logs` column, a JSON array of entries whose `output` holds
+  each line.
 - **Running container**, in CT 105:
-  `docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}"`. The site's
-  container is the one whose image tag is the full SHA of the deployed commit.
+  `docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}"`, or from a control
+  host:
+
+  ```sh
+  ssh root@192.168.1.195 'pct exec 105 -- docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}"'
+  ```
+
+  CT 105 also runs Coolify's proxy, sentinel and buildkit containers. The
+  site's container is named `<uuid>-<UTC timestamp>`, and its image tag is the
+  full SHA of the deployed commit.
+- **Wait for the deploy of a commit**, from a control host, with
+  homelab-stacks' read-only `scripts/coolify-deploy-status.sh` (the clone at
+  `~/Projects/homelab-stacks` on sbrn). Given the site's uuid and the merge
+  commit's SHA, it checks that commit's deploy row, prints its key build-log
+  lines, and checks that the container on CT 105 runs an image tagged with
+  that SHA and is `healthy`:
+
+  ```sh
+  ~/Projects/homelab-stacks/scripts/coolify-deploy-status.sh q104frwri03kmi3jzid62x4g <sha>
+  ```
+
+  Its last line is the verdict: `OK` (exit 0), `FAIL` (exit 1) or `PENDING`
+  (exit 3). `PENDING` means the deploy is still queued or in progress. To wait
+  after a merge, rerun the script while it exits 3:
+
+  ```sh
+  sha=<sha>
+  for i in $(seq 1 22); do
+    sleep 20
+    out=$(~/Projects/homelab-stacks/scripts/coolify-deploy-status.sh q104frwri03kmi3jzid62x4g "$sha")
+    rc=$?
+    [ "$rc" -ne 3 ] && break
+  done
+  printf '%s\n' "$out"; echo "exit $rc"
+  ```
+
+  The loop sleeps before its first check because Coolify queues the deploy a
+  few seconds after the merge. Until then the script prints
+  `FAIL: no deployment of <sha> for simonbrunou.bzh`. If the loop ends on that
+  line right after a merge, run it again. The loop runs for at most 9 minutes,
+  so give the command a 10-minute timeout. Since 2026-10-19 a deploy alone has
+  taken 40 to 95 s. One queued behind another deploy took up to 144 s. A
+  deploy still `PENDING` when the loop ends has run far longer than usual, so
+  check the latest deploys and its build log before waiting longer.
 - **Queue a deploy** of the current `main` with no new commit, for example
   after changing application 4's settings, which apply only on the next
   deploy. Do it the way the UI does: change application 4 through Coolify's
