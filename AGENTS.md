@@ -160,13 +160,14 @@ container on a deploy.
 **Operating production.** Coolify (`coolify` and its Postgres `coolify-db`)
 runs in CT 104 and the site container in CT 105, both on the Proxmox host
 192.168.1.195. In Coolify the site is application 4, uuid
-`q104frwri03kmi3jzid62x4g`. The commands below without `ssh` go in a root
-shell inside that container (`pct enter 104` or `pct enter 105` on the
-Proxmox host). Typed through `ssh` or `pct exec` instead, the host shell
-parses their quotes and pipes first. The commands that start with
-`ssh root@192.168.1.195` run from a control host such as sbrn, which has root
-ssh to the Proxmox host. They feed the SQL in on stdin and put the remote
-command in single quotes, so only the Proxmox host's shell parses it.
+`q104frwri03kmi3jzid62x4g`. Each check below says where it runs. "In CT 104"
+or "in CT 105" means a root shell inside that container (`pct enter 104` or
+`pct enter 105` on the Proxmox host). If you type those commands through
+`ssh` or `pct exec` instead, the host shell parses their quotes and pipes
+first. "From a control host" means a host such as sbrn, which has root ssh to
+the Proxmox host as `root@192.168.1.195`. There the remote command sits in
+single quotes and any SQL goes in on stdin, so only the Proxmox host's shell
+parses the command.
 
 - **Latest deploys**, in CT 104:
 
@@ -200,15 +201,15 @@ command in single quotes, so only the Proxmox host's shell parses it.
 - **Wait for the deploy of a commit**, from a control host, with
   homelab-stacks' read-only `scripts/coolify-deploy-status.sh` (the clone at
   `~/Projects/homelab-stacks` on sbrn). Given the site's uuid and the merge
-  commit's SHA, it checks that commit's deploy row and key build-log lines,
-  then that the container on CT 105 runs an image tagged with that SHA and is
-  `healthy`:
+  commit's SHA, it checks that commit's deploy row, prints its key build-log
+  lines, and checks that the container on CT 105 runs an image tagged with
+  that SHA and is `healthy`:
 
   ```sh
   ~/Projects/homelab-stacks/scripts/coolify-deploy-status.sh q104frwri03kmi3jzid62x4g <sha>
   ```
 
-  Its last line is the verdict, `OK` (exit 0), `FAIL` (exit 1) or `PENDING`
+  Its last line is the verdict: `OK` (exit 0), `FAIL` (exit 1) or `PENDING`
   (exit 3). `PENDING` means the deploy is still queued or in progress. To wait
   after a merge, rerun the script while it exits 3:
 
@@ -226,10 +227,11 @@ command in single quotes, so only the Proxmox host's shell parses it.
   The loop sleeps before its first check because Coolify queues the deploy a
   few seconds after the merge. Until then the script prints
   `FAIL: no deployment of <sha> for simonbrunou.bzh`. If the loop ends on that
-  line right after a merge, run it again. It runs for at most about 9
-  minutes, so give the command a 10-minute timeout. Since 2026-10-19 a deploy
-  alone has taken 40 to 95 s, and one queued behind another merge up to
-  144 s. If the loop ends on `PENDING`, run it again.
+  line right after a merge, run it again. The loop runs for at most 9 minutes,
+  so give the command a 10-minute timeout. Since 2026-10-19 a deploy alone has
+  taken 40 to 95 s. One queued behind another deploy took up to 144 s. A
+  deploy still `PENDING` when the loop ends has run far longer than usual, so
+  check the latest deploys and its build log before waiting longer.
 - **Queue a deploy** of the current `main` with no new commit, for example
   after changing application 4's settings, which apply only on the next
   deploy. Do it the way the UI does: change application 4 through Coolify's
