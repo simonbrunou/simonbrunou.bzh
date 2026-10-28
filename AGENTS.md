@@ -343,7 +343,7 @@ Agents may merge their own PR without asking once all three hold:
 
 - A code review ran on the diff (the `code-review` skill or the
   `pr-review-toolkit:code-reviewer` agent), and the agent fixed its real
-  findings.
+  findings, nits aside (the global agent rules define a nit).
 - CI is green on the pushed SHA.
 - The pushed SHA has no conflict with `origin/main`. Run `git fetch origin`,
   then check that `git merge-tree --write-tree origin/main HEAD` exits 0 with
