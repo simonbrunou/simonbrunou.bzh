@@ -169,11 +169,11 @@ read_workflow() {
       print "unread", NR
       next
     }
-    # A block mapping of inputs, which an anchor (&inputs) or a tag (!!map)
-    # may name first.
-    open && /^[ \t]*with[ \t]*:[ \t]*([&!][^ \t]*[ \t]*)*(#.*)?$/ { inwith = 1; withind = ind; next }
-    # Any other with: of a setup-node step ({ ... }, an alias) prints
-    # `flow <line>`: reading those forms would take a YAML parser.
+    # A block mapping of inputs, which an anchor (&inputs) or the mapping
+    # tag (!!map) may name first.
+    open && /^[ \t]*with[ \t]*:[ \t]*((&[^ \t#]+|!!map)([ \t]+(&[^ \t#]+|!!map))*)?[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
+    # Any other with: of a setup-node step ({ ... }, an alias, another tag)
+    # prints `flow <line>`: reading those forms would take a YAML parser.
     open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
     /^[ \t]*node-version[ \t]*:/ {
       v = $0

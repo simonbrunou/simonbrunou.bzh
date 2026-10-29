@@ -181,7 +181,7 @@ for (const [name, text] of [
     });
 }
 
-for (const withLine of ["with: &inputs", "with: !!map # tagged"]) {
+for (const withLine of ["with: &inputs", "with: !!map # tagged", "with: !!map &inputs"]) {
     test(`passes on a block mapping of inputs named first: ${withLine}`, () => {
         const f = fixture();
         f.setLine(CI, 9, `        ${withLine}`);
@@ -399,6 +399,9 @@ for (const [name, text] of [
     ["a flow mapping with a nested node-version", "        with: { ignored: { node-version: 24 }, node-version: 26 }"],
     ["a flow mapping over several lines", "        with: {\n          node-version: 24,\n          cache: npm\n        }"],
     ["an alias", "        with: *inputs"],
+    ["an anchor then an alias", "        with: &a *b"],
+    ["a tag other than !!map", "        with: !!str"],
+    ["an anchor with no name", "        with: & "],
 ]) {
     test(`fails on a setup-node step whose with: is ${name}`, () => {
         const f = fixture();
