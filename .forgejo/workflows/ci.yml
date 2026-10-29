@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
       # Before npm ci, so a Node pin that moved alone fails here, by name.
       - run: scripts/check-node-pins.sh
       - run: npm ci
