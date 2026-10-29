@@ -9,7 +9,8 @@
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
 #     the Node CI runs. The step and its `with:` must be block mappings, as
-#     in this repo's ci.yml; the body of a block scalar (run: |) is skipped.
+#     in this repo's ci.yml (an anchor or a tag may name the `with:`); the
+#     body of a block scalar (run: |) is skipped.
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
 #     (with: { node-version: 24 }), and a `node-version` outside such a step
@@ -168,8 +169,10 @@ read_workflow() {
       print "unread", NR
       next
     }
-    open && /^[ \t]*with[ \t]*:[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
-    # Any other with: of a setup-node step ({ ... }, an alias, a tag) prints
+    # A block mapping of inputs, which an anchor (&inputs) or a tag (!!map)
+    # may name first.
+    open && /^[ \t]*with[ \t]*:[ \t]*([&!][^ \t]*[ \t]*)*(#.*)?$/ { inwith = 1; withind = ind; next }
+    # Any other with: of a setup-node step ({ ... }, an alias) prints
     # `flow <line>`: reading those forms would take a YAML parser.
     open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
     /^[ \t]*node-version[ \t]*:/ {
@@ -180,8 +183,10 @@ read_workflow() {
     }
     # A node-version key inside a flow mapping on any other line.
     /node-version[ \t]*:/ { print "stray", NR }
-    # A key whose value is a block scalar (| or >) starts a body.
-    /:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/ {
+    # A key whose value is a block scalar (| or >) starts a body. The key is
+    # matched from the start of the line, so a `: |` inside a comment
+    # (hidden: # note: |) starts none.
+    /^ *(- +)*[^ \t#:]+[ \t]*:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/ {
       match($0, /^ *(- +)*/)
       body = RLENGTH
     }

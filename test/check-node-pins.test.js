@@ -181,6 +181,14 @@ for (const [name, text] of [
     });
 }
 
+for (const withLine of ["with: &inputs", "with: !!map # tagged"]) {
+    test(`passes on a block mapping of inputs named first: ${withLine}`, () => {
+        const f = fixture();
+        f.setLine(CI, 9, `        ${withLine}`);
+        f.passesWith(ALL);
+    });
+}
+
 test("passes on a second workflow without a setup-node step", () => {
     const f = fixture();
     f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - run: echo pdf\n");
@@ -404,6 +412,16 @@ test("fails on a setup-node step after a block scalar body, which ends at the da
     const f = fixture();
     f.setLine(CI, 11, "      - run: |\n          echo hi\n      - uses: actions/setup-node@v7\n        with:\n          node-version: 26");
     f.failsWith("the Node majors differ", `${CI}:15  26 (26)`);
+});
+
+test("fails on a job after a key whose comment ends in `: |`, which starts no block scalar", () => {
+    const f = fixture();
+    f.setLine(
+        CI,
+        30,
+        `${ciLines[29]}\n  hidden: # note: |\n    steps:\n      - uses: actions/setup-node@v7\n        with:\n          node-version: 26`,
+    );
+    f.failsWith("the Node majors differ", `${CI}:35  26 (26)`);
 });
 
 test("fails on a setup-node step written as one flow mapping", () => {
