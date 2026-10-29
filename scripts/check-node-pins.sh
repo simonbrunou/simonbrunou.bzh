@@ -8,9 +8,11 @@
 # It reads each pin from the file that sets it:
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
-#     the Node CI runs. A step without one, a value such as lts/* or
-#     ${{ matrix.node }}, and a `node-version` outside such a step fail; a
-#     `node-version-file` input is not read.
+#     the Node CI runs. Its inputs may be a block or a flow mapping
+#     (with: { node-version: 24 }). A step without one, a value such as
+#     lts/* or ${{ matrix.node }}, a step written as one flow mapping, and a
+#     `node-version` outside such a step fail; a `node-version-file` input
+#     is not read.
 #   Dockerfile  the major of the tag of every `FROM [<registry>/]node:<tag>`
 #     (24 out of 24-alpine or 24.12.0-alpine@sha256:...), the Node that
 #     Coolify builds production on. A FROM continued over several lines is
@@ -19,8 +21,8 @@
 #     line that starts with FROM node:<tag> counts as a stage: skipping
 #     bodies would take BuildKit's shell tokenizer, and any way this script
 #     read a heredoc differently would let a real stage go unread.
-#   package.json  the major of `engines.node` (24 out of 24.x), and of the
-#     `@types/node` range in devDependencies or dependencies when the repo
+#   package.json  the major of `engines.node` (24 out of 24.x), and of each
+#     `@types/node` range in devDependencies and dependencies when the repo
 #     has one (none today).
 # The Node.js group in renovate.json moves them together. The dev shell's
 # Node comes from flake.nix, which Renovate does not update, so a
@@ -95,10 +97,49 @@ read_workflow() {
         fail "$rel:$line actions/setup-node step has no node-version (node-version-file is not read)"
         ;;
       stray) fail "$rel:$line node-version is not in an actions/setup-node step" ;;
+      unread)
+        steps=$((steps + 1))
+        fail "$rel:$line actions/setup-node step is not written as a block mapping, which this check cannot read"
+        ;;
     esac
   done < <(awk -v q="'" '
     function indent(s) { match(s, /^ */); return RLENGTH }
     function close_step() { if (open) print "nopin", open; open = 0; inwith = 0 }
+    # The value of a YAML scalar: the text inside its quotes, or a plain
+    # scalar up to a comment (a # after a blank) or, in a flow mapping, up
+    # to the next , or }. A quote that never closes, or text after the
+    # closing quote, comes back as written, so it fails the major pattern.
+    # mawk (the default awk of Debian and Ubuntu) reads a } inside [...]
+    # wrongly, so the flow end is found with index().
+    function scalar(s, flow,   c, i, j, rest) {
+      sub(/^[ \t]+/, "", s)
+      c = substr(s, 1, 1)
+      if (c == "\"" || c == q) {
+        i = index(substr(s, 2), c)
+        if (!i) return s
+        rest = substr(s, i + 2)
+        sub(/^[ \t]+/, "", rest)
+        j = substr(rest, 1, 1)
+        if (rest != "" && !(flow ? j == "," || j == "}" : j == "#")) return s
+        return substr(s, 2, i - 1)
+      }
+      if (flow) {
+        i = index(s, ",")
+        j = index(s, "}")
+        if (j && (!i || j < i)) i = j
+        if (i) s = substr(s, 1, i - 1)
+      }
+      if (s ~ /^#/) return ""
+      sub(/[ \t]+#.*$/, "", s)
+      sub(/[ \t]+$/, "", s)
+      return s
+    }
+    # Prints `pin <line> <value>` for the input of a setup-node step, and
+    # `stray <line>` for a node-version anywhere else (setup-node ignores
+    # one under env:).
+    function input(v) {
+      if (open && inwith) { print "pin", NR, v; open = 0; inwith = 0 } else print "stray", NR
+    }
     { sub(/\r$/, "") }
     /^[ \t]*(#|$)/ { next }
     {
@@ -111,7 +152,7 @@ read_workflow() {
       if (match($0, /^ *- +/)) dash[RLENGTH] = ind
     }
     # actions/setup-node@<ref>, or a full URL to it.
-    $0 ~ ("^[ \t-]*uses:[ \t]*[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
+    $0 ~ ("^[ \t-]*uses[ \t]*:[ \t]*[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
       open = NR
       # `- uses:` opens the step; a bare `uses:` belongs to the item whose
       # keys start at its column.
@@ -119,18 +160,29 @@ read_workflow() {
       else step = (ind in dash) ? dash[ind] : ind - 2
       next
     }
-    open && /^[ \t]*with:[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
-    # Prints `pin <line> <value>` for the input of a setup-node step,
-    # `nopin <line>` for a setup-node step without one, and `stray <line>`
-    # for a node-version anywhere else (setup-node ignores one under env:).
-    /^[ \t]*node-version:/ {
-      v = $0
-      sub(/^[ \t]*node-version:[ \t]*/, "", v)
-      sub(/[ \t]*#.*$/, "", v)
-      gsub(/"/, "", v)
-      gsub(q, "", v)
-      if (open && inwith) { print "pin", NR, v; open = 0; inwith = 0 } else print "stray", NR
+    # Anything else that runs setup-node, such as a step written as one flow
+    # mapping (- { uses: actions/setup-node@v7, ... }), prints `unread <line>`.
+    $0 ~ ("uses[ \t]*:[ \t]*[\"" q "]?([^ \t\"" q ",]*/)?actions/setup-node@") {
+      print "unread", NR
+      next
     }
+    open && /^[ \t]*with[ \t]*:[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
+    # with: { node-version: 24, cache: npm }
+    open && /^[ \t]*with[ \t]*:[ \t]*\{/ {
+      inwith = 1
+      withind = ind
+      if (match($0, /[{,][ \t]*node-version[ \t]*:/)) input(scalar(substr($0, RSTART + RLENGTH), 1))
+      else if ($0 ~ /\}[ \t]*(#.*)?$/) close_step()
+      next
+    }
+    /^[ \t]*node-version[ \t]*:/ {
+      v = $0
+      sub(/^[ \t]*node-version[ \t]*:/, "", v)
+      input(scalar(v, 0))
+      next
+    }
+    # A node-version key inside a flow mapping on any other line.
+    /node-version[ \t]*:/ { print "stray", NR }
     END { close_step() }
   ' "$ROOT/$rel")
 }
@@ -236,12 +288,14 @@ read_dockerfile() {
 }
 
 read_package() {
-  local file="$ROOT/$PACKAGE" values engines types
+  local file="$ROOT/$PACKAGE" values engines key types i
+  local -a lines
   if [ ! -f "$file" ]; then
     fail "$PACKAGE not found"
     return
   fi
-  # Two lines: engines.node, then @types/node, each empty when absent.
+  # Three lines: engines.node, then the @types/node of devDependencies and
+  # of dependencies, each empty when absent.
   values=$(PIN_FILE="$file" node -e '
     let pkg;
     try {
@@ -251,12 +305,15 @@ read_package() {
     }
     const text = (v) => (typeof v === "string" ? v.replace(/\n/g, " ") : "");
     console.log(text(pkg?.engines?.node));
-    console.log(text(pkg?.devDependencies?.["@types/node"] ?? pkg?.dependencies?.["@types/node"]));
+    console.log(text(pkg?.devDependencies?.["@types/node"]));
+    console.log(text(pkg?.dependencies?.["@types/node"]));
   ') || {
     fail "$PACKAGE is not valid JSON"
     return
   }
-  { IFS= read -r engines; IFS= read -r types; } <<<"$values"
+  # The command substitution drops trailing empty lines, hence the :- below.
+  mapfile -t lines <<<"$values"
+  engines=${lines[0]:-}
   if [ -z "$engines" ]; then
     fail "$PACKAGE has no engines.node"
   elif [[ "$engines" =~ $ONE_MAJOR ]]; then
@@ -264,14 +321,19 @@ read_package() {
   else
     fail "$PACKAGE engines.node '$engines' does not pin one Node major"
   fi
-  # @types/node is optional: the repo has no TypeScript today.
-  if [ -z "$types" ]; then
-    return
-  elif [[ "$types" =~ $ONE_MAJOR ]]; then
-    pin "$PACKAGE @types/node" "${BASH_REMATCH[1]}" "$types"
-  else
-    fail "$PACKAGE @types/node '$types' does not pin one Node major"
-  fi
+  i=1
+  for key in devDependencies dependencies; do
+    types=${lines[i]:-}
+    i=$((i + 1))
+    # @types/node is optional: the repo has no TypeScript today.
+    if [ -z "$types" ]; then
+      continue
+    elif [[ "$types" =~ $ONE_MAJOR ]]; then
+      pin "$PACKAGE $key @types/node" "${BASH_REMATCH[1]}" "$types"
+    else
+      fail "$PACKAGE $key @types/node '$types' does not pin one Node major"
+    fi
+  done
 }
 
 read_workflows

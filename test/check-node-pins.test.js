@@ -156,7 +156,23 @@ for (const key of ["devDependencies", "dependencies"]) {
     test(`passes on @types/node in ${key}, reading it as an eighth pin`, () => {
         const f = fixture();
         f.writePackage({ engines: { node: "24.x" }, [key]: { "@types/node": "^24.12.4" } });
-        f.passesWith("8 pins read Node 24");
+        f.passesWith(`8 pins read Node 24 (${CI}:10, ${CI}:20, ${CI}:30, Dockerfile:2, Dockerfile:4, Dockerfile:6, package.json engines.node, package.json ${key} @types/node)`);
+    });
+}
+
+test("passes on @types/node in both devDependencies and dependencies, reading each", () => {
+    const f = fixture();
+    const types = { "@types/node": "^24.12.4" };
+    f.writePackage({ engines: { node: "24.x" }, devDependencies: types, dependencies: types });
+    f.passesWith("9 pins read Node 24");
+});
+
+for (const flow of ["with: { node-version: 24 }", "with: {cache: npm, node-version: '24'} # inline"]) {
+    test(`passes on a setup-node step whose inputs are a flow mapping: ${flow}`, () => {
+        const f = fixture();
+        f.setLine(CI, 9, `        ${flow}`);
+        f.setLine(CI, 10, "");
+        f.passesWith(ALL);
     });
 }
 
@@ -268,7 +284,25 @@ test("fails on engines.node left behind", () => {
 test("fails on @types/node", () => {
     const f = fixture();
     f.writePackage({ engines: { node: "24.x" }, devDependencies: { "@types/node": "^26.0.0" } });
-    f.failsWith("the Node majors differ", "package.json @types/node  26 (^26.0.0)", "package.json engines.node  24 (24.x)");
+    f.failsWith(
+        "the Node majors differ",
+        "package.json devDependencies @types/node  26 (^26.0.0)",
+        "package.json engines.node  24 (24.x)",
+    );
+});
+
+test("fails on an @types/node of dependencies that differs from the one of devDependencies", () => {
+    const f = fixture();
+    f.writePackage({
+        engines: { node: "24.x" },
+        devDependencies: { "@types/node": "^24.12.4" },
+        dependencies: { "@types/node": "^26.0.0" },
+    });
+    f.failsWith(
+        "the Node majors differ",
+        "package.json dependencies @types/node  26 (^26.0.0)",
+        "package.json devDependencies @types/node  24 (^24.12.4)",
+    );
 });
 
 // Fails when it cannot read a pin.
@@ -334,6 +368,40 @@ for (const value of ["lts/*", "latest", "node", ">=24", "24 || 26"]) {
     });
 }
 
+for (const [value, read] of [
+    ['"24#oops"', "24#oops"],
+    ["24#oops", "24#oops"],
+    ['"24', '"24'],
+    ['"24" x', '"24" x'],
+]) {
+    test(`fails on a node-version of ${value}, reading it as ${read}`, () => {
+        const f = fixture();
+        f.setLine(CI, 10, `          node-version: ${value}`);
+        f.failsWith(`${CI}:10 node-version '${read}' does not name one Node major`);
+    });
+}
+
+test("fails on a setup-node step whose flow mapping of inputs has no node-version", () => {
+    const f = fixture();
+    f.setLine(CI, 9, "        with: { cache: npm }");
+    f.setLine(CI, 10, "");
+    f.failsWith(`${CI}:8 actions/setup-node step has no node-version`);
+});
+
+test("fails on a setup-node step written as one flow mapping", () => {
+    const f = fixture();
+    f.setLine(CI, 8, "      - { uses: actions/setup-node@v7, with: { node-version: 26 } }");
+    f.setLine(CI, 9, "");
+    f.setLine(CI, 10, "");
+    f.failsWith(`${CI}:8 actions/setup-node step is not written as a block mapping`);
+});
+
+test("fails on a node-version in a flow mapping outside any setup-node step", () => {
+    const f = fixture();
+    f.setLine(CI, 5, "    env: { node-version: 26 }");
+    f.failsWith(`${CI}:5 node-version is not in an actions/setup-node step`);
+});
+
 test("fails on a node-version that is an expression", () => {
     const f = fixture();
     f.setLine(CI, 10, "          node-version: ${{ matrix.node }}");
@@ -397,7 +465,7 @@ for (const range of [">=24", "*", "latest"]) {
     test(`fails on @types/node ${range}, which pins no one major`, () => {
         const f = fixture();
         f.writePackage({ engines: { node: "24.x" }, devDependencies: { "@types/node": range } });
-        f.failsWith(`package.json @types/node '${range}' does not pin one Node major`);
+        f.failsWith(`package.json devDependencies @types/node '${range}' does not pin one Node major`);
     });
 }
 
