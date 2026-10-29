@@ -14,9 +14,22 @@ This file provides guidance to coding agents (Claude Code, Codex, OpenCode, Copi
   `chromium`, or `chromium-browser` on PATH, or set `CHROMIUM_PATH`).
   The PDF is committed to the repo; rerun and commit after editing `data.js`,
   `profile.js` or anything under `pdf-template/`.
+- `scripts/check-node-pins.sh` — check that the Node pins name one major
+  (CI runs it before `npm ci`).
 
 There is no linter and no bundler. Vanilla HTML/CSS/JS served by a tiny Node
 server.
+
+One Node major is pinned in three places: the `node-version` of every
+`actions/setup-node` step in `.forgejo/workflows/` (the Node CI runs), every
+`FROM node:` line of the `Dockerfile` (the Node production runs) and
+`engines.node` in `package.json`, plus `@types/node` if the repo adds it.
+`scripts/check-node-pins.sh` fails CI when their majors differ, naming each
+pin, and `test/check-node-pins.test.js` covers its parsing. The `Node.js`
+group in `renovate.json` moves them in one PR. The dev shell's Node comes
+from `flake.nix` (`nodejs_<major>`), which Renovate does not update: change
+it by hand after a Node major lands. Until then the check prints a warning
+that the shell runs another major.
 
 ## Architecture
 
@@ -79,7 +92,7 @@ outcome that `pdf-template/render-outcome.js` writes on `<html>`, then
 snapshots to A4 PDF with `printBackground: true`. On a failed render it logs
 the reason and exits 1 (see "The CV render outcome" below).
 
-**Server — `server.js` + `site.js` (Hono on Node 24).** `site.js` is the site
+**Server — `server.js` + `site.js` (Hono on Node).** `site.js` is the site
 app: it holds the routes, headers and CSP machinery. It exports
 `createSiteApp(files)` and `loadSiteFiles(root)`, plus `ROOT_FILES`,
 `staticAssets`, `HTML_PAGES`, `NOT_FOUND_HTML` and `injectNonce` for the
@@ -129,7 +142,7 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
 
 **Deployment — Coolify + Docker.** Coolify (application 4) builds the
 `Dockerfile` with its Dockerfile build pack on every push to `main`, and
-Traefik fronts the container. The image is Alpine with Node 24 and no
+Traefik fronts the container. The image is the Alpine `node` image, with no
 browser: `puppeteer-core` is a devDependency only. Dependencies install with
 `npm ci --omit=dev` from the lockfile. The `COPY` lines are the allowlist of
 what ships: `server.js`, `site.js`, `package.json`, production
@@ -147,7 +160,8 @@ the Dockerfile `HEALTHCHECK` with its own check of
 `wget`). Its health check host must stay `127.0.0.1`: in Alpine `localhost`
 resolves to `::1` first and the server listens on IPv4 only.
 
-CI runs `npm test`, boots `node server.js` and probes `/healthz`. It then
+CI runs the Node pin check and `npm test`, boots `node server.js` and probes
+`/healthz`. It then
 builds the image, runs it with the same `--cap-drop=ALL --init`, waits for
 Docker to report it healthy, and runs
 `scripts/check-image.js` inside it against the files the checkout's

@@ -13,6 +13,11 @@
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["minor"],
       "automerge": true
+    },
+    {
+      "description": "One Node major for CI, production and package.json (#140): CI's setup-node node-version, the Dockerfile's node image and engines.node (and @types/node, if the repo adds it) move in one PR, so scripts/check-node-pins.sh stays green. Matched by dep name: the setup-node input's package name is actions/node-versions. config:recommended's group:nodeJs preset sets only a commit message topic, no group name, and skips that input's github-releases datasource.",
+      "matchDepNames": ["node", "@types/node"],
+      "groupName": "Node.js"
     }
   ]
 }

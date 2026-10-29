@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+      # Before npm ci, so a Node pin that moved alone fails here, by name.
+      - run: scripts/check-node-pins.sh
       - run: npm ci
       - run: npm test
       # The tests drive the app in-process; this checks the real entry point

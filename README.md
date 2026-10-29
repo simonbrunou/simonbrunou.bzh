@@ -19,7 +19,7 @@ service serves the static site. The FR CV ships as a pre-built PDF
   `pdf-template/styles.css` + `pdf-template/app.js`. Rendered to
   `simon-brunou-cv.pdf` by `scripts/build-pdf.js` (Puppeteer + headless Chrome).
 - **Server** (`server.js` loads the files and listens; `site.js` is the app):
-  - Hono on Node 24 (`@hono/node-server`)
+  - Hono on Node (`@hono/node-server`)
   - Per-request CSP nonce: `script-src` allows only that nonce, and the
     server stitches it onto every `<script>` tag. The JSON-LD block that
     `app.js` injects needs none: it is a data block the browser never
@@ -30,7 +30,7 @@ service serves the static site. The FR CV ships as a pre-built PDF
 
 ## Local development
 
-Requires Node 24. Rebuilding the PDF additionally requires a Chromium
+Requires the Node major that `engines.node` in `package.json` names. Rebuilding the PDF additionally requires a Chromium
 binary; the build script auto-detects `google-chrome-stable`, `chromium`, or
 `chromium-browser`, or honors `$CHROMIUM_PATH`.
 
