@@ -167,11 +167,16 @@ test("passes on @types/node in both devDependencies and dependencies, reading ea
     f.passesWith("9 pins read Node 24");
 });
 
-for (const flow of ["with: { node-version: 24 }", "with: {cache: npm, node-version: '24'} # inline"]) {
-    test(`passes on a setup-node step whose inputs are a flow mapping: ${flow}`, () => {
+// The body of a block scalar is shell text: what it says about node-version
+// or setup-node is no pin.
+const body = ['echo "node-version: 26"', 'echo "uses: actions/setup-node@v7"', "node-version: 26"];
+for (const [name, text] of [
+    ["- run: |", ["      - run: |", ...body.map((l) => `          ${l}`)]],
+    ["run: >- under - name:", ["      - name: Build", "        run: >-", ...body.map((l) => `          ${l}`)]],
+]) {
+    test(`passes on a block scalar body (${name}) that mentions node-version and setup-node`, () => {
         const f = fixture();
-        f.setLine(CI, 9, `        ${flow}`);
-        f.setLine(CI, 10, "");
+        f.setLine(CI, 11, text.join("\n"));
         f.passesWith(ALL);
     });
 }
@@ -381,11 +386,24 @@ for (const [value, read] of [
     });
 }
 
-test("fails on a setup-node step whose flow mapping of inputs has no node-version", () => {
+for (const [name, text] of [
+    ["a flow mapping", "        with: { node-version: 24 }"],
+    ["a flow mapping with a nested node-version", "        with: { ignored: { node-version: 24 }, node-version: 26 }"],
+    ["a flow mapping over several lines", "        with: {\n          node-version: 24,\n          cache: npm\n        }"],
+    ["an alias", "        with: *inputs"],
+]) {
+    test(`fails on a setup-node step whose with: is ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 10, "");
+        f.setLine(CI, 9, text);
+        f.failsWith(`${CI}:9 actions/setup-node step does not write with: as a block mapping`);
+    });
+}
+
+test("fails on a setup-node step after a block scalar body, which ends at the dash column", () => {
     const f = fixture();
-    f.setLine(CI, 9, "        with: { cache: npm }");
-    f.setLine(CI, 10, "");
-    f.failsWith(`${CI}:8 actions/setup-node step has no node-version`);
+    f.setLine(CI, 11, "      - run: |\n          echo hi\n      - uses: actions/setup-node@v7\n        with:\n          node-version: 26");
+    f.failsWith("the Node majors differ", `${CI}:15  26 (26)`);
 });
 
 test("fails on a setup-node step written as one flow mapping", () => {

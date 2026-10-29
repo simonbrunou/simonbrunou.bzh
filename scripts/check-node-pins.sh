@@ -8,11 +8,12 @@
 # It reads each pin from the file that sets it:
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
-#     the Node CI runs. Its inputs may be a block or a flow mapping
-#     (with: { node-version: 24 }). A step without one, a value such as
-#     lts/* or ${{ matrix.node }}, a step written as one flow mapping, and a
-#     `node-version` outside such a step fail; a `node-version-file` input
-#     is not read.
+#     the Node CI runs. The step and its `with:` must be block mappings, as
+#     in this repo's ci.yml; the body of a block scalar (run: |) is skipped.
+#     A step without a node-version, a value such as lts/* or
+#     ${{ matrix.node }}, a step or `with:` in flow style
+#     (with: { node-version: 24 }), and a `node-version` outside such a step
+#     fail; a `node-version-file` input is not read.
 #   Dockerfile  the major of the tag of every `FROM [<registry>/]node:<tag>`
 #     (24 out of 24-alpine or 24.12.0-alpine@sha256:...), the Node that
 #     Coolify builds production on. A FROM continued over several lines is
@@ -101,33 +102,28 @@ read_workflow() {
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step is not written as a block mapping, which this check cannot read"
         ;;
+      flow)
+        steps=$((steps + 1))
+        fail "$rel:$line actions/setup-node step does not write with: as a block mapping, which this check cannot read"
+        ;;
     esac
   done < <(awk -v q="'" '
+    BEGIN { body = -1 }
     function indent(s) { match(s, /^ */); return RLENGTH }
     function close_step() { if (open) print "nopin", open; open = 0; inwith = 0 }
     # The value of a YAML scalar: the text inside its quotes, or a plain
-    # scalar up to a comment (a # after a blank) or, in a flow mapping, up
-    # to the next , or }. A quote that never closes, or text after the
-    # closing quote, comes back as written, so it fails the major pattern.
-    # mawk (the default awk of Debian and Ubuntu) reads a } inside [...]
-    # wrongly, so the flow end is found with index().
-    function scalar(s, flow,   c, i, j, rest) {
+    # scalar up to a comment (a # after a blank). A quote that never closes,
+    # or text after the closing quote, comes back as written, so it fails
+    # the major pattern.
+    function scalar(s,   c, i, rest) {
       sub(/^[ \t]+/, "", s)
       c = substr(s, 1, 1)
       if (c == "\"" || c == q) {
         i = index(substr(s, 2), c)
         if (!i) return s
         rest = substr(s, i + 2)
-        sub(/^[ \t]+/, "", rest)
-        j = substr(rest, 1, 1)
-        if (rest != "" && !(flow ? j == "," || j == "}" : j == "#")) return s
+        if (rest !~ /^[ \t]*(#.*)?$/) return s
         return substr(s, 2, i - 1)
-      }
-      if (flow) {
-        i = index(s, ",")
-        j = index(s, "}")
-        if (j && (!i || j < i)) i = j
-        if (i) s = substr(s, 1, i - 1)
       }
       if (s ~ /^#/) return ""
       sub(/[ \t]+#.*$/, "", s)
@@ -144,6 +140,12 @@ read_workflow() {
     /^[ \t]*(#|$)/ { next }
     {
       ind = indent($0)
+      # The body of a block scalar (run: |) is text, not YAML keys: it runs
+      # until a line indented no deeper than its key.
+      if (body >= 0) {
+        if (ind > body) next
+        body = -1
+      }
       # A step ends at the next line indented no deeper than its `-`, and
       # its `with:` block at the next line indented no deeper than `with:`.
       if (open && ind <= step) close_step()
@@ -167,22 +169,22 @@ read_workflow() {
       next
     }
     open && /^[ \t]*with[ \t]*:[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
-    # with: { node-version: 24, cache: npm }
-    open && /^[ \t]*with[ \t]*:[ \t]*\{/ {
-      inwith = 1
-      withind = ind
-      if (match($0, /[{,][ \t]*node-version[ \t]*:/)) input(scalar(substr($0, RSTART + RLENGTH), 1))
-      else if ($0 ~ /\}[ \t]*(#.*)?$/) close_step()
-      next
-    }
+    # Any other with: of a setup-node step ({ ... }, an alias, a tag) prints
+    # `flow <line>`: reading those forms would take a YAML parser.
+    open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
     /^[ \t]*node-version[ \t]*:/ {
       v = $0
       sub(/^[ \t]*node-version[ \t]*:/, "", v)
-      input(scalar(v, 0))
+      input(scalar(v))
       next
     }
     # A node-version key inside a flow mapping on any other line.
     /node-version[ \t]*:/ { print "stray", NR }
+    # A key whose value is a block scalar (| or >) starts a body.
+    /:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/ {
+      match($0, /^ *(- +)*/)
+      body = RLENGTH
+    }
     END { close_step() }
   ' "$ROOT/$rel")
 }
