@@ -15,10 +15,14 @@
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
 #     (with: { node-version: 24 }), and a `node-version` outside such a step
-#     fail; a `node-version-file` input is not read. Anywhere in a workflow
-#     outside a comment and a block scalar body, the forms that can spell a
-#     key or a value as other text than the line shows fail too, since
-#     reading them would take a YAML parser: an escape in a double-quoted
+#     fail; a `node-version-file` input is not read. Any line that names
+#     actions/setup-node@ outside its comment and outside a `uses:` this
+#     reader opens a step on fails too, since a step there would go unread:
+#     an action on the line after its `uses:`, or plain text such as
+#     run: echo actions/setup-node@v7. Anywhere in a workflow outside a
+#     comment and a block scalar body, the forms that can spell a key or a
+#     value as other text than the line shows fail as well, since reading
+#     them would take a YAML parser: an escape in a double-quoted
 #     string ("node\x2dversion"), an alias (*name), an explicit key (? ), a
 #     tag other than !!map (!!binary decodes base64), and a quoted string or
 #     a flow collection left open at the line end.
@@ -160,9 +164,10 @@ read_workflow() {
     # single-quoted string, it is text, and so is a comment (a # after a
     # blank). In a flow collection, a : right after a quoted scalar or a
     # closed collection starts a value even with no blank after it, as in
-    # {"uses":"actions/setup-node@v7"}. Sets escape, alias, explicit, tag
-    # (one other than !!map), unclosed for a quoted string still open at the
-    # line end, and openflow for a flow collection.
+    # {"uses":"actions/setup-node@v7"}. Sets code (the line without its
+    # comment), escape, alias, explicit, tag (one other than !!map),
+    # unclosed for a quoted string still open at the line end, and openflow
+    # for a flow collection.
     function scan(s,   n, i, j, c, nx, start, depth, inq, json, wasjson) {
       escape = 0; alias = 0; explicit = 0; tag = 0; unclosed = 0; openflow = 0
       n = length(s); start = 1; depth = 0; inq = ""; json = 0
@@ -177,6 +182,8 @@ read_workflow() {
         }
         if (c == " " || c == "\t") continue
         if (c == "#" && (i == 1 || substr(s, i - 1, 1) ~ /[ \t]/)) {
+          code = substr(s, 1, i - 1)
+          sub(/[ \t]+$/, "", code)
           openflow = (depth > 0)
           return
         }
@@ -203,6 +210,7 @@ read_workflow() {
         else if (depth && c == ",") start = 1
         else if (depth && (c == "]" || c == "}")) { depth--; json = 1 }
       }
+      code = s
       unclosed = (inq != "")
       openflow = (!unclosed && depth > 0)
     }
@@ -242,12 +250,6 @@ read_workflow() {
       else step = (ind in dash) ? dash[ind] : ind - 2
       next
     }
-    # Anything else that runs setup-node, such as a step written as one flow
-    # mapping (- { uses: actions/setup-node@v7, ... }), prints `unread <line>`.
-    $0 ~ ("uses[\"" q "]?[ \t]*:[ \t]*(&[^ \t,]+[ \t]+)?[\"" q "]?([^ \t\"" q ",]*/)?actions/setup-node@") {
-      print "unread", NR
-      next
-    }
     # A block mapping of inputs, which an anchor (&inputs) or the mapping
     # tag (!!map) may name first.
     open && /^[ \t]*with[ \t]*:[ \t]*((&[^ \t#]+|!!map)([ \t]+(&[^ \t#]+|!!map))*)?[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
@@ -256,14 +258,24 @@ read_workflow() {
     open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
     # The patterns here would miss a node-version or a setup-node step
     # written with a form scan() flags, so each prints its kind, wherever in
-    # the file it is. So does a quoted string or a flow collection that runs
-    # onto the next line, whose next line this reader would read as keys.
+    # the file it is, before the rule below can print `unread` for the same
+    # line. So does a quoted string or a flow collection that runs onto the
+    # next line, whose next line this reader would read as keys.
     escape { print "escape", NR; next }
     alias { print "alias", NR; next }
     explicit { print "explicit", NR; next }
     tag { print "tag", NR; next }
     unclosed { print "unclosed", NR; next }
     openflow { print "openflow", NR; next }
+    # Any other line that names setup-node outside its comment prints
+    # `unread <line>`: a step written as one flow mapping (- { uses:
+    # actions/setup-node@v7, ... }), an action on the line after its uses:,
+    # an anchor that an alias reuses, or plain text. A step this reader does
+    # not open is never read, so it fails rather than pass unread.
+    tolower(code) ~ /actions\/setup-node@/ {
+      print "unread", NR
+      next
+    }
     /^[ \t]*node-version[ \t]*:/ {
       v = $0
       sub(/^[ \t]*node-version[ \t]*:/, "", v)

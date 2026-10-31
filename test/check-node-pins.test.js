@@ -194,6 +194,7 @@ for (const withLine of ["with: &inputs", "with: !!map # tagged", "with: !!map &i
 for (const [name, text] of [
     ["a plain scalar holding quotes", '      - run: docker build --tag "$IMAGE" .'],
     ["a comment holding an apostrophe", "      - run: npm ci # the runner's npm"],
+    ["a comment naming the action", "      - run: npm ci # set up by actions/setup-node@v7"],
     ["a plain scalar holding ${{ ... }}", "      - run: npm ci\n        env:\n          IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}"],
     ["an if: holding ${{ !cancelled() }}", "      - if: ${{ !cancelled() }}\n        run: echo \"done!\""],
     [
@@ -481,6 +482,20 @@ for (const step of ["{ uses: actions/setup-node@v7, with: { node-version: 26 } }
     });
 }
 
+// A line that names the action outside a uses: this check opens a step on
+// fails, even when it is text, rather than risk a step that goes unread.
+for (const [name, text, at] of [
+    ["an action on the line after its uses:", "      - uses:\n          actions/setup-node@v7", 9],
+    ["plain text", "      - run: echo uses: actions/setup-node@v7", 8],
+    ["a quoted string", `      - run: 'echo "uses": actions/setup-node@v7'`, 8],
+]) {
+    test(`fails on a line that names actions/setup-node@ in ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, text);
+        f.failsWith(`${CI}:${at} actions/setup-node step is not written as a block mapping`);
+    });
+}
+
 test("fails on a node-version in a flow mapping outside any setup-node step", () => {
     const f = fixture();
     f.setLine(CI, 5, "    env: { node-version: 26 }");
@@ -584,11 +599,14 @@ for (const [name, at, text, message] of [
     });
 }
 
-test("fails on an alias as the action of uses:", () => {
+test("fails on an alias as the action of uses:, and on the anchor that names the action", () => {
     const f = fixture();
     f.setLine(CI, 1, "name: &setup actions/setup-node@v7");
     f.setLine(CI, 8, "      - uses: *setup");
-    f.failsWith(`${CI}:8 uses a YAML alias, which this check cannot read`);
+    f.failsWith(
+        `${CI}:1 actions/setup-node step is not written as a block mapping`,
+        `${CI}:8 uses a YAML alias, which this check cannot read`,
+    );
 });
 
 test("fails on an alias as the node-version value", () => {
