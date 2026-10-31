@@ -9,8 +9,9 @@
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
 #     the Node CI runs. The step and its `with:` must be block mappings, as
-#     in this repo's ci.yml (an anchor or !!map may name the `with:`); the
-#     body of a block scalar (run: |) is skipped.
+#     in this repo's ci.yml (the `uses` key may be quoted, an anchor may name
+#     the action, and an anchor or !!map may name the `with:`); the body of
+#     a block scalar (run: |) is skipped.
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
 #     (with: { node-version: 24 }), and a `node-version` outside such a step
@@ -157,19 +158,21 @@ read_workflow() {
     # or `: `, after a tag or an anchor, and in a flow collection after [, {
     # or ,. Anywhere else, as in run: echo "a\b" or a double quote inside a
     # single-quoted string, it is text, and so is a comment (a # after a
-    # blank). Sets escape, alias, explicit, tag (one other than !!map),
-    # unclosed for a quoted string still open at the line end, and openflow
-    # for a flow collection.
-    function scan(s,   n, i, j, c, nx, start, depth, inq) {
+    # blank). In a flow collection, a : right after a quoted scalar or a
+    # closed collection starts a value even with no blank after it, as in
+    # {"uses":"actions/setup-node@v7"}. Sets escape, alias, explicit, tag
+    # (one other than !!map), unclosed for a quoted string still open at the
+    # line end, and openflow for a flow collection.
+    function scan(s,   n, i, j, c, nx, start, depth, inq, json, wasjson) {
       escape = 0; alias = 0; explicit = 0; tag = 0; unclosed = 0; openflow = 0
-      n = length(s); start = 1; depth = 0; inq = ""
+      n = length(s); start = 1; depth = 0; inq = ""; json = 0
       for (i = 1; i <= n; i++) {
         c = substr(s, i, 1)
         nx = substr(s, i + 1, 1)
         if (inq != "") {
           if (inq == "\"" && c == "\\") { escape = 1; i++ }
           else if (c == inq && inq == q && nx == q) i++
-          else if (c == inq) inq = ""
+          else if (c == inq) { inq = ""; json = 1 }
           continue
         }
         if (c == " " || c == "\t") continue
@@ -177,6 +180,7 @@ read_workflow() {
           openflow = (depth > 0)
           return
         }
+        wasjson = json; json = 0
         if (start) {
           if (c == "\"" || c == q) { inq = c; start = 0; continue }
           if ((c == "-" || c == "?") && (nx == "" || nx ~ /[ \t]/)) {
@@ -184,7 +188,7 @@ read_workflow() {
             continue
           }
           if (c == "[" || c == "{") { depth++; continue }
-          if (depth && (c == "]" || c == "}")) { depth--; start = 0; continue }
+          if (depth && (c == "]" || c == "}")) { depth--; start = 0; json = 1; continue }
           if (c == "!" || c == "&" || c == "*") {
             j = i
             while (i < n && substr(s, i + 1, 1) !~ /[] \t,{}[]/) i++
@@ -195,9 +199,9 @@ read_workflow() {
           # A plain scalar starts here.
           start = 0
         }
-        if (c == ":" && (nx == "" || nx ~ /[ \t]/ || (depth && nx ~ /[],{}[]/))) start = 1
+        if (c == ":" && (nx == "" || nx ~ /[ \t]/ || (depth && (wasjson || nx ~ /[],{}[]/)))) start = 1
         else if (depth && c == ",") start = 1
-        else if (depth && (c == "]" || c == "}")) depth--
+        else if (depth && (c == "]" || c == "}")) { depth--; json = 1 }
       }
       unclosed = (inq != "")
       openflow = (!unclosed && depth > 0)
@@ -228,8 +232,9 @@ read_workflow() {
       }
       scan($0)
     }
-    # actions/setup-node@<ref>, or a full URL to it.
-    $0 ~ ("^[ \t-]*uses[ \t]*:[ \t]*[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
+    # actions/setup-node@<ref>, or a full URL to it, under a plain or quoted
+    # uses key and after an optional anchor (uses: &setup actions/...).
+    $0 ~ ("^[ \t-]*[\"" q "]?uses[\"" q "]?[ \t]*:[ \t]*(&[^ \t]+[ \t]+)?[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
       open = NR
       # `- uses:` opens the step; a bare `uses:` belongs to the item whose
       # keys start at its column.
@@ -239,7 +244,7 @@ read_workflow() {
     }
     # Anything else that runs setup-node, such as a step written as one flow
     # mapping (- { uses: actions/setup-node@v7, ... }), prints `unread <line>`.
-    $0 ~ ("uses[ \t]*:[ \t]*[\"" q "]?([^ \t\"" q ",]*/)?actions/setup-node@") {
+    $0 ~ ("uses[\"" q "]?[ \t]*:[ \t]*(&[^ \t,]+[ \t]+)?[\"" q "]?([^ \t\"" q ",]*/)?actions/setup-node@") {
       print "unread", NR
       next
     }

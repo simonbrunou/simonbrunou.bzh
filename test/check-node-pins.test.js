@@ -216,6 +216,17 @@ for (const [name, text] of [
     });
 }
 
+for (const [name, at, text] of [
+    ["a quoted uses key", 15, `        'uses': "actions/setup-node@v7"`],
+    ["an anchor before the action of uses:", 8, "      - uses: &setup actions/setup-node@v7"],
+]) {
+    test(`passes on a setup-node step with ${name}, reading its node-version`, () => {
+        const f = fixture();
+        f.setLine(CI, at, text);
+        f.passesWith(ALL);
+    });
+}
+
 test("passes on a second workflow without a setup-node step", () => {
     const f = fixture();
     f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - run: echo pdf\n");
@@ -460,13 +471,15 @@ test("fails on a job after a key whose comment ends in `: |`, which starts no bl
     f.failsWith("the Node majors differ", `${CI}:35  26 (26)`);
 });
 
-test("fails on a setup-node step written as one flow mapping", () => {
-    const f = fixture();
-    f.setLine(CI, 8, "      - { uses: actions/setup-node@v7, with: { node-version: 26 } }");
-    f.setLine(CI, 9, "");
-    f.setLine(CI, 10, "");
-    f.failsWith(`${CI}:8 actions/setup-node step is not written as a block mapping`);
-});
+for (const step of ["{ uses: actions/setup-node@v7, with: { node-version: 26 } }", '{"uses": actions/setup-node@v7}', '{"uses":"actions/setup-node@v7"}']) {
+    test(`fails on a setup-node step written as one flow mapping: ${step}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, `      - ${step}`);
+        f.setLine(CI, 9, "");
+        f.setLine(CI, 10, "");
+        f.failsWith(`${CI}:8 actions/setup-node step is not written as a block mapping`);
+    });
+}
 
 test("fails on a node-version in a flow mapping outside any setup-node step", () => {
     const f = fixture();
@@ -542,12 +555,15 @@ for (const range of [">=24", "*", "latest"]) {
 }
 
 // Fails on a YAML form that can spell a key or a value as other text than
-// the line shows (#144). The workflow runner decodes each into a setup-node
-// step or a node-version input that this check would otherwise not read.
+// the line shows (#144). A step or an input written with an escape, a tag,
+// an alias or an explicit key is one the patterns of this check do not
+// match, and a quoted string or a flow collection left open turns the next
+// lines into text or nested data that the check would read as inputs.
 
 for (const [name, at, text, message] of [
     ["an escape in uses:", 8, '      - uses: "actions/setup\\x2dnode@v7"', "holds an escape in a double-quoted string"],
     ["an escape in a uses key", 8, '      - "us\\x65s": actions/setup-node@v7', "holds an escape in a double-quoted string"],
+    ["an escape after a quoted key and a colon with no blank", 8, '      - {"uses":"actions/setup\\x2dnode@v7"}', "holds an escape in a double-quoted string"],
     ["an escape in a node-version key", 10, '          "node\\x2dversion": 24', "holds an escape in a double-quoted string"],
     ["a !!binary uses:", 8, "      - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3", "uses a YAML tag other than !!map"],
     ["a !!binary node-version key", 10, "          !!binary bm9kZS12ZXJzaW9u: 24", "uses a YAML tag other than !!map"],
