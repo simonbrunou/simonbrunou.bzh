@@ -189,6 +189,45 @@ for (const withLine of ["with: &inputs", "with: !!map # tagged", "with: !!map &i
     });
 }
 
+// A quote, a \, a *, a ? or a ! is YAML syntax only where a node starts,
+// outside a comment and a block scalar body: anywhere else it is text.
+for (const [name, text] of [
+    ["a plain scalar holding quotes", '      - run: docker build --tag "$IMAGE" .'],
+    ["a comment holding an apostrophe", "      - run: npm ci # the runner's npm"],
+    ["a comment naming the action", "      - run: npm ci # set up by actions/setup-node@v7"],
+    ["a plain scalar holding ${{ ... }}", "      - run: npm ci\n        env:\n          IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}"],
+    ["an if: holding ${{ !cancelled() }}", "      - if: ${{ !cancelled() }}\n        run: echo \"done!\""],
+    [
+        "a block scalar body holding YAML syntax",
+        [
+            "      - run: |",
+            '          echo "a\\b" * ?',
+            "          ? uses",
+            "          - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3",
+            "          node-version: *pin",
+            "          echo 'open",
+            "          cache: {a: 1,",
+        ].join("\n"),
+    ],
+]) {
+    test(`passes on ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 11, text);
+        f.passesWith(ALL);
+    });
+}
+
+for (const [name, at, text] of [
+    ["a quoted uses key", 15, `        'uses': "actions/setup-node@v7"`],
+    ["an anchor before the action of uses:", 8, "      - uses: &setup actions/setup-node@v7"],
+]) {
+    test(`passes on a setup-node step with ${name}, reading its node-version`, () => {
+        const f = fixture();
+        f.setLine(CI, at, text);
+        f.passesWith(ALL);
+    });
+}
+
 test("passes on a second workflow without a setup-node step", () => {
     const f = fixture();
     f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - run: echo pdf\n");
@@ -384,7 +423,6 @@ for (const value of ["lts/*", "latest", "node", ">=24", "24 || 26"]) {
 for (const [value, read] of [
     ['"24#oops"', "24#oops"],
     ["24#oops", "24#oops"],
-    ['"24', '"24'],
     ['"24" x', '"24" x'],
 ]) {
     test(`fails on a node-version of ${value}, reading it as ${read}`, () => {
@@ -394,6 +432,12 @@ for (const [value, read] of [
     });
 }
 
+test('fails on a node-version of "24, which leaves a quoted string open', () => {
+    const f = fixture();
+    f.setLine(CI, 10, '          node-version: "24');
+    f.failsWith(`${CI}:10 leaves a quoted string open onto the next line, which this check cannot read`);
+});
+
 for (const [name, text] of [
     ["a flow mapping", "        with: { node-version: 24 }"],
     ["a flow mapping with a nested node-version", "        with: { ignored: { node-version: 24 }, node-version: 26 }"],
@@ -402,6 +446,7 @@ for (const [name, text] of [
     ["an anchor then an alias", "        with: &a *b"],
     ["a tag other than !!map", "        with: !!str"],
     ["an anchor with no name", "        with: & "],
+    ["a block scalar", "        with: |\n          node-version: 24"],
 ]) {
     test(`fails on a setup-node step whose with: is ${name}`, () => {
         const f = fixture();
@@ -427,13 +472,37 @@ test("fails on a job after a key whose comment ends in `: |`, which starts no bl
     f.failsWith("the Node majors differ", `${CI}:35  26 (26)`);
 });
 
-test("fails on a setup-node step written as one flow mapping", () => {
-    const f = fixture();
-    f.setLine(CI, 8, "      - { uses: actions/setup-node@v7, with: { node-version: 26 } }");
-    f.setLine(CI, 9, "");
-    f.setLine(CI, 10, "");
-    f.failsWith(`${CI}:8 actions/setup-node step is not written as a block mapping`);
-});
+for (const step of ["{ uses: actions/setup-node@v7, with: { node-version: 26 } }", '{"uses": actions/setup-node@v7}', '{"uses":"actions/setup-node@v7"}']) {
+    test(`fails on a setup-node step written as one flow mapping: ${step}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, `      - ${step}`);
+        f.setLine(CI, 9, "");
+        f.setLine(CI, 10, "");
+        f.failsWith(`${CI}:8 actions/setup-node step is not written as a block mapping`);
+    });
+}
+
+// A line that names the action outside a uses: this check opens a step on
+// fails, even when it is text, rather than risk a step that goes unread.
+for (const [name, text, at] of [
+    ["an action on the line after its uses:", "      - uses:\n          actions/setup-node@v7", 9],
+    ["plain text", "      - run: echo uses: actions/setup-node@v7", 8],
+    ["a quoted string", `      - run: 'echo "uses": actions/setup-node@v7'`, 8],
+]) {
+    test(`fails on a line that names actions/setup-node@ in ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, text);
+        f.failsWith(`${CI}:${at} actions/setup-node step is not written as a block mapping`);
+    });
+}
+
+for (const header of ["- uses: >-", "- uses: |", '- "uses": |-']) {
+    test(`fails on a uses: that names its action in a block scalar: ${header}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, `      ${header}\n          actions/setup-node@v7`);
+        f.failsWith(`${CI}:8 uses: names its action in a block scalar (| or >), which this check cannot read`);
+    });
+}
 
 test("fails on a node-version in a flow mapping outside any setup-node step", () => {
     const f = fixture();
@@ -507,6 +576,59 @@ for (const range of [">=24", "*", "latest"]) {
         f.failsWith(`package.json devDependencies @types/node '${range}' does not pin one Node major`);
     });
 }
+
+// Fails on a YAML form that can spell a key or a value as other text than
+// the line shows (#144). A step or an input written with an escape, a tag,
+// an alias or an explicit key is one the patterns of this check do not
+// match, and a quoted string or a flow collection left open turns the next
+// lines into text or nested data that the check would read as inputs.
+
+for (const [name, at, text, message] of [
+    ["an escape in uses:", 8, '      - uses: "actions/setup\\x2dnode@v7"', "holds an escape in a double-quoted string"],
+    ["an escape in a uses key", 8, '      - "us\\x65s": actions/setup-node@v7', "holds an escape in a double-quoted string"],
+    ["an escape after a quoted key and a colon with no blank", 8, '      - {"uses":"actions/setup\\x2dnode@v7"}', "holds an escape in a double-quoted string"],
+    ["an escape in a node-version key", 10, '          "node\\x2dversion": 24', "holds an escape in a double-quoted string"],
+    ["a !!binary uses:", 8, "      - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3", "uses a YAML tag other than !!map"],
+    ["a !!binary node-version key", 10, "          !!binary bm9kZS12ZXJzaW9u: 24", "uses a YAML tag other than !!map"],
+    ["a !!str uses:", 8, "      - uses: !!str actions/setup-node@v7", "uses a YAML tag other than !!map"],
+    ["a local tag on node-version", 10, "          node-version: !pin 24", "uses a YAML tag other than !!map"],
+    ["a verbatim tag on uses:", 8, "      - uses: !<tag:yaml.org,2002:binary> YWN0aW9ucy9zZXR1cC1ub2RlQHY3", "uses a YAML tag other than !!map"],
+    ["an explicit uses key", 8, "      - ? uses\n        : actions/setup-node@v7", "uses a YAML explicit key (?)"],
+    ["an explicit node-version key", 10, "          ? node-version\n          : 24", "uses a YAML explicit key (?)"],
+    ["a single-quoted value left open", 10, "          check-latest: 'true\n          node-version: 24\n          '", "leaves a quoted string open onto the next line"],
+    ["a double-quoted value left open", 10, '          check-latest: "true\n          node-version: 24\n          "', "leaves a quoted string open onto the next line"],
+    ["a flow mapping left open", 10, "          cache: {a: 1,\n          node-version: 24\n          }", "leaves a flow mapping or sequence open onto the next line"],
+    ["a flow sequence left open", 10, "          cache: [a,\n          node-version: 24\n          ]", "leaves a flow mapping or sequence open onto the next line"],
+]) {
+    test(`fails on ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, at, text);
+        f.failsWith(`${CI}:${at} ${message}, which this check cannot read`);
+    });
+}
+
+test("fails on an alias as the action of uses:, and on the anchor that names the action", () => {
+    const f = fixture();
+    f.setLine(CI, 1, "name: &setup actions/setup-node@v7");
+    f.setLine(CI, 8, "      - uses: *setup");
+    f.failsWith(
+        `${CI}:1 actions/setup-node step is not written as a block mapping`,
+        `${CI}:8 uses a YAML alias, which this check cannot read`,
+    );
+});
+
+test("fails on an alias as the node-version value", () => {
+    const f = fixture();
+    f.setLine(CI, 1, "name: &pin 26");
+    f.setLine(CI, 10, "          node-version: *pin");
+    f.failsWith(`${CI}:10 uses a YAML alias, which this check cannot read`);
+});
+
+test("fails on a !!binary uses: in a second workflow without another setup-node step", () => {
+    const f = fixture();
+    f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3\n");
+    f.failsWith(".forgejo/workflows/pdf.yaml:4 uses a YAML tag other than !!map, which this check cannot read");
+});
 
 // Exits 2.
 
