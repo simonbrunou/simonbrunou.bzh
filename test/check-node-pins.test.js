@@ -496,6 +496,14 @@ for (const [name, text, at] of [
     });
 }
 
+for (const header of ["- uses: >-", "- uses: |", '- "uses": |-']) {
+    test(`fails on a uses: that names its action in a block scalar: ${header}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, `      ${header}\n          actions/setup-node@v7`);
+        f.failsWith(`${CI}:8 uses: names its action in a block scalar (| or >), which this check cannot read`);
+    });
+}
+
 test("fails on a node-version in a flow mapping outside any setup-node step", () => {
     const f = fixture();
     f.setLine(CI, 5, "    env: { node-version: 26 }");

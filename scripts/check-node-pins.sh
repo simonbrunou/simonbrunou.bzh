@@ -19,13 +19,14 @@
 #     actions/setup-node@ outside its comment and outside a `uses:` this
 #     reader opens a step on fails too, since a step there would go unread:
 #     an action on the line after its `uses:`, or plain text such as
-#     run: echo actions/setup-node@v7. Anywhere in a workflow outside a
-#     comment and a block scalar body, the forms that can spell a key or a
-#     value as other text than the line shows fail as well, since reading
-#     them would take a YAML parser: an escape in a double-quoted
-#     string ("node\x2dversion"), an alias (*name), an explicit key (? ), a
-#     tag other than !!map (!!binary decodes base64), and a quoted string or
-#     a flow collection left open at the line end.
+#     run: echo actions/setup-node@v7. So does a `uses:` whose value is a
+#     block scalar (uses: >-), whose body this reader skips. Anywhere in a
+#     workflow outside a comment and a block scalar body, the forms that can
+#     spell a key or a value as other text than the line shows fail as
+#     well, since reading them would take a YAML parser: an escape in a
+#     double-quoted string ("node\x2dversion"), an alias (*name), an
+#     explicit key (? ), a tag other than !!map (!!binary decodes base64),
+#     and a quoted string or a flow collection left open at the line end.
 #   Dockerfile  the major of the tag of every `FROM [<registry>/]node:<tag>`
 #     (24 out of 24-alpine or 24.12.0-alpine@sha256:...), the Node that
 #     Coolify builds production on. A FROM continued over several lines is
@@ -118,6 +119,7 @@ read_workflow() {
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step does not write with: as a block mapping, which this check cannot read"
         ;;
+      blockuses) fail "$rel:$line uses: names its action in a block scalar (| or >), which this check cannot read" ;;
       escape) fail "$rel:$line holds an escape in a double-quoted string, which this check cannot read" ;;
       alias) fail "$rel:$line uses a YAML alias, which this check cannot read" ;;
       explicit) fail "$rel:$line uses a YAML explicit key (?), which this check cannot read" ;;
@@ -237,6 +239,9 @@ read_workflow() {
       if ($0 ~ /^ *(- +)*[^ \t#:]+[ \t]*:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/) {
         match($0, /^ *(- +)*/)
         body = RLENGTH
+        # The body is skipped, so a uses: written as one (uses: >-) would
+        # hide its action.
+        if ($0 ~ ("^ *(- +)*[\"" q "]?uses[\"" q "]?[ \t]*:")) print "blockuses", NR
       }
       scan($0)
     }
