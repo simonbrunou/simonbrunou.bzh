@@ -9,12 +9,18 @@
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
 #     the Node CI runs. The step and its `with:` must be block mappings, as
-#     in this repo's ci.yml (an anchor or a tag may name the `with:`); the
+#     in this repo's ci.yml (an anchor or !!map may name the `with:`); the
 #     body of a block scalar (run: |) is skipped.
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
 #     (with: { node-version: 24 }), and a `node-version` outside such a step
-#     fail; a `node-version-file` input is not read.
+#     fail; a `node-version-file` input is not read. Anywhere in a workflow
+#     outside a comment and a block scalar body, the forms that can spell a
+#     key or a value as other text than the line shows fail too, since
+#     reading them would take a YAML parser: an escape in a double-quoted
+#     string ("node\x2dversion"), an alias (*name), an explicit key (? ), a
+#     tag other than !!map (!!binary decodes base64), and a quoted string or
+#     a flow collection left open at the line end.
 #   Dockerfile  the major of the tag of every `FROM [<registry>/]node:<tag>`
 #     (24 out of 24-alpine or 24.12.0-alpine@sha256:...), the Node that
 #     Coolify builds production on. A FROM continued over several lines is
@@ -107,6 +113,12 @@ read_workflow() {
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step does not write with: as a block mapping, which this check cannot read"
         ;;
+      escape) fail "$rel:$line holds an escape in a double-quoted string, which this check cannot read" ;;
+      alias) fail "$rel:$line uses a YAML alias, which this check cannot read" ;;
+      explicit) fail "$rel:$line uses a YAML explicit key (?), which this check cannot read" ;;
+      tag) fail "$rel:$line uses a YAML tag other than !!map, which this check cannot read" ;;
+      unclosed) fail "$rel:$line leaves a quoted string open onto the next line, which this check cannot read" ;;
+      openflow) fail "$rel:$line leaves a flow mapping or sequence open onto the next line, which this check cannot read" ;;
     esac
   done < <(awk -v q="'" '
     BEGIN { body = -1 }
@@ -137,6 +149,59 @@ read_workflow() {
     function input(v) {
       if (open && inwith) { print "pin", NR, v; open = 0; inwith = 0 } else print "stray", NR
     }
+    # Read one line as YAML does, far enough to see the forms that spell a
+    # key or a value as other text than the line shows: an escape in a
+    # double-quoted string ("node\x2dversion"), an alias (*name), an
+    # explicit key (? ) and a tag (!!binary). A quote, a *, a ! or a ? is
+    # syntax only where a node starts: at the line start, after `- `, `? `
+    # or `: `, after a tag or an anchor, and in a flow collection after [, {
+    # or ,. Anywhere else, as in run: echo "a\b" or a double quote inside a
+    # single-quoted string, it is text, and so is a comment (a # after a
+    # blank). Sets escape, alias, explicit, tag (one other than !!map),
+    # unclosed for a quoted string still open at the line end, and openflow
+    # for a flow collection.
+    function scan(s,   n, i, j, c, nx, start, depth, inq) {
+      escape = 0; alias = 0; explicit = 0; tag = 0; unclosed = 0; openflow = 0
+      n = length(s); start = 1; depth = 0; inq = ""
+      for (i = 1; i <= n; i++) {
+        c = substr(s, i, 1)
+        nx = substr(s, i + 1, 1)
+        if (inq != "") {
+          if (inq == "\"" && c == "\\") { escape = 1; i++ }
+          else if (c == inq && inq == q && nx == q) i++
+          else if (c == inq) inq = ""
+          continue
+        }
+        if (c == " " || c == "\t") continue
+        if (c == "#" && (i == 1 || substr(s, i - 1, 1) ~ /[ \t]/)) {
+          openflow = (depth > 0)
+          return
+        }
+        if (start) {
+          if (c == "\"" || c == q) { inq = c; start = 0; continue }
+          if ((c == "-" || c == "?") && (nx == "" || nx ~ /[ \t]/)) {
+            if (c == "?") explicit = 1
+            continue
+          }
+          if (c == "[" || c == "{") { depth++; continue }
+          if (depth && (c == "]" || c == "}")) { depth--; start = 0; continue }
+          if (c == "!" || c == "&" || c == "*") {
+            j = i
+            while (i < n && substr(s, i + 1, 1) !~ /[] \t,{}[]/) i++
+            if (c == "!" && substr(s, j, i - j + 1) != "!!map") tag = 1
+            if (c == "*") { alias = 1; start = 0 }
+            continue
+          }
+          # A plain scalar starts here.
+          start = 0
+        }
+        if (c == ":" && (nx == "" || nx ~ /[ \t]/ || (depth && nx ~ /[],{}[]/))) start = 1
+        else if (depth && c == ",") start = 1
+        else if (depth && (c == "]" || c == "}")) depth--
+      }
+      unclosed = (inq != "")
+      openflow = (!unclosed && depth > 0)
+    }
     { sub(/\r$/, "") }
     /^[ \t]*(#|$)/ { next }
     {
@@ -153,6 +218,15 @@ read_workflow() {
       if (inwith && ind <= withind) inwith = 0
       # A list item: remember its dash by the column its keys start at.
       if (match($0, /^ *- +/)) dash[RLENGTH] = ind
+      # A key whose value is a block scalar (| or >) starts a body on the
+      # next line, whatever rule below reads this one. The key is matched
+      # from the start of the line, so a `: |` inside a comment
+      # (hidden: # note: |) starts none.
+      if ($0 ~ /^ *(- +)*[^ \t#:]+[ \t]*:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/) {
+        match($0, /^ *(- +)*/)
+        body = RLENGTH
+      }
+      scan($0)
     }
     # actions/setup-node@<ref>, or a full URL to it.
     $0 ~ ("^[ \t-]*uses[ \t]*:[ \t]*[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
@@ -175,6 +249,16 @@ read_workflow() {
     # Any other with: of a setup-node step ({ ... }, an alias, another tag)
     # prints `flow <line>`: reading those forms would take a YAML parser.
     open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
+    # The patterns here would miss a node-version or a setup-node step
+    # written with a form scan() flags, so each prints its kind, wherever in
+    # the file it is. So does a quoted string or a flow collection that runs
+    # onto the next line, whose next line this reader would read as keys.
+    escape { print "escape", NR; next }
+    alias { print "alias", NR; next }
+    explicit { print "explicit", NR; next }
+    tag { print "tag", NR; next }
+    unclosed { print "unclosed", NR; next }
+    openflow { print "openflow", NR; next }
     /^[ \t]*node-version[ \t]*:/ {
       v = $0
       sub(/^[ \t]*node-version[ \t]*:/, "", v)
@@ -183,13 +267,6 @@ read_workflow() {
     }
     # A node-version key inside a flow mapping on any other line.
     /node-version[ \t]*:/ { print "stray", NR }
-    # A key whose value is a block scalar (| or >) starts a body. The key is
-    # matched from the start of the line, so a `: |` inside a comment
-    # (hidden: # note: |) starts none.
-    /^ *(- +)*[^ \t#:]+[ \t]*:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/ {
-      match($0, /^ *(- +)*/)
-      body = RLENGTH
-    }
     END { close_step() }
   ' "$ROOT/$rel")
 }

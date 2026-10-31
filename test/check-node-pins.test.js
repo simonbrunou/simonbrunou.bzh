@@ -189,6 +189,33 @@ for (const withLine of ["with: &inputs", "with: !!map # tagged", "with: !!map &i
     });
 }
 
+// A quote, a \, a *, a ? or a ! is YAML syntax only where a node starts,
+// outside a comment and a block scalar body: anywhere else it is text.
+for (const [name, text] of [
+    ["a plain scalar holding quotes", '      - run: docker build --tag "$IMAGE" .'],
+    ["a comment holding an apostrophe", "      - run: npm ci # the runner's npm"],
+    ["a plain scalar holding ${{ ... }}", "      - run: npm ci\n        env:\n          IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}"],
+    ["an if: holding ${{ !cancelled() }}", "      - if: ${{ !cancelled() }}\n        run: echo \"done!\""],
+    [
+        "a block scalar body holding YAML syntax",
+        [
+            "      - run: |",
+            '          echo "a\\b" * ?',
+            "          ? uses",
+            "          - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3",
+            "          node-version: *pin",
+            "          echo 'open",
+            "          cache: {a: 1,",
+        ].join("\n"),
+    ],
+]) {
+    test(`passes on ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 11, text);
+        f.passesWith(ALL);
+    });
+}
+
 test("passes on a second workflow without a setup-node step", () => {
     const f = fixture();
     f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - run: echo pdf\n");
@@ -384,7 +411,6 @@ for (const value of ["lts/*", "latest", "node", ">=24", "24 || 26"]) {
 for (const [value, read] of [
     ['"24#oops"', "24#oops"],
     ["24#oops", "24#oops"],
-    ['"24', '"24'],
     ['"24" x', '"24" x'],
 ]) {
     test(`fails on a node-version of ${value}, reading it as ${read}`, () => {
@@ -394,6 +420,12 @@ for (const [value, read] of [
     });
 }
 
+test('fails on a node-version of "24, which leaves a quoted string open', () => {
+    const f = fixture();
+    f.setLine(CI, 10, '          node-version: "24');
+    f.failsWith(`${CI}:10 leaves a quoted string open onto the next line, which this check cannot read`);
+});
+
 for (const [name, text] of [
     ["a flow mapping", "        with: { node-version: 24 }"],
     ["a flow mapping with a nested node-version", "        with: { ignored: { node-version: 24 }, node-version: 26 }"],
@@ -402,6 +434,7 @@ for (const [name, text] of [
     ["an anchor then an alias", "        with: &a *b"],
     ["a tag other than !!map", "        with: !!str"],
     ["an anchor with no name", "        with: & "],
+    ["a block scalar", "        with: |\n          node-version: 24"],
 ]) {
     test(`fails on a setup-node step whose with: is ${name}`, () => {
         const f = fixture();
@@ -507,6 +540,53 @@ for (const range of [">=24", "*", "latest"]) {
         f.failsWith(`package.json devDependencies @types/node '${range}' does not pin one Node major`);
     });
 }
+
+// Fails on a YAML form that can spell a key or a value as other text than
+// the line shows (#144). The workflow runner decodes each into a setup-node
+// step or a node-version input that this check would otherwise not read.
+
+for (const [name, at, text, message] of [
+    ["an escape in uses:", 8, '      - uses: "actions/setup\\x2dnode@v7"', "holds an escape in a double-quoted string"],
+    ["an escape in a uses key", 8, '      - "us\\x65s": actions/setup-node@v7', "holds an escape in a double-quoted string"],
+    ["an escape in a node-version key", 10, '          "node\\x2dversion": 24', "holds an escape in a double-quoted string"],
+    ["a !!binary uses:", 8, "      - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3", "uses a YAML tag other than !!map"],
+    ["a !!binary node-version key", 10, "          !!binary bm9kZS12ZXJzaW9u: 24", "uses a YAML tag other than !!map"],
+    ["a !!str uses:", 8, "      - uses: !!str actions/setup-node@v7", "uses a YAML tag other than !!map"],
+    ["a local tag on node-version", 10, "          node-version: !pin 24", "uses a YAML tag other than !!map"],
+    ["a verbatim tag on uses:", 8, "      - uses: !<tag:yaml.org,2002:binary> YWN0aW9ucy9zZXR1cC1ub2RlQHY3", "uses a YAML tag other than !!map"],
+    ["an explicit uses key", 8, "      - ? uses\n        : actions/setup-node@v7", "uses a YAML explicit key (?)"],
+    ["an explicit node-version key", 10, "          ? node-version\n          : 24", "uses a YAML explicit key (?)"],
+    ["a single-quoted value left open", 10, "          check-latest: 'true\n          node-version: 24\n          '", "leaves a quoted string open onto the next line"],
+    ["a double-quoted value left open", 10, '          check-latest: "true\n          node-version: 24\n          "', "leaves a quoted string open onto the next line"],
+    ["a flow mapping left open", 10, "          cache: {a: 1,\n          node-version: 24\n          }", "leaves a flow mapping or sequence open onto the next line"],
+    ["a flow sequence left open", 10, "          cache: [a,\n          node-version: 24\n          ]", "leaves a flow mapping or sequence open onto the next line"],
+]) {
+    test(`fails on ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, at, text);
+        f.failsWith(`${CI}:${at} ${message}, which this check cannot read`);
+    });
+}
+
+test("fails on an alias as the action of uses:", () => {
+    const f = fixture();
+    f.setLine(CI, 1, "name: &setup actions/setup-node@v7");
+    f.setLine(CI, 8, "      - uses: *setup");
+    f.failsWith(`${CI}:8 uses a YAML alias, which this check cannot read`);
+});
+
+test("fails on an alias as the node-version value", () => {
+    const f = fixture();
+    f.setLine(CI, 1, "name: &pin 26");
+    f.setLine(CI, 10, "          node-version: *pin");
+    f.failsWith(`${CI}:10 uses a YAML alias, which this check cannot read`);
+});
+
+test("fails on a !!binary uses: in a second workflow without another setup-node step", () => {
+    const f = fixture();
+    f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - uses: !!binary YWN0aW9ucy9zZXR1cC1ub2RlQHY3\n");
+    f.failsWith(".forgejo/workflows/pdf.yaml:4 uses a YAML tag other than !!map, which this check cannot read");
+});
 
 // Exits 2.
 
