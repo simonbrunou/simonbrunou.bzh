@@ -9,9 +9,9 @@
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
 #     the Node CI runs. The step and its `with:` must be block mappings, as
-#     in this repo's ci.yml (the `uses` key may be quoted, an anchor may name
-#     the action, and an anchor or !!map may name the `with:`); the body of
-#     a block scalar (run: |) is skipped.
+#     in this repo's ci.yml (the `uses` and `node-version` keys may be
+#     quoted, an anchor may name the action, and an anchor or !!map may name
+#     the `with:`); the body of a block scalar (run: |) is skipped.
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
 #     (with: { node-version: 24 }), and a `node-version` outside such a step
@@ -128,7 +128,12 @@ read_workflow() {
       openflow) fail "$rel:$line leaves a flow mapping or sequence open onto the next line, which this check cannot read" ;;
     esac
   done < <(awk -v q="'" '
-    BEGIN { body = -1 }
+    BEGIN {
+      body = -1
+      # The input key, plain or quoted. It does not match the start of
+      # `node-version-file`, since the colon must follow.
+      NV = "^[ \t]*(node-version|\"node-version\"|" q "node-version" q ")[ \t]*:"
+    }
     function indent(s) { match(s, /^ */); return RLENGTH }
     function close_step() { if (open) print "nopin", open; open = 0; inwith = 0 }
     # The value of a YAML scalar: the text inside its quotes, or a plain
@@ -281,14 +286,15 @@ read_workflow() {
       print "unread", NR
       next
     }
-    /^[ \t]*node-version[ \t]*:/ {
+    $0 ~ NV {
       v = $0
-      sub(/^[ \t]*node-version[ \t]*:/, "", v)
+      sub(NV, "", v)
       input(scalar(v))
       next
     }
-    # A node-version key inside a flow mapping on any other line.
-    /node-version[ \t]*:/ { print "stray", NR }
+    # A node-version key, plain or quoted, on any other line, a flow mapping
+    # included.
+    $0 ~ ("node-version[\"" q "]?[ \t]*:") { print "stray", NR }
     END { close_step() }
   ' "$ROOT/$rel")
 }

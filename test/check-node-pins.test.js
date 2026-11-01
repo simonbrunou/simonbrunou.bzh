@@ -228,6 +228,15 @@ for (const [name, at, text] of [
     });
 }
 
+// A quoted key is the same YAML key as a plain one (#146).
+for (const input of ['"node-version": 24', "'node-version': 24", '"node-version": "24.x"', '"node-version" : 24']) {
+    test(`passes on a quoted node-version key: ${input}`, () => {
+        const f = fixture();
+        f.setLine(CI, 10, `          ${input}`);
+        f.passesWith(ALL);
+    });
+}
+
 test("passes on a second workflow without a setup-node step", () => {
     const f = fixture();
     f.write(".forgejo/workflows/pdf.yaml", "jobs:\n  pdf:\n    steps:\n      - run: echo pdf\n");
@@ -400,6 +409,44 @@ test("fails on a node-version under the step's env: instead of with:", () => {
     );
 });
 
+for (const key of ['"node-version"', "'node-version'"]) {
+    test(`fails on a quoted ${key} key under the step's env: instead of with:`, () => {
+        const f = fixture();
+        f.setLine(CI, 9, "        env:");
+        f.setLine(CI, 10, `          ${key}: 24`);
+        f.failsWith(
+            `${CI}:8 actions/setup-node step has no node-version`,
+            `${CI}:10 node-version is not in an actions/setup-node step`,
+        );
+    });
+}
+
+for (const [name, keys] of [
+    ["a plain key then a quoted one", ["node-version: 24", '"node-version": 26']],
+    ["a quoted key then a plain one", ["'node-version': 24", "node-version: 26"]],
+]) {
+    test(`fails on a second node-version in one with:, ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 10, keys.map((k) => `          ${k}`).join("\n"));
+        f.failsWith(`${CI}:11 node-version is not in an actions/setup-node step`);
+    });
+}
+
+test('fails on a setup-node step whose only input is a quoted "node-version-file"', () => {
+    const f = fixture();
+    f.setLine(CI, 10, '          "node-version-file": .nvmrc');
+    f.failsWith(`${CI}:8 actions/setup-node step has no node-version (node-version-file is not read)`);
+});
+
+// A key opened with one quote and closed with the other is a string left open.
+for (const key of [`"node-version'`, `'node-version"`]) {
+    test(`fails on a node-version key quoted as ${key}`, () => {
+        const f = fixture();
+        f.setLine(CI, 10, `          ${key}: 24`);
+        f.failsWith(`${CI}:10 leaves a quoted string open onto the next line, which this check cannot read`);
+    });
+}
+
 test("fails on a node-version outside any setup-node step", () => {
     const f = fixture();
     f.setLine(CI, 7, `${ciLines[6]}\n        with:\n          node-version: 24`);
@@ -509,6 +556,14 @@ test("fails on a node-version in a flow mapping outside any setup-node step", ()
     f.setLine(CI, 5, "    env: { node-version: 26 }");
     f.failsWith(`${CI}:5 node-version is not in an actions/setup-node step`);
 });
+
+for (const env of ['{"node-version": 26}', "{'node-version': 26}"]) {
+    test(`fails on a quoted node-version key in a flow mapping outside any setup-node step: ${env}`, () => {
+        const f = fixture();
+        f.setLine(CI, 5, `    env: ${env}`);
+        f.failsWith(`${CI}:5 node-version is not in an actions/setup-node step`);
+    });
+}
 
 test("fails on a node-version that is an expression", () => {
     const f = fixture();
