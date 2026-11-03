@@ -4,14 +4,17 @@
 // shapes the script must read: three setup-node steps, three node stages, a
 // FROM that builds on an earlier stage, a stage of another image and
 // engines.node. A test edits one line into one failure class and asserts
-// the exit code and the message that names the pin.
-import { after, test } from "node:test";
+// the exit code and the message that names the pin. The cases at the end
+// compare the check with a YAML parser instead: they assert only that the
+// check never passes a workflow the parser reads as a violation.
+import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFile, execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { availableParallelism, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseDocument } from "yaml";
 
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = path.join(repo, "scripts", "check-node-pins.sh");
@@ -519,6 +522,46 @@ test("fails on a job after a key whose comment ends in `: |`, which starts no bl
     f.failsWith("the Node majors differ", `${CI}:35  26 (26)`);
 });
 
+// #151: a with: or a node-version that YAML does not read as an input of the
+// step, as the only step of a second job. On 8a041a0 the check read each as
+// the step's pin and passed with "4 pins read Node 24", while a YAML parser
+// reads the step with no node-version under its with.
+const firstJob = ["on: push", "jobs:", "  a:", "    steps:", "      - uses: actions/setup-node@v7", "        with:", "          node-version: 24"];
+function secondJob(f, step) {
+    f.write(CI, `${[...firstJob, "  b:", "    steps:", "      - uses: actions/setup-node@v7", ...step].join("\n")}\n`);
+    f.write("Dockerfile", "FROM node:24-alpine\n");
+    f.writePackage({ engines: { node: "24.x" } });
+}
+const NOPIN = `${CI}:10 actions/setup-node step has no node-version`;
+for (const [name, step, ...messages] of [
+    ["A: a with: under another key of the step", ["        env:", "          with:", "            node-version: 24"], NOPIN, `${CI}:13 node-version is not in an actions/setup-node step`],
+    ["B: a with: in the body of a block scalar that is a list item", ["        args:", "          - |", "            with:", "              node-version: 24"], NOPIN],
+    ["C: a with: in the body of a block scalar whose key holds a blank", ["        my key: |", "          with:", "            node-version: 24"], NOPIN],
+    ["D: a with: in the body of a block scalar after an anchor", ["        notes: &n |", "          with:", "            node-version: 24"], NOPIN],
+    ["E: a with: in the body of a block scalar whose quoted key holds a blank", ['        "my key": |', "          with:", "            node-version: 24"], NOPIN],
+    ["F: a node-version under another input of with:", ["        with:", "          foo:", "            node-version: 24"], NOPIN, `${CI}:13 node-version is not in an actions/setup-node step`],
+    [
+        "N: a setup-node uses: under a key of an open setup-node step",
+        ["        env:", "          uses: actions/setup-node@v7", "          with:", "            node-version: 24"],
+        NOPIN,
+        `${CI}:12 names actions/setup-node@ under a key of another setup-node step, which this check cannot read`,
+        `${CI}:14 node-version is not in an actions/setup-node step`,
+    ],
+]) {
+    test(`fails on ${name}`, () => {
+        const f = fixture();
+        secondJob(f, step);
+        f.failsWith(...messages);
+    });
+}
+
+test("fails on form F beside a node-version: 26 input, reading the 26 as the step's pin", () => {
+    const f = fixture();
+    secondJob(f, ["        with:", "          foo:", "            node-version: 24", "          node-version: 26"]);
+    const err = f.failsWith("the Node majors differ", `${CI}:14  26 (26)`, `${CI}:13 node-version is not in an actions/setup-node step`);
+    assert.doesNotMatch(err, /:10 actions\/setup-node step has no node-version|:13 {2}24 /);
+});
+
 for (const step of ["{ uses: actions/setup-node@v7, with: { node-version: 26 } }", '{"uses": actions/setup-node@v7}', '{"uses":"actions/setup-node@v7"}']) {
     test(`fails on a setup-node step written as one flow mapping: ${step}`, () => {
         const f = fixture();
@@ -709,4 +752,336 @@ test("exits 2 without node on PATH", () => {
     const { code, err } = f.run([f.dir], { PATH: bin });
     assert.equal(code, 2);
     assert.match(err, /needs node on PATH/);
+});
+
+// The script holds three programs in single quotes: the awk workflow reader,
+// the awk Dockerfile reader and the node package.json reader. An apostrophe
+// in one, in a comment too, ends that quoting. One alone leaves bash a
+// syntax error at a later line, which names neither the apostrophe nor its
+// line; a pair splices shell text into the program and fails nowhere. The
+// workflow reader spells a quote as `q`.
+for (const [name, opening, closing] of [
+    ["awk workflow reader", `awk -v q="'" '`, `  ' "$ROOT/$rel")`],
+    ["awk Dockerfile reader", "    awk '", `    ' "$file" |`],
+    ["node package.json reader", "node -e '", "  ') || {"],
+]) {
+    test(`holds no apostrophe inside its single-quoted ${name}`, () => {
+        const lines = readFileSync(scriptPath, "utf8").split("\n");
+        const start = lines.findIndex((line) => line.endsWith(opening));
+        const end = lines.findIndex((line, i) => i > start && line.startsWith(closing));
+        // An apostrophe on the opening or closing line moves its quote, so
+        // that line no longer matches.
+        assert.ok(start > -1, `a line ending in ${opening}`);
+        assert.ok(end > start, `a line after it starting with ${closing.trim()}`);
+        const stray = lines.slice(start + 1, end).flatMap((line, i) => (line.includes("'") ? [`line ${start + i + 2}: ${line.trim()}`] : []));
+        assert.deepEqual(stray, [], "write these without an apostrophe");
+    });
+}
+
+// The check reads workflows with an awk line reader, since CI runs it before
+// `npm ci`; each gap in that reader was found by hand (#144, #146, #151).
+// Here a YAML parser reads the same workflows (#151, ported from sutom's
+// check). Each case writes one entry of the fixture's setup-node steps in one
+// YAML form (or a whole step, or a step it adds), and parses the result with
+// eemeli/yaml, which resolves << merge keys as go-yaml does for Forgejo. The
+// check may refuse any case (exit 1). It must never exit 0 on one in which
+// the parser finds a setup-node step whose with: holds no node-version input
+// that names the fixture's major, 24.
+
+const pad = (n) => " ".repeat(n);
+const hex = (s) => `\\x${s.charCodeAt(0).toString(16).padStart(2, "0")}`;
+
+// An entry is [key, value], where the value is a scalar (a string) or the
+// entries of a block mapping. A form writes one entry whose key sits at
+// column `at` as lines, or returns null when it does not apply to that
+// entry. An item form writes a whole step as the lines of a list item whose
+// dash sits at column `dash`.
+function block([key, value], at, writtenKey = key) {
+    return typeof value === "string" ? [`${pad(at)}${writtenKey}: ${value}`] : [`${pad(at)}${writtenKey}:`, ...value.flatMap((entry) => block(entry, at + 2))];
+}
+
+function flow(entries) {
+    return `{ ${entries.map(([k, v]) => `${k}: ${typeof v === "string" ? v : flow(v)}`).join(", ")} }`;
+}
+
+// The lines after a { that ends the line of a key or a dash at column `at`:
+// one entry a line, deeper than the key, as eemeli/yaml requires, then the }.
+function flowLines(entries, at) {
+    return [...entries.map(([k, v]) => `${pad(at + 4)}${k}: ${typeof v === "string" ? v : flow(v)},`), `${pad(at + 2)}}`];
+}
+
+function json(entries) {
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${typeof v === "string" ? JSON.stringify(v) : json(v)}`).join(",")}}`;
+}
+
+// A form that applies to scalar entries only, or to block mappings only.
+const scalarOnly =
+    (write) =>
+    ([key, value], at) =>
+        typeof value === "string" ? write(key, value, at) : null;
+const mappingOnly =
+    (write) =>
+    ([key, value], at) =>
+        typeof value === "string" ? null : write(key, value, at);
+// The block lines of an entry, with `text` (an anchor or a tag) written
+// after its key.
+const afterKey = (entry, at, text) => {
+    const [first, ...rest] = block(entry, at);
+    return [first.replace(/:( |$)/, `: ${text}$1`), ...rest];
+};
+
+const forms = [
+    ["plain", (entry, at) => block(entry, at)],
+    ["a double-quoted key", (entry, at) => block(entry, at, `"${entry[0]}"`)],
+    ["a single-quoted key", (entry, at) => block(entry, at, `'${entry[0]}'`)],
+    ["a double-quoted value", scalarOnly((k, v, at) => [`${pad(at)}${k}: "${v}"`])],
+    ["a single-quoted value", scalarOnly((k, v, at) => [`${pad(at)}${k}: '${v}'`])],
+    [
+        "a comment after it",
+        (entry, at) => {
+            const [first, ...rest] = block(entry, at);
+            return [`${first} # node-version: 26 uses: actions/setup-node@v7`, ...rest];
+        },
+    ],
+    ["a comment line before it", (entry, at) => [`${pad(at)}# with: { node-version: 26 }`, ...block(entry, at)]],
+    ["the !!str tag", scalarOnly((k, v, at) => [`${pad(at)}${k}: !!str ${v}`])],
+    ["the !!map tag", mappingOnly((k, v, at) => afterKey([k, v], at, "!!map"))],
+    ["the !!binary tag", scalarOnly((k, v, at) => [`${pad(at)}${k}: !!binary ${btoa(v)}`])],
+    ["a local tag", (entry, at) => afterKey(entry, at, "!pin")],
+    ["an anchor on the value", (entry, at) => afterKey(entry, at, "&v")],
+    ["an anchor on the key", (entry, at) => block(entry, at, `&k ${entry[0]}`)],
+    ["an alias of an anchor on another key", ([k, v], at) => [...afterKey([`x-${k}`, v], at, "&v"), `${pad(at)}${k}: *v`]],
+    ["a merge key", mappingOnly((k, v, at) => [`${pad(at)}${k}:`, `${pad(at + 2)}<<: ${flow(v)}`])],
+    ["a flow mapping", mappingOnly((k, v, at) => [`${pad(at)}${k}: ${flow(v)}`])],
+    ["a JSON-style flow mapping", mappingOnly((k, v, at) => [`${pad(at)}${k}: ${json(v)}`])],
+    ["a flow mapping over several lines", mappingOnly((k, v, at) => [`${pad(at)}${k}: {`, ...flowLines(v, at)])],
+    ["a flow sequence", scalarOnly((k, v, at) => [`${pad(at)}${k}: [${v}]`])],
+    ["a literal block scalar", scalarOnly((k, v, at) => [`${pad(at)}${k}: |-`, `${pad(at + 2)}${v}`])],
+    ["a folded block scalar", scalarOnly((k, v, at) => [`${pad(at)}${k}: >-`, `${pad(at + 2)}${v}`])],
+    ["a block scalar after an anchor", scalarOnly((k, v, at) => [`${pad(at)}${k}: &v |-`, `${pad(at + 2)}${v}`])],
+    ["the value on the next line", scalarOnly((k, v, at) => [`${pad(at)}${k}:`, `${pad(at + 2)}${v}`])],
+    ["a double-quoted value over two lines", scalarOnly((k, v, at) => [`${pad(at)}${k}: "${v}`, `${pad(at + 2)}"`])],
+    ["an escape in the key", (entry, at) => block(entry, at, `"${hex(entry[0])}${entry[0].slice(1)}"`)],
+    ["an escape in the value", scalarOnly((k, v, at) => [`${pad(at)}${k}: "${hex(v)}${v.slice(1)}"`])],
+    ["an explicit key", ([k, v], at) => (typeof v === "string" ? [`${pad(at)}? ${k}`, `${pad(at)}: ${v}`] : [`${pad(at)}? ${k}`, `${pad(at)}:`, ...block([k, v], at).slice(1)])],
+    // #151's forms A to F: the entry under another key (A, and F when the
+    // entry is node-version), or as text in the body of a block scalar (B
+    // to E).
+    ["under another key", (entry, at) => [`${pad(at)}other:`, ...block(entry, at + 2)]],
+    ["under another key, after a key of its own", (entry, at) => [`${pad(at)}other:`, `${pad(at + 2)}x: 1`, ...block(entry, at + 2)]],
+    ["in a flow mapping under another key", (entry, at) => [`${pad(at)}other: ${flow([entry])}`]],
+    ["in the body of a block scalar that is a list item", (entry, at) => [`${pad(at)}args:`, `${pad(at + 2)}- |`, ...block(entry, at + 4)]],
+    ["in the body of a block scalar whose key holds a blank", (entry, at) => [`${pad(at)}my key: |`, ...block(entry, at + 2)]],
+    ["in the body of a block scalar after an anchor", (entry, at) => [`${pad(at)}notes: &n |`, ...block(entry, at + 2)]],
+    ["in the body of a block scalar whose quoted key holds a blank", (entry, at) => [`${pad(at)}"my key": |`, ...block(entry, at + 2)]],
+    // #151's form N: the entry in a setup-node step nested in another value,
+    // which YAML reads as no step. A second uses: there would be a duplicate
+    // key.
+    [
+        "under another key, beside a uses: of setup-node",
+        (entry, at) => (entry[0] === "uses" ? null : [`${pad(at)}other:`, `${pad(at + 2)}uses: actions/setup-node@v7`, ...block(entry, at + 2)]),
+    ],
+    [
+        "in a setup-node step in a list under another key",
+        (entry, at) => (entry[0] === "uses" ? null : [`${pad(at)}args:`, `${pad(at + 2)}- uses: actions/setup-node@v7`, ...block(entry, at + 4)]),
+    ],
+];
+
+const itemForms = [
+    ["a flow mapping", (entries, dash) => [`${pad(dash)}- ${flow(entries)}`]],
+    ["a JSON-style flow mapping", (entries, dash) => [`${pad(dash)}- ${json(entries)}`]],
+    ["a JSON-style flow mapping with its dashes escaped", (entries, dash) => [`${pad(dash)}- ${json(entries).replaceAll("-", "\\x2d")}`]],
+    ["a flow mapping over several lines", (entries, dash) => [`${pad(dash)}- {`, ...flowLines(entries, dash)]],
+    ["an anchor on the item", (entries, dash) => [`${pad(dash)}- &step`, ...entries.flatMap((e) => block(e, dash + 2))]],
+    ["the !!map tag on the item", (entries, dash) => [`${pad(dash)}- !!map`, ...entries.flatMap((e) => block(e, dash + 2))]],
+    ["a lone dash", (entries, dash) => [`${pad(dash)}-`, ...entries.flatMap((e) => block(e, dash + 2))]],
+    ["a merge key", (entries, dash) => [`${pad(dash)}- <<: ${flow(entries)}`]],
+];
+
+// The lines of a list item whose keys sit at column dash + 2, with the dash
+// on its first line that is no comment.
+function dashed(lines, dash) {
+    const first = lines.findIndex((line) => !/^\s*#/.test(line));
+    return lines.map((line, i) => (i === first ? `${pad(dash)}- ${line.slice(dash + 2)}` : line));
+}
+
+// The fixture's setup-node steps: the first line of the item, the column of
+// its dash, the lines of its uses: and with:, the entries the item forms
+// write before uses: (they leave out step c's env:, a list), the action, and
+// the inputs by line. The last input, node-version, is on the last line of
+// the step.
+const NV = "node-version";
+const steps = [
+    { item: 8, dash: 6, uses: 8, with: 9, entries: [], action: "actions/setup-node@v7", inputs: [[10, [NV, "24"]]] },
+    {
+        item: 14,
+        dash: 6,
+        uses: 15,
+        with: 16,
+        entries: [["name", "Set up Node"]],
+        action: "actions/setup-node@v7",
+        inputs: [
+            [19, ["cache", "npm"]],
+            [20, [NV, "24.x"]],
+        ],
+    },
+    { item: 24, dash: 4, uses: 28, with: 29, entries: [["name", "Set up Node"]], action: "https://data.forgejo.org/actions/setup-node@v7", inputs: [[30, [NV, "24.12.0"]]] },
+];
+
+// The fixture's ci.yml with line `at` (1-based) replaced by edits[at], which
+// may hold no line or several.
+function edited(edits) {
+    return `${ciLines.flatMap((line, i) => edits[i + 1] ?? [line]).join("\n")}\n`;
+}
+
+// Lines `from` to `to` replaced by `lines`.
+function replaced(from, to, lines) {
+    const edits = { [from]: lines };
+    for (let at = from + 1; at <= to; at++) edits[at] = [];
+    return edits;
+}
+
+// The node-version input of an entry list set to 26, or nested under extra:.
+const at26 = (inputs) => inputs.map((e) => (e[0] === NV ? [NV, "26"] : e));
+const nestedNv = (inputs) => inputs.map((e) => (e[0] === NV ? ["extra", [e]] : e));
+
+// A setup-node step that names no Node 24, added after step a (line 10), in
+// the fixture's layout: `- ` at column 6.
+const addedStep = (lines) => edited({ 10: [ciLines[9], ...dashed(lines, 6)] });
+const ADDED = "a setup-node step added after line 10 that names no Node 24";
+const addedUses = ["uses", "actions/setup-node@v7"];
+
+const cases = [{ name: "the unmodified fixture", form: "none", text: files[CI] }];
+function addCase(form, where, text) {
+    if (text !== null) cases.push({ name: `${form}: ${where}`, form, text });
+}
+
+for (const [name, form] of forms) {
+    for (const step of steps) {
+        // The keys of the step sit two columns right of its dash, and its
+        // inputs two more.
+        const keys = step.dash + 2;
+        const inputAt = keys + 2;
+        const inputs = step.inputs.map(([, input]) => input);
+        const [last, [, nv]] = step.inputs.at(-1);
+        // The uses:, a line added to the step before its with:, and each
+        // input but node-version, each as it is and with the node-version of
+        // the step nested under extra:, where the parser reads a violation.
+        const nesting = { [last]: [`${pad(inputAt)}extra:`, `${pad(inputAt + 2)}${NV}: ${nv}`] };
+        for (const [variant, edits] of [
+            ["", {}],
+            [`, with ${NV} nested under extra:`, nesting],
+        ]) {
+            const uses = form(["uses", step.action], keys);
+            const usesLines = uses && (step.uses === step.item ? dashed(uses, step.dash) : uses);
+            addCase(name, `the uses: on line ${step.uses}${variant}`, usesLines && edited({ ...edits, [step.uses]: usesLines }));
+            const id = form(["id", "setup"], keys);
+            addCase(name, `a line added after line ${step.uses}${variant}`, id && edited({ ...edits, [step.uses]: [ciLines[step.uses - 1], ...id] }));
+            for (const [line, input] of step.inputs.slice(0, -1)) {
+                const lines = form(input, inputAt);
+                addCase(name, `the input on line ${line}${variant}`, lines && edited({ ...edits, [line]: lines }));
+            }
+        }
+        // The with: block as it is, with node-version: 26, and with
+        // node-version nested under extra:.
+        const withBlock = (written) => {
+            const lines = form(["with", written], keys);
+            return lines && edited(replaced(step.with, last, lines));
+        };
+        addCase(name, `the with: on line ${step.with}`, withBlock(inputs));
+        addCase(name, `the with: on line ${step.with}, with ${NV}: 26`, withBlock(at26(inputs)));
+        addCase(name, `the with: on line ${step.with}, with ${NV} nested under extra:`, withBlock(nestedNv(inputs)));
+        // The node-version input as it is, set to 26, and nested under extra:.
+        const input = form([NV, nv], inputAt);
+        addCase(name, `the input on line ${last}`, input && edited({ [last]: input }));
+        const pin = form([NV, "26"], inputAt);
+        addCase(name, `the input on line ${last}, set to 26`, pin && edited({ [last]: pin }));
+        const nested = form([NV, nv], inputAt + 2);
+        addCase(name, `the input on line ${last}, nested under extra:`, nested && edited({ [last]: [`${pad(inputAt)}extra:`, ...nested] }));
+    }
+    const uses = form(addedUses, 8);
+    addCase(name, `the uses: of ${ADDED}`, uses && addedStep([...uses, ...block(["with", [["cache", "npm"]]], 8)]));
+    const inputs = form(["with", [["cache", "npm"]]], 8);
+    addCase(name, `the with: of ${ADDED}`, inputs && addedStep([...block(addedUses, 8), ...inputs]));
+    const input = form([NV, "26"], 10);
+    addCase(name, `the input of ${ADDED}`, input && addedStep([...block(addedUses, 8), "        with:", ...input]));
+}
+
+for (const [name, form] of itemForms) {
+    const item = `the step as ${name}`;
+    for (const step of steps) {
+        const inputs = step.inputs.map(([, input]) => input);
+        const last = step.inputs.at(-1)[0];
+        const write = (written) => edited(replaced(step.item, last, form([...step.entries, ["uses", step.action], ["with", written]], step.dash)));
+        addCase(item, `on line ${step.item}`, write(inputs));
+        addCase(item, `on line ${step.item}, with ${NV}: 26`, write(at26(inputs)));
+    }
+    addCase(item, ADDED, edited({ 10: [ciLines[9], ...form([addedUses, ["with", [["cache", "npm"]]]], 6)] }));
+}
+
+// The script's ONE_MAJOR: one major, as a Node version or an npm range.
+const ONE_MAJOR = /^[~^]?v?([0-9]+)(\.([0-9]+|x|\*)){0,2}(-[0-9A-Za-z.-]+)?$/;
+
+// The setup-node steps the parser reads whose with: holds no node-version
+// that names Node 24, as `<job> step <n>`. A !!binary scalar is bytes here,
+// which go-yaml hands Forgejo as text, so it is read as text, and a plain 24
+// is a number. A workflow the parser rejects throws: the generator wrote no
+// YAML.
+function parserViolations(text) {
+    const doc = parseDocument(text, { merge: true });
+    if (doc.errors.length > 0) throw new Error(`the parser rejects this case: ${doc.errors[0].message}\n${text}`);
+    const asText = (v) => (typeof v === "string" ? v : typeof v === "number" ? String(v) : v instanceof Uint8Array ? new TextDecoder().decode(v) : undefined);
+    const get = (node, key) => (node instanceof Map ? [...node].find(([k]) => asText(k) === key)?.[1] : undefined);
+    const violations = [];
+    const jobs = get(doc.toJS({ mapAsMap: true }), "jobs");
+    for (const [job, body] of jobs instanceof Map ? jobs : []) {
+        const jobSteps = get(body, "steps");
+        (Array.isArray(jobSteps) ? jobSteps : []).forEach((step, i) => {
+            const uses = asText(get(step, "uses"))?.toLowerCase();
+            if (uses === undefined || !/^(.*\/)?actions\/setup-node@/.test(uses)) return;
+            const version = asText(get(get(step, "with"), NV));
+            if (ONE_MAJOR.exec(version ?? "")?.[1] !== "24") violations.push(`${asText(job)} step ${i + 1}`);
+        });
+    }
+    return violations;
+}
+
+// Run the check without blocking, so the cases run side by side. A run still
+// going after 30 s is stuck: killed, it exits with no code.
+function runAsync(dir) {
+    return new Promise((resolve) => {
+        execFile(scriptPath, [dir], { encoding: "utf8", timeout: 30_000 }, (error, out, err) => {
+            const code = error === null ? 0 : typeof error.code === "number" ? error.code : null;
+            resolve({ code, out, err });
+        });
+    });
+}
+
+test("compared with a YAML parser, reads the unmodified fixture as the parser does: no step names another major", () => {
+    assert.deepEqual(parserViolations(files[CI]), []);
+    fixture().passesWith(ALL);
+});
+
+test("compared with a YAML parser, generates for every form a case the parser reads as a violation, each under its own name", () => {
+    const names = [...forms.map(([name]) => name), ...itemForms.map(([name]) => `the step as ${name}`)];
+    const found = new Set(cases.filter((c) => parserViolations(c.text).length > 0).map((c) => c.form));
+    assert.deepEqual(
+        names.filter((name) => !found.has(name)),
+        [],
+    );
+    assert.equal(new Set(cases.map((c) => c.name)).size, cases.length);
+});
+
+// Each case runs in its own directory, so the cases run side by side.
+describe("compared with a YAML parser, never passes a case the parser reads as a violation", { concurrency: availableParallelism() }, () => {
+    for (const { name, text } of cases) {
+        test(name, async () => {
+            const violations = parserViolations(text);
+            const f = fixture();
+            f.write(CI, text);
+            const { code, out, err } = await runAsync(f.dir);
+            assert.ok(code === 0 || code === 1, `check-node-pins.sh exited ${code}:\n${out}${err}`);
+            if (code === 0) assert.deepEqual(violations, [], `check-node-pins.sh passed on\n${text}`);
+        });
+    }
 });
