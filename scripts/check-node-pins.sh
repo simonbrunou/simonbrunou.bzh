@@ -8,25 +8,39 @@
 # It reads each pin from the file that sets it:
 #   .forgejo/workflows/*.yml and *.yaml  the major of the `node-version`
 #     input (24 out of 24, 24.x or 24.12.0) of every actions/setup-node step,
-#     the Node CI runs. The step and its `with:` must be block mappings, as
-#     in this repo's ci.yml (the `uses` and `node-version` keys may be
-#     quoted, an anchor may name the action, and an anchor or !!map may name
-#     the `with:`); the body of a block scalar (run: |) is skipped.
+#     the Node CI runs. The step and its `with:` must be block mappings,
+#     `uses:` before `with:`, as in this repo's ci.yml (the `uses` and
+#     `node-version` keys may be quoted, an anchor may name the action, and
+#     an anchor or !!map may name the `with:`). A `with:` counts only at the
+#     column of the step's own keys, so one under another key of the step
+#     (env: then with:) holds no input. The inputs are the keys at the
+#     indentation of the first line under `with:`, so a node-version nested
+#     under another input (with: then foo:) is no pin. The body of a block
+#     scalar is skipped: after a key, plain or quoted, with or without an
+#     anchor or a tag before the | or > (run: |, my key: &n >-), the lines
+#     indented deeper than the key; after dashes only (- |), the lines
+#     indented deeper than the last dash. A | or > on a line with no key and
+#     no dash, after a line whose value is still to come (run:), fails,
+#     since its body may sit shallower than that line; after any other line
+#     it goes on a plain scalar (run: cat file, then | grep x).
 #     A step without a node-version, a value such as lts/* or
 #     ${{ matrix.node }}, a step or `with:` in flow style
-#     (with: { node-version: 24 }), and a `node-version` outside such a step
-#     fail; a `node-version-file` input is not read. Any line that names
+#     (with: { node-version: 24 }), and a `node-version` that is not such an
+#     input (a second one, one under env: or nested deeper) fail; a
+#     `node-version-file` input is not read. Any line that names
 #     actions/setup-node@ outside its comment and outside a `uses:` this
 #     reader opens a step on fails too, since a step there would go unread:
 #     an action on the line after its `uses:`, or plain text such as
-#     run: echo actions/setup-node@v7. So does a `uses:` whose value is a
-#     block scalar (uses: >-), whose body this reader skips. Anywhere in a
-#     workflow outside a comment and a block scalar body, the forms that can
-#     spell a key or a value as other text than the line shows fail as
-#     well, since reading them would take a YAML parser: an escape in a
-#     double-quoted string ("node\x2dversion"), an alias (*name), an
-#     explicit key (? ), a tag other than !!map (!!binary decodes base64),
-#     and a quoted string or a flow collection left open at the line end.
+#     run: echo actions/setup-node@v7. So does a setup-node `uses:` under a
+#     key of a setup-node step (env: then uses:), where YAML reads no step,
+#     and a `uses:` whose value is a block scalar (uses: >-, &a uses: |),
+#     whose body this reader skips. Anywhere in a workflow outside a comment
+#     and a block scalar body, the forms that can spell a key or a value as
+#     other text than the line shows fail as well, since reading them would
+#     take a YAML parser: an escape in a double-quoted string
+#     ("node\x2dversion"), an alias (*name), an explicit key (? ), a tag
+#     other than !!map (!!binary decodes base64), and a quoted string or a
+#     flow collection left open at the line end.
 #   Dockerfile  the major of the tag of every `FROM [<registry>/]node:<tag>`
 #     (24 out of 24-alpine or 24.12.0-alpine@sha256:...), the Node that
 #     Coolify builds production on. A FROM continued over several lines is
@@ -45,7 +59,8 @@
 # cannot be read, and the output names each file, line and value. Exit 2: a
 # wrong call, a <repo dir> that does not exist, or no node on PATH.
 # test/check-node-pins.test.js runs it on edited copies of the three files,
-# one failure class per test: add a test there when the parsing changes.
+# one failure class per test, and compares its workflow reader with a YAML
+# parser on generated workflows: add a test there when the parsing changes.
 set -uo pipefail
 
 if [ $# -gt 1 ]; then
@@ -110,7 +125,7 @@ read_workflow() {
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step has no node-version (node-version-file is not read)"
         ;;
-      stray) fail "$rel:$line node-version is not in an actions/setup-node step" ;;
+      stray) fail "$rel:$line node-version is not in an actions/setup-node step as a with: input" ;;
       unread)
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step is not written as a block mapping, which this check cannot read"
@@ -119,7 +134,9 @@ read_workflow() {
         steps=$((steps + 1))
         fail "$rel:$line actions/setup-node step does not write with: as a block mapping, which this check cannot read"
         ;;
+      nested) fail "$rel:$line names actions/setup-node@ under a key of another setup-node step, which this check cannot read" ;;
       blockuses) fail "$rel:$line uses: names its action in a block scalar (| or >), which this check cannot read" ;;
+      blockalone) fail "$rel:$line starts a block scalar (| or >) on a line with no key and no -, which this check cannot read" ;;
       escape) fail "$rel:$line holds an escape in a double-quoted string, which this check cannot read" ;;
       alias) fail "$rel:$line uses a YAML alias, which this check cannot read" ;;
       explicit) fail "$rel:$line uses a YAML explicit key (?), which this check cannot read" ;;
@@ -129,13 +146,28 @@ read_workflow() {
     esac
   done < <(awk -v q="'" '
     BEGIN {
+      # This program sits in single quotes, so it holds no apostrophe, in
+      # comments too: q holds one. test/check-node-pins.test.js checks.
       body = -1
+      lonedash = -1
+      # The file starts where a node starts, as after `key:`.
+      opened = 1
       # The input key, plain or quoted. It does not match the start of
       # `node-version-file`, since the colon must follow.
       NV = "^[ \t]*(node-version|\"node-version\"|" q "node-version" q ")[ \t]*:"
+      # The uses key, plain or quoted, and its colon. The rules that open a
+      # step and that print `blockuses` match it in lower case.
+      USES = "[\"" q "]?uses[\"" q "]?[ \t]*:"
     }
     function indent(s) { match(s, /^ */); return RLENGTH }
-    function close_step() { if (open) print "nopin", open; open = 0; inwith = 0 }
+    # A step reports its node-version input as the reader meets it (`pin`),
+    # and once it ends without one, `nopin`.
+    function close_step() {
+      if (open && !nv) print "nopin", open
+      drop_step()
+    }
+    # Forget the open step without a report.
+    function drop_step() { open = 0; inwith = 0; nv = 0 }
     # The value of a YAML scalar: the text inside its quotes, or a plain
     # scalar up to a comment (a # after a blank). A quote that never closes,
     # or text after the closing quote, comes back as written, so it fails
@@ -155,28 +187,28 @@ read_workflow() {
       sub(/[ \t]+$/, "", s)
       return s
     }
-    # Prints `pin <line> <value>` for the input of a setup-node step, and
-    # `stray <line>` for a node-version anywhere else (setup-node ignores
-    # one under env:).
-    function input(v) {
-      if (open && inwith) { print "pin", NR, v; open = 0; inwith = 0 } else print "stray", NR
-    }
-    # Read one line as YAML does, far enough to see the forms that spell a
-    # key or a value as other text than the line shows: an escape in a
-    # double-quoted string ("node\x2dversion"), an alias (*name), an
-    # explicit key (? ) and a tag (!!binary). A quote, a *, a ! or a ? is
-    # syntax only where a node starts: at the line start, after `- `, `? `
-    # or `: `, after a tag or an anchor, and in a flow collection after [, {
-    # or ,. Anywhere else, as in run: echo "a\b" or a double quote inside a
-    # single-quoted string, it is text, and so is a comment (a # after a
-    # blank). In a flow collection, a : right after a quoted scalar or a
-    # closed collection starts a value even with no blank after it, as in
-    # {"uses":"actions/setup-node@v7"}. Sets code (the line without its
-    # comment), escape, alias, explicit, tag (one other than !!map),
-    # unclosed for a quoted string still open at the line end, and openflow
-    # for a flow collection.
+    # Read one line as YAML does, far enough to drop its comment and to see
+    # the forms that spell a key or a value as other text than the line
+    # shows: an escape in a double-quoted string ("node\x2dversion"), an
+    # alias (*name), an explicit key (? ) and a tag (!!binary). A quote, a *,
+    # a ! or a ? is syntax only where a node starts: at the line start, after
+    # `- `, `? ` or `: `, after a tag or an anchor, and in a flow collection
+    # after [, { or ,. Anywhere else, as in run: echo "a\b" or a double quote
+    # inside a single-quoted string, it is text. In a flow collection, a :
+    # right after a quoted scalar or a closed collection starts a value even
+    # with no blank after it, as in {"uses":"actions/setup-node@v7"};
+    # outside one, a : needs a blank after it. A | or > where a node starts
+    # outside a flow collection is a block scalar header. Sets code (the line
+    # without its comment), escape, alias, explicit, tag (one other than
+    # !!map), and unclosed for a quoted string still open at the line end,
+    # and openflow for a flow collection ([ or {) still open there or where
+    # the comment starts, block for a block scalar header, keyed for a key
+    # before it on the line and dashed for a `- ` before it, and opened for
+    # a line that ends where a node starts (key:, - , key: &a), whose value
+    # comes on a later line.
     function scan(s,   n, i, j, c, nx, start, depth, inq, json, wasjson) {
       escape = 0; alias = 0; explicit = 0; tag = 0; unclosed = 0; openflow = 0
+      block = 0; keyed = 0; dashed = 0
       n = length(s); start = 1; depth = 0; inq = ""; json = 0
       for (i = 1; i <= n; i++) {
         c = substr(s, i, 1)
@@ -192,6 +224,7 @@ read_workflow() {
           code = substr(s, 1, i - 1)
           sub(/[ \t]+$/, "", code)
           openflow = (depth > 0)
+          opened = (start && !depth)
           return
         }
         wasjson = json; json = 0
@@ -199,8 +232,10 @@ read_workflow() {
           if (c == "\"" || c == q) { inq = c; start = 0; continue }
           if ((c == "-" || c == "?") && (nx == "" || nx ~ /[ \t]/)) {
             if (c == "?") explicit = 1
+            else dashed = 1
             continue
           }
+          if (!depth && (c == "|" || c == ">")) { block = 1; start = 0; continue }
           if (c == "[" || c == "{") { depth++; continue }
           if (depth && (c == "]" || c == "}")) { depth--; start = 0; json = 1; continue }
           if (c == "!" || c == "&" || c == "*") {
@@ -213,20 +248,23 @@ read_workflow() {
           # A plain scalar starts here.
           start = 0
         }
-        if (c == ":" && (nx == "" || nx ~ /[ \t]/ || (depth && (wasjson || nx ~ /[],{}[]/)))) start = 1
-        else if (depth && c == ",") start = 1
+        if (c == ":" && (nx == "" || nx ~ /[ \t]/ || (depth && (wasjson || nx ~ /[],{}[]/)))) {
+          start = 1
+          if (!depth && !block) keyed = 1
+        } else if (depth && c == ",") start = 1
         else if (depth && (c == "]" || c == "}")) { depth--; json = 1 }
       }
       code = s
       unclosed = (inq != "")
       openflow = (!unclosed && depth > 0)
+      opened = (start && !depth && !unclosed)
     }
     { sub(/\r$/, "") }
     /^[ \t]*(#|$)/ { next }
     {
       ind = indent($0)
       # The body of a block scalar (run: |) is text, not YAML keys: it runs
-      # until a line indented no deeper than its key.
+      # until a line indented no deeper than its key, or than its last dash.
       if (body >= 0) {
         if (ind > body) next
         body = -1
@@ -235,37 +273,67 @@ read_workflow() {
       # its `with:` block at the next line indented no deeper than `with:`.
       if (open && ind <= step) close_step()
       if (inwith && ind <= withind) inwith = 0
-      # A list item: remember its dash by the column its keys start at.
+      # A list item: remember its dash by the column its keys start at. A
+      # dash with no key after it (-, - &step) has its keys on the next
+      # line, at the column that line starts at.
+      if (lonedash >= 0) { dash[ind] = lonedash; lonedash = -1 }
       if (match($0, /^ *- +/)) dash[RLENGTH] = ind
-      # A key whose value is a block scalar (| or >) starts a body on the
-      # next line, whatever rule below reads this one. The key is matched
-      # from the start of the line, so a `: |` inside a comment
-      # (hidden: # note: |) starts none.
-      if ($0 ~ /^ *(- +)*[^ \t#:]+[ \t]*:[ \t]*[|>][-+0-9]*[ \t]*(#.*)?$/) {
+      wasopen = opened
+      scan($0)
+      low = tolower(code)
+      if (dashed && !keyed && opened) lonedash = ind
+      # A block scalar header (| or >) starts a body on the next line, which
+      # scan() finds where a node starts, so a `: |` inside a comment
+      # (hidden: # note: |) starts none. After a key, plain or quoted, with
+      # an anchor or a tag before the indicator or not (my key: &n |), the
+      # body is the lines indented deeper than the key. After dashes only
+      # (- |), it is the lines indented deeper than the last dash. A | or >
+      # with neither before it on its line is a header only after a line
+      # whose value is still to come (run:), and then its body may sit
+      # shallower than the header, so it prints `blockalone`. After any other
+      # line it is text that goes on a plain scalar (run: cat file, then
+      # | grep x), as YAML reads it.
+      if (block && keyed) {
         match($0, /^ *(- +)*/)
         body = RLENGTH
         # The body is skipped, so a uses: written as one (uses: >-) would
-        # hide its action.
-        if ($0 ~ ("^ *(- +)*[\"" q "]?uses[\"" q "]?[ \t]*:")) print "blockuses", NR
-      }
-      scan($0)
+        # hide its action: it prints `blockuses`, whatever the body names.
+        # The key is matched in lower case, as the rule that opens a step
+        # matches it, after any anchor or tag (- &a uses: >-).
+        if (tolower($0) ~ ("^ *(- +)*([&!][^ \t]+[ \t]+)*" USES)) print "blockuses", NR
+      } else if (block && dashed) {
+        match($0, /^ *(- +)*-/)
+        body = RLENGTH - 1
+      } else if (block && wasopen) print "blockalone", NR
     }
-    # actions/setup-node@<ref>, or a full URL to it, under a plain or quoted
-    # uses key and after an optional anchor (uses: &setup actions/...).
-    $0 ~ ("^[ \t-]*[\"" q "]?uses[\"" q "]?[ \t]*:[ \t]*(&[^ \t]+[ \t]+)?[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
+    # actions/setup-node@<ref>, or a full URL to it, in any letter case,
+    # under a plain or quoted uses key and after an optional anchor
+    # (uses: &setup actions/...).
+    low ~ ("^[ \t-]*" USES "[ \t]*(&[^ \t]+[ \t]+)?[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
+      # A step still open here holds this line under one of its keys (env:,
+      # a list under args:), where YAML reads no step. Opening one would
+      # leave the open step unreported, so it prints `nested`.
+      if (open) { print "nested", NR; next }
       open = NR
       # `- uses:` opens the step; a bare `uses:` belongs to the item whose
-      # keys start at its column.
+      # keys start at its column. Either way the keys of the step, its
+      # with: among them, sit at the column of `uses`.
       if ($0 ~ /^ *- /) step = ind
       else step = (ind in dash) ? dash[ind] : ind - 2
+      match($0, /^ *(- +)*/)
+      keyind = RLENGTH
       next
     }
     # A block mapping of inputs, which an anchor (&inputs) or the mapping
-    # tag (!!map) may name first.
-    open && /^[ \t]*with[ \t]*:[ \t]*((&[^ \t#]+|!!map)([ \t]+(&[^ \t#]+|!!map))*)?[ \t]*(#.*)?$/ { inwith = 1; withind = ind; next }
+    # tag (!!map) may name first. A with: deeper than the keys of the step
+    # (env: then with:) is the key of another value, so it holds no input.
+    open && ind == keyind && /^[ \t]*with[ \t]*:[ \t]*((&[^ \t#]+|!!map)([ \t]+(&[^ \t#]+|!!map))*)?[ \t]*(#.*)?$/ {
+      inwith = 1; withind = ind; inputind = -1
+      next
+    }
     # Any other with: of a setup-node step ({ ... }, an alias, another tag)
-    # prints `flow <line>`: reading those forms would take a YAML parser.
-    open && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; next }
+    # prints `flow`: reading those forms would take a YAML parser.
+    open && ind == keyind && /^[ \t]*with[ \t]*:/ { print "flow", NR; drop_step(); next }
     # The patterns here would miss a node-version or a setup-node step
     # written with a form scan() flags, so each prints its kind, wherever in
     # the file it is, before the rule below can print `unread` for the same
@@ -278,23 +346,31 @@ read_workflow() {
     unclosed { print "unclosed", NR; next }
     openflow { print "openflow", NR; next }
     # Any other line that names setup-node outside its comment prints
-    # `unread <line>`: a step written as one flow mapping (- { uses:
+    # `unread`: a step written as one flow mapping (- { uses:
     # actions/setup-node@v7, ... }), an action on the line after its uses:,
-    # an anchor that an alias reuses, or plain text. A step this reader does
-    # not open is never read, so it fails rather than pass unread.
-    tolower(code) ~ /actions\/setup-node@/ {
+    # an anchor on the uses key (- &a uses: ...), an anchor that an alias
+    # reuses, or plain text. A step this reader does not open is never
+    # read, so it fails rather than pass unread.
+    low ~ /actions\/setup-node@/ {
       print "unread", NR
       next
     }
-    $0 ~ NV {
-      v = $0
-      sub(NV, "", v)
-      input(scalar(v))
-      next
+    # The inputs are the keys at the indentation of the first line under
+    # with:. The first node-version there is the pin of the step. A second
+    # one, or one nested deeper, fails as stray below.
+    inwith {
+      if (inputind < 0) inputind = ind
+      if (ind == inputind && !nv && $0 ~ NV) {
+        nv = NR
+        v = $0
+        sub(NV, "", v)
+        print "pin", NR, scalar(v)
+        next
+      }
     }
     # A node-version key, plain or quoted, on any other line, a flow mapping
     # included.
-    $0 ~ ("node-version[\"" q "]?[ \t]*:") { print "stray", NR }
+    code ~ ("node-version[\"" q "]?[ \t]*:") { print "stray", NR }
     END { close_step() }
   ' "$ROOT/$rel")
 }
