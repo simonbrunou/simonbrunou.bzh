@@ -246,6 +246,41 @@ test("passes on a second workflow without a setup-node step", () => {
     f.passesWith(ALL);
 });
 
+// A | or > that starts a line after a plain value goes on that value as text
+// (#151).
+test("passes on a plain scalar that goes on in a line starting with | or >", () => {
+    const f = fixture();
+    f.setLine(CI, 11, "      - run: cat file\n          | grep x\n      - run: echo hello\n          > out.txt");
+    f.passesWith(ALL);
+});
+
+// Job d puts the keys of its item at column 8 after a dash at column 4; in
+// job e, keys at column 8 belong to the dash at column 6 on the line before
+// (#151).
+test("passes on a list item whose keys start on the line after its dash", () => {
+    const f = fixture();
+    f.setLine(
+        CI,
+        30,
+        [
+            ciLines[29],
+            "  d:",
+            "    steps:",
+            "    -   uses: actions/checkout@v7",
+            "  e:",
+            "    steps:",
+            "      -",
+            "        uses: actions/setup-node@v7",
+            "        with:",
+            "          node-version: 24",
+            "      - uses: actions/setup-node@v7",
+            "        with:",
+            "          node-version: 24",
+        ].join("\n"),
+    );
+    f.passesWith("9 pins read Node 24");
+});
+
 test("passes on a FROM that builds on an earlier stage named node", () => {
     const f = fixture();
     f.setLine("Dockerfile", 2, "FROM node:24-alpine AS node");
@@ -594,6 +629,38 @@ for (const header of ["- uses: >-", "- uses: |", '- "uses": |-']) {
     });
 }
 
+// #151: an anchor or a tag may come before the indicator or the key, and the
+// key is read in any letter case, as the rule that opens a step reads it.
+for (const header of ["- uses: &a |", "- &a uses: >-", "- !!str uses: |", "- Uses: >-"]) {
+    test(`fails on a uses: block scalar after an anchor or a tag, or in another letter case: ${header}`, () => {
+        const f = fixture();
+        f.setLine(CI, 8, `      ${header}\n          actions/setup-node@v7`);
+        f.failsWith(`${CI}:8 uses: names its action in a block scalar (| or >), which this check cannot read`);
+    });
+}
+
+// A block scalar header on a line of its own belongs to the key on the line
+// before, and its body may sit shallower than the header, so this reader
+// cannot tell where the body ends (#151).
+for (const [name, text] of [
+    ["under a key", "      - run:\n          |\n          npm ci"],
+    ["after an anchor, under a key", "      - run: &cmd\n          >-\n          npm ci"],
+]) {
+    test(`fails on a block scalar header with no key and no dash on its line, ${name}`, () => {
+        const f = fixture();
+        f.setLine(CI, 11, text);
+        f.failsWith(`${CI}:12 starts a block scalar (| or >) on a line with no key and no -, which this check cannot read`);
+    });
+}
+
+// #151: Forgejo resolves an action in any letter case, so the step is read.
+test("fails on a setup-node step that names the action in another letter case, reading its node-version", () => {
+    const f = fixture();
+    f.setLine(CI, 8, "      - uses: Actions/Setup-Node@v7");
+    f.setLine(CI, 10, "          node-version: 26");
+    f.failsWith("the Node majors differ", `${CI}:10  26 (26)`);
+});
+
 test("fails on a node-version in a flow mapping outside any setup-node step", () => {
     const f = fixture();
     f.setLine(CI, 5, "    env: { node-version: 26 }");
@@ -758,7 +825,8 @@ test("exits 2 without node on PATH", () => {
 // the awk Dockerfile reader and the node package.json reader. An apostrophe
 // in one, in a comment too, ends that quoting. One alone leaves bash a
 // syntax error at a later line, which names neither the apostrophe nor its
-// line; a pair splices shell text into the program and fails nowhere. The
+// line; a pair splices shell text into the program, which may then fail
+// nowhere. The
 // workflow reader spells a quote as `q`.
 for (const [name, opening, closing] of [
     ["awk workflow reader", `awk -v q="'" '`, `  ' "$ROOT/$rel")`],
@@ -861,6 +929,16 @@ const forms = [
     ["a block scalar after an anchor", scalarOnly((k, v, at) => [`${pad(at)}${k}: &v |-`, `${pad(at + 2)}${v}`])],
     ["the value on the next line", scalarOnly((k, v, at) => [`${pad(at)}${k}:`, `${pad(at + 2)}${v}`])],
     ["a double-quoted value over two lines", scalarOnly((k, v, at) => [`${pad(at)}${k}: "${v}`, `${pad(at + 2)}"`])],
+    // A block scalar header on the line after its key, with its body at the
+    // column of the header: a mapping written there is text.
+    [
+        "a block scalar header on the line after its key",
+        ([k, v], at) => (typeof v === "string" ? [`${pad(at)}${k}:`, `${pad(at + 2)}|-`, `${pad(at + 2)}${v}`] : [`${pad(at)}${k}:`, `${pad(at + 2)}|`, ...block([k, v], at).slice(1)]),
+    ],
+    [
+        "a block scalar header on the line after its key and an anchor",
+        ([k, v], at) => (typeof v === "string" ? [`${pad(at)}${k}: &v`, `${pad(at + 2)}>-`, `${pad(at + 2)}${v}`] : [`${pad(at)}${k}: &v`, `${pad(at + 2)}>`, ...block([k, v], at).slice(1)]),
+    ],
     ["an escape in the key", (entry, at) => block(entry, at, `"${hex(entry[0])}${entry[0].slice(1)}"`)],
     ["an escape in the value", scalarOnly((k, v, at) => [`${pad(at)}${k}: "${hex(v)}${v.slice(1)}"`])],
     ["an explicit key", ([k, v], at) => (typeof v === "string" ? [`${pad(at)}? ${k}`, `${pad(at)}: ${v}`] : [`${pad(at)}? ${k}`, `${pad(at)}:`, ...block([k, v], at).slice(1)])],
@@ -1019,8 +1097,10 @@ for (const [name, form] of itemForms) {
     addCase(item, ADDED, edited({ 10: [ciLines[9], ...form([addedUses, ["with", [["cache", "npm"]]]], 6)] }));
 }
 
-// The script's ONE_MAJOR: one major, as a Node version or an npm range.
-const ONE_MAJOR = /^[~^]?v?([0-9]+)(\.([0-9]+|x|\*)){0,2}(-[0-9A-Za-z.-]+)?$/;
+// A node-version that names Node 24 as setup-node reads it: 24, v24, 24.x,
+// 24.12.0. It is written apart from the script's ONE_MAJOR, so a gap in that
+// pattern does not show up here as well.
+const NAMES_24 = /^v?24(\.([0-9]+|x)){0,2}$/;
 
 // The setup-node steps the parser reads whose with: holds no node-version
 // that names Node 24, as `<job> step <n>`. A !!binary scalar is bytes here,
@@ -1040,7 +1120,7 @@ function parserViolations(text) {
             const uses = asText(get(step, "uses"))?.toLowerCase();
             if (uses === undefined || !/^(.*\/)?actions\/setup-node@/.test(uses)) return;
             const version = asText(get(get(step, "with"), NV));
-            if (ONE_MAJOR.exec(version ?? "")?.[1] !== "24") violations.push(`${asText(job)} step ${i + 1}`);
+            if (!NAMES_24.test(version ?? "")) violations.push(`${asText(job)} step ${i + 1}`);
         });
     }
     return violations;

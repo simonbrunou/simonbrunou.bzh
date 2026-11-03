@@ -29,11 +29,10 @@ pin, and `test/check-node-pins.test.js` covers its parsing. That test also
 compares the script's workflow reader with a YAML parser (`yaml`, a
 devDependency) on about 1,000 generated workflows: the script runs before
 `npm ci`, so it reads YAML with awk, and the comparison finds the forms that
-reader misses. The `Node.js`
-group in `renovate.json` moves them in one PR. The dev shell's Node comes
-from `flake.nix` (`nodejs_<major>`), which Renovate does not update: change
-it by hand after a Node major lands. Until then the check prints a warning
-that the shell runs another major.
+reader misses. The `Node.js` group in `renovate.json` moves them in one PR.
+The dev shell's Node comes from `flake.nix` (`nodejs_<major>`), which
+Renovate does not update: change it by hand after a Node major lands. Until
+then the check prints a warning that the shell runs another major.
 
 ## Architecture
 

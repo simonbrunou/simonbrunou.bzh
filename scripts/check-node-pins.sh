@@ -155,14 +155,19 @@ read_workflow() {
       # The input key, plain or quoted. It does not match the start of
       # `node-version-file`, since the colon must follow.
       NV = "^[ \t]*(node-version|\"node-version\"|" q "node-version" q ")[ \t]*:"
+      # The uses key, plain or quoted, and its colon. The rules that open a
+      # step and that print `blockuses` match it in lower case.
+      USES = "[\"" q "]?uses[\"" q "]?[ \t]*:"
     }
     function indent(s) { match(s, /^ */); return RLENGTH }
     # A step reports its node-version input as the reader meets it (`pin`),
     # and once it ends without one, `nopin`.
     function close_step() {
       if (open && !nv) print "nopin", open
-      open = 0; inwith = 0; nv = 0
+      drop_step()
     }
+    # Forget the open step without a report.
+    function drop_step() { open = 0; inwith = 0; nv = 0 }
     # The value of a YAML scalar: the text inside its quotes, or a plain
     # scalar up to a comment (a # after a blank). A quote that never closes,
     # or text after the closing quote, comes back as written, so it fails
@@ -295,7 +300,7 @@ read_workflow() {
         # hide its action: it prints `blockuses`, whatever the body names.
         # The key is matched in lower case, as the rule that opens a step
         # matches it, after any anchor or tag (- &a uses: >-).
-        if (tolower($0) ~ ("^ *(- +)*([&!][^ \t]+[ \t]+)*[\"" q "]?uses[\"" q "]?[ \t]*:")) print "blockuses", NR
+        if (tolower($0) ~ ("^ *(- +)*([&!][^ \t]+[ \t]+)*" USES)) print "blockuses", NR
       } else if (block && dashed) {
         match($0, /^ *(- +)*-/)
         body = RLENGTH - 1
@@ -304,7 +309,7 @@ read_workflow() {
     # actions/setup-node@<ref>, or a full URL to it, in any letter case,
     # under a plain or quoted uses key and after an optional anchor
     # (uses: &setup actions/...).
-    low ~ ("^[ \t-]*[\"" q "]?uses[\"" q "]?[ \t]*:[ \t]*(&[^ \t]+[ \t]+)?[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
+    low ~ ("^[ \t-]*" USES "[ \t]*(&[^ \t]+[ \t]+)?[\"" q "]?([^ \t\"" q "]*/)?actions/setup-node@") {
       # A step still open here holds this line under one of its keys (env:,
       # a list under args:), where YAML reads no step. Opening one would
       # leave the open step unreported, so it prints `nested`.
@@ -328,7 +333,7 @@ read_workflow() {
     }
     # Any other with: of a setup-node step ({ ... }, an alias, another tag)
     # prints `flow`: reading those forms would take a YAML parser.
-    open && ind == keyind && /^[ \t]*with[ \t]*:/ { print "flow", NR; open = 0; inwith = 0; nv = 0; next }
+    open && ind == keyind && /^[ \t]*with[ \t]*:/ { print "flow", NR; drop_step(); next }
     # The patterns here would miss a node-version or a setup-node step
     # written with a form scan() flags, so each prints its kind, wherever in
     # the file it is, before the rule below can print `unread` for the same
