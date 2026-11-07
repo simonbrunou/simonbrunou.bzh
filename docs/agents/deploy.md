@@ -1,22 +1,21 @@
 # Deploy
 
-How to check, wait for and queue a production deploy of the site, and the
-Coolify facts behind those steps. The build and the container setup live in
-`AGENTS.md`, Deployment.
+This doc covers checking and queueing a production deploy, changing
+application 4's settings or custom Docker options, and browser checks against
+production.
 
 ## Operating production
 
-Coolify (`coolify` and its Postgres `coolify-db`)
-runs in CT 104 and the site container in CT 105, both on the Proxmox host
-192.168.1.195. In Coolify the site is application 4, uuid
-`q104frwri03kmi3jzid62x4g`. Each check below says where it runs. "In CT 104"
-or "in CT 105" means a root shell inside that container (`pct enter 104` or
-`pct enter 105` on the Proxmox host). If you type those commands through
-`ssh` or `pct exec` instead, the host shell parses their quotes and pipes
-first. "From a control host" means a host such as sbrn, which has root ssh to
-the Proxmox host as `root@192.168.1.195`. There the remote command sits in
-single quotes and any SQL goes in on stdin, so only the Proxmox host's shell
-parses the command.
+Coolify (`coolify` and its Postgres `coolify-db`) runs in CT 104 and the site
+container in CT 105, both on the Proxmox host 192.168.1.195. In Coolify the
+site is application 4, uuid `q104frwri03kmi3jzid62x4g`. Each check below says
+where it runs. "In CT 104" or "in CT 105" means a root shell inside that
+container (`pct enter 104` or `pct enter 105` on the Proxmox host). If you
+type those commands through `ssh` or `pct exec` instead, the host shell
+parses their quotes and pipes first. "From a control host" means a host such
+as sbrn, which has root ssh to the Proxmox host as `root@192.168.1.195`.
+There the remote command sits in single quotes and any SQL goes in on stdin,
+so only the Proxmox host's shell parses the command.
 
 - **Latest deploys**, in CT 104:
 

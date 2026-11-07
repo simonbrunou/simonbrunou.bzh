@@ -174,9 +174,9 @@ Docker to report it healthy, and runs
 `docker stop` and expects exit code 0, as when Coolify replaces the
 container on a deploy.
 
-**Operating production.** Before checking or queueing a deploy, changing
-application 4's settings or custom Docker options, or running browser checks
-against production, read `docs/agents/deploy.md`.
+**Operating production.** Before queueing a deploy, changing application 4's
+settings or custom Docker options, or running browser checks against
+production, read `docs/agents/deploy.md`.
 
 ## Things that have bitten us
 
