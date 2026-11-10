@@ -277,17 +277,20 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   three checks below pass, and otherwise wait as for different hashes.
 
 The checks show that the `push` run on `main` repeats the PR run's jobs and
-steps. Run them at the pushed SHA:
+steps. Run them at the pushed SHA. A `git grep` that prints nothing exits
+1, which here means the check passed.
 
-1. Each workflow file that `git show "<pushed SHA>:.forgejo/workflows/"`
-   lists triggers on both `push` and `pull_request`. It has no filter on
-   `pull_request`, and none beyond `branches: [main]` on `push`. Read each
-   file with `git show "<pushed SHA>:.forgejo/workflows/<file>"`.
-2. `git grep -nP '\bgithub\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo/workflows`
-   prints nothing. It prints any use of the `github` context other than
-   `github.run_id`, and any `if:` other than `if: always()`.
-3. `git grep -n GITHUB_ "<pushed SHA>" -- ':!*.md' ':!graphify-out'` prints
-   nothing, so no script reads the event from the runner's environment.
+1. `git show "<pushed SHA>:.forgejo/workflows/"` lists the workflow files.
+   Read each with `git show "<pushed SHA>:.forgejo/workflows/<file>"`. Each
+   triggers on both `push` and `pull_request`, with no filter on
+   `pull_request` and none beyond `branches: [main]` on `push`.
+2. `git grep -nP '\b(github|forgejo|forge)\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo`
+   prints nothing. It prints any use of the `github` context or its
+   `forgejo` and `forge` aliases other than `github.run_id`, and any `if:`
+   other than `if: always()`, in workflows and local actions alike.
+3. `git grep -nE 'GITHUB_|FORGEJO_|FORGE_' "<pushed SHA>" -- ':!*.md' ':!graphify-out'`
+   prints nothing, so no script reads the event from the runner's
+   environment.
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.
