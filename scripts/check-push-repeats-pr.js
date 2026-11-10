@@ -12,12 +12,21 @@
 //   `pull_request` trigger, filters `pull_request`, filters `push` beyond
 //   `branches: [main]`, or has a trigger other than those two, `schedule`
 //   and `workflow_dispatch`;
+// - a job that calls a reusable workflow (`jobs.<id>.uses`), whose steps
+//   this script cannot read;
 // - in a workflow, in any other YAML file under .forgejo/, or in an
 //   action.yml or action.yaml anywhere: an `if` key whose value is not
-//   `always()`, and a `${{ }}` expression other than `${{ github.run_id }}`;
+//   `always()`, a `${{ }}` expression other than `${{ github.run_id }}`,
+//   and a step that uses actions/github-script, whose code gets the event;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
-//   through. Neither this script nor its test holds one, so both are read.
+//   through, and the names of the actions toolkit's github module and its
+//   event property. Neither this script nor its test holds one, so both are
+//   read.
+//
+// It cannot see code that branches on commit metadata (the merge commit's
+// subject, SHA and parents differ from the pushed SHA's) or reads the event
+// by a route the list above leaves out. Such code passes.
 //
 // Exit 0: no difference, so the push run repeats the PR run. Exit 1: it
 // printed a difference, so wait on main's run. Exit 2: git failed, the SHA
@@ -26,6 +35,8 @@
 import { execFileSync } from "node:child_process";
 
 const RUNNER_NAMES = ["GITHUB", "FORGEJO", "FORGE"].map((name) => `${name}_`);
+// Built from parts, like RUNNER_NAMES, so this file does not match itself.
+const EVENT_READS = [["@actions", "github"].join("/"), ["event", "Name"].join("")];
 const ALLOWED_TRIGGERS = new Set(["push", "pull_request", "schedule", "workflow_dispatch"]);
 const ALLOWED_EXPRESSION = "github.run_id";
 const EXPRESSION = /\$\{\{([\s\S]*?)\}\}/g;
@@ -94,15 +105,29 @@ function checkTriggers(file, doc) {
     }
 }
 
-// Every `if` key at any depth, however the YAML spells it ("if":, if :).
-function checkIfs(file, node, where) {
-    if (Array.isArray(node)) return node.forEach((item, i) => checkIfs(file, item, `${where}[${i}]`));
+function checkJobs(file, doc) {
+    const jobs = doc?.jobs;
+    if (!jobs || typeof jobs !== "object") return;
+    for (const [id, job] of Object.entries(jobs)) {
+        if (job && typeof job === "object" && "uses" in job) {
+            differences.push(`${file}: job ${id} calls a reusable workflow: ${job.uses}`);
+        }
+    }
+}
+
+// Every `if` and `uses` key at any depth, however the YAML spells it
+// ("if":, if :).
+function checkKeys(file, node, where) {
+    if (Array.isArray(node)) return node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`));
     if (!node || typeof node !== "object") return;
     for (const [key, value] of Object.entries(node)) {
         if (key === "if" && String(value).trim() !== "always()") {
             differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
         }
-        checkIfs(file, value, `${where}.${key}`);
+        if (key === "uses" && String(value).includes("github-script")) {
+            differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
+        }
+        checkKeys(file, value, `${where}.${key}`);
     }
 }
 
@@ -121,14 +146,17 @@ for (const file of scanned) {
         differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
         continue;
     }
-    checkIfs(file, doc, "");
-    if (workflows.includes(file)) checkTriggers(file, doc);
+    checkKeys(file, doc, "");
+    if (workflows.includes(file)) {
+        checkTriggers(file, doc);
+        checkJobs(file, doc);
+    }
 }
 
-const pattern = RUNNER_NAMES.join("|");
+const pattern = [...RUNNER_NAMES, ...EVENT_READS].join("|");
 const hits = git(["grep", "-nE", pattern, commit, "--", ".", ":!*.md", ":!graphify-out"], [0, 1]);
 for (const hit of hits.split("\n").filter(Boolean)) {
-    differences.push(`${hit.replace(`${commit}:`, "")}: names a runner variable`);
+    differences.push(`${hit.replace(`${commit}:`, "")}: reads the event or names a runner variable`);
 }
 
 if (differences.length) {

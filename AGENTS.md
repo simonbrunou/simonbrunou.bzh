@@ -276,9 +276,9 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   since the PR run checks out the pushed SHA itself. Then run
   `node scripts/check-push-repeats-pr.js "<pushed SHA>"` in a checkout
   with its dependencies installed. It checks that the `push` run on `main`
-  repeats the PR run's jobs and steps, and its header lists what it reads.
-  On exit 0, skip the wait. On any other exit, wait as for different
-  hashes. The script prints each difference it found.
+  repeats the PR run's jobs and steps. Its header lists what it reads and
+  what it cannot see. On exit 0, skip the wait. On any other exit, wait as
+  for different hashes. The script prints each difference it found.
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.

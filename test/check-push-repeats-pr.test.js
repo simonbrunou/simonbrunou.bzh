@@ -18,6 +18,8 @@ const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = path.join(repo, "scripts", "check-push-repeats-pr.js");
 const CI = ".forgejo/workflows/ci.yml";
 const [GH, FJ, FG] = ["GITHUB", "FORGEJO", "FORGE"].map((name) => `${name}_`);
+const LIB = ["@actions", "github"].join("/");
+const EV = ["event", "Name"].join("");
 const root = mkdtempSync(path.join(tmpdir(), "push-repeats-pr-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -199,12 +201,28 @@ describe("check-push-repeats-pr finds a difference", () => {
         assertDifference({ "lib/env.js": `export const ref = process.env.${FJ}REF;\nexport const e = process.env.${FG}EVENT_NAME;\n` }, /lib\/env\.js:1:.*names a runner variable[\s\S]*lib\/env\.js:2:.*names a runner variable/);
     });
     test("a binary file that holds a runner variable name", () => {
-        assertDifference({ "bin/tool": `\0\x01${GH}REF\0` }, /bin\/tool matches: names a runner variable/);
+        assertDifference({ "bin/tool": `\0\x01${GH}REF\0` }, /bin\/tool matches: reads the event or names a runner variable/);
+    });
+    test("a script under .forgejo that loads the actions toolkit's github module", () => {
+        assertDifference({ ".forgejo/scripts/gate.js": `const { context } = require("${LIB}");\n` }, /\.forgejo\/scripts\/gate\.js:1:.*reads the event/);
+    });
+    test("a module that reads the toolkit context's event property", () => {
+        assertDifference({ "lib/gate.js": `export const onPush = (context) => context.${EV} === "push";\n` }, /lib\/gate\.js:1:.*reads the event/);
+    });
+    test("a step that uses actions/github-script", () => {
+        assertDifference(
+            { [CI]: ciWith("      - uses: actions/github-script@v7", "        with:", "          script: core.info('hi')") },
+            /ci\.yml: \.jobs\.test\.steps\[3\]\.uses runs code that gets the event: actions\/github-script@v7/,
+        );
+    });
+    test("a job that calls a reusable workflow", () => {
+        const ci = `${baseCi}\n  deploy:\n    uses: owner/repo/.forgejo/workflows/deploy.yml@main\n`;
+        assertDifference({ [CI]: ci }, /ci\.yml: job deploy calls a reusable workflow: owner\/repo\/\.forgejo\/workflows\/deploy\.yml@main/);
     });
 });
 
-test("the script and this test hold no runner variable name, so the script reads both", () => {
-    const names = new RegExp([GH, FJ, FG].join("|"));
+test("the script and this test hold none of the names they search for, so the script reads both", () => {
+    const names = new RegExp([GH, FJ, FG, LIB, EV].join("|"));
     for (const file of [scriptPath, fileURLToPath(import.meta.url)]) {
         assert.doesNotMatch(readFileSync(file, "utf8"), names, file);
     }
