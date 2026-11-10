@@ -268,20 +268,19 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
 (`fj pr merge` prints no SHA). Run `git fetch origin`, then
 `git rev-parse "<merge SHA>^{tree}" "<pushed SHA>^{tree}"`:
 
-- Equal hashes mean the merge commit holds the files the PR's CI passed, so
-  skip the wait on `main`'s run. The PR run checks out the pushed SHA
-  itself, and `ci.yml` runs its one job, `test`, with the same steps on
-  `push` to `main` as on `pull_request`, so the `push` run repeats that job
-  on those files.
 - Two different hashes mean the merge commit holds files CI has not tested
-  together, as when the branch was behind `origin/main`. Only then wait on
-  `main`'s run, with the `ci --follow main` command of the `forgejo-issues`
-  skill's "PRs and CI" section. Fix a red run in a new PR.
-
-No job or step in `ci.yml` runs only on `push` or only on `pull_request`. A
-PR that adds one running only on `push` must also change this rule to wait
-on `main`'s run, since the PR run never ran it. One running only on
-`pull_request` has already passed on the pushed SHA and changes nothing here.
+  together, as when the branch was behind `origin/main`. Wait on `main`'s
+  run with the `ci --follow main` command of the `forgejo-issues` skill's
+  "PRs and CI" section, and fix a red run in a new PR.
+- Equal hashes mean the merge commit holds the files the PR's CI passed,
+  since the PR run checks out the pushed SHA itself. Skip the wait when the
+  `push` run on `main` also repeats the PR run's jobs and steps. To check
+  that, read each file in `.forgejo/workflows/` at the pushed SHA
+  (`git show "<pushed SHA>:.forgejo/workflows/<file>"`). Skip only when
+  every workflow there triggers on both `push` and `pull_request`, with no
+  filter beyond `branches: [main]` on `push`, and no `if:` reads the
+  `github` context (`github.event_name`, `github.ref` and the like).
+  Otherwise wait as for different hashes.
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.
