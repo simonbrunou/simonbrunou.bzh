@@ -257,6 +257,25 @@ can still break `main` together. The owner accepted that risk
 (simonbrunou/homelab-stacks#218), since the CI run that the second merge
 starts on `main` shows the breakage.
 
+After the merge, take the merge SHA from the `merge_commit_sha` field of
+`python3 -I ~/.agents/skills/forgejo-issues/scripts/forgejo.py get simonbrunou.bzh#<n>`
+(`fj pr merge` prints no SHA). Run `git fetch origin`, then
+`git rev-parse <merge SHA>^{tree} <pushed SHA>^{tree}`:
+
+- The same hash twice means the merge commit holds the files the PR's CI
+  passed, so skip the wait on `main`'s run. The PR run checks out the pushed
+  SHA itself, and `ci.yml` runs its one job, `test`, with the same steps on
+  `push` to `main` as on `pull_request`, so the `push` run repeats it on
+  those files. A job or step that runs on only one of those events breaks
+  that premise: whoever adds one changes this rule in the same PR.
+- Two different hashes mean the merge commit holds files CI has not tested
+  together, as when the branch was behind `origin/main`. Only then wait on
+  `main`'s run, alone in its shell call:
+  `python3 -I ~/.agents/skills/forgejo-issues/scripts/forgejo.py ci simonbrunou.bzh --follow main`.
+  It follows `main` to its newest commit. Fix a red run in a new PR.
+
+The deploy check below runs either way.
+
 On a conflict, merge `origin/main` into the branch, resolve it, run
 `npm test`, and push. Merge once CI is green on the new head. Resolve a
 conflict on `simon-brunou-cv.pdf` by rerunning `npm run build:pdf` on the
