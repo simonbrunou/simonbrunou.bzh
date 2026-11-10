@@ -283,8 +283,8 @@ steps. Run them at the pushed SHA:
    lists triggers on both `push` and `pull_request`. It has no filter on
    `pull_request`, and none beyond `branches: [main]` on `push`. Read each
    file with `git show "<pushed SHA>:.forgejo/workflows/<file>"`.
-2. `git grep -nP 'github\.(?!run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo/workflows`
-   prints nothing. It prints any read of the `github` context other than
+2. `git grep -nP '\bgithub\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo/workflows`
+   prints nothing. It prints any use of the `github` context other than
    `github.run_id`, and any `if:` other than `if: always()`.
 3. `git grep -n GITHUB_ "<pushed SHA>" -- ':!*.md' ':!graphify-out'` prints
    nothing, so no script reads the event from the runner's environment.
