@@ -284,10 +284,11 @@ steps. Run them at the pushed SHA. A `git grep` that prints nothing exits
    Read each with `git show "<pushed SHA>:.forgejo/workflows/<file>"`. Each
    triggers on both `push` and `pull_request`, with no filter on
    `pull_request` and none beyond `branches: [main]` on `push`.
-2. `git grep -nP '\b(github|forgejo|forge)\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo`
-   prints nothing. It prints any use of the `github` context or its
-   `forgejo` and `forge` aliases other than `github.run_id`, and any `if:`
-   other than `if: always()`, in workflows and local actions alike.
+2. `git grep -nP '\b(github|forgejo|forge)\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo '*action.yml' '*action.yaml'`
+   prints nothing. It searches the workflows and every local action. It
+   prints each use of the `github` context or its `forgejo` and `forge`
+   aliases, except their `run_id`. It also prints each `if:` other than
+   `if: always()`.
 3. `git grep -nE 'GITHUB_|FORGEJO_|FORGE_' "<pushed SHA>" -- ':!*.md' ':!graphify-out'`
    prints nothing, so no script reads the event from the runner's
    environment.
