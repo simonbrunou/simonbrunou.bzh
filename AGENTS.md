@@ -263,6 +263,39 @@ conflict on `simon-brunou-cv.pdf` by rerunning `npm run build:pdf` on the
 merged tree. CI never rebuilds the PDF, so keeping either side ships it
 without the other PR's CV change.
 
+After the merge, take the merge SHA from the `merge_commit_sha` field of
+`python3 -I ~/.agents/skills/forgejo-issues/scripts/forgejo.py get simonbrunou.bzh#<n>`
+(`fj pr merge` prints no SHA). Run `git fetch origin`, then
+`git rev-parse "<merge SHA>^{tree}" "<pushed SHA>^{tree}"`:
+
+- Two different hashes mean the merge commit holds files CI has not tested
+  together, as when the branch was behind `origin/main`. Wait on `main`'s
+  run with the `ci --follow main` command of the `forgejo-issues` skill's
+  "PRs and CI" section, and fix a red run in a new PR.
+- Equal hashes mean the merge commit holds the files the PR's CI passed,
+  since the PR run checks out the pushed SHA itself. Skip the wait when the
+  three checks below pass, and otherwise wait as for different hashes.
+
+The checks show that the `push` run on `main` repeats the PR run's jobs and
+steps. Run them at the pushed SHA. A `git grep` that prints nothing exits
+1, which here means the check passed.
+
+1. `git show "<pushed SHA>:.forgejo/workflows/"` lists the workflow files.
+   Read each with `git show "<pushed SHA>:.forgejo/workflows/<file>"`. Each
+   triggers on both `push` and `pull_request`, with no filter on
+   `pull_request` and none beyond `branches: [main]` on `push`.
+2. `git grep -nP '\b(github|forgejo|forge)\b(?!\.run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo '*action.yml' '*action.yaml'`
+   prints nothing. It searches the workflows and every local action. It
+   prints each use of the `github` context or its `forgejo` and `forge`
+   aliases, except their `run_id`. It also prints each `if:` other than
+   `if: always()`.
+3. `git grep -nE 'GITHUB_|FORGEJO_|FORGE_' "<pushed SHA>" -- ':!*.md' ':!graphify-out'`
+   prints nothing, so no script reads the event from the runner's
+   environment.
+
+Check the production deploy whatever the hashes say, as the next paragraph
+says.
+
 The go-ahead to merge covers the production deploy that the merge triggers.
 Ask first only when the PR drops or rewrites stored data (a destructive
 migration, a backfill that overwrites rows). To check a production deploy,
