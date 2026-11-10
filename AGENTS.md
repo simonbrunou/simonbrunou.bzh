@@ -274,13 +274,20 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   "PRs and CI" section, and fix a red run in a new PR.
 - Equal hashes mean the merge commit holds the files the PR's CI passed,
   since the PR run checks out the pushed SHA itself. Skip the wait when the
-  `push` run on `main` also repeats the PR run's jobs and steps. To check
-  that, read each file in `.forgejo/workflows/` at the pushed SHA
-  (`git show "<pushed SHA>:.forgejo/workflows/<file>"`). Skip only when
-  every workflow there triggers on both `push` and `pull_request`, with no
-  filter beyond `branches: [main]` on `push`, and no `if:` reads the
-  `github` context (`github.event_name`, `github.ref` and the like).
-  Otherwise wait as for different hashes.
+  three checks below pass, and otherwise wait as for different hashes.
+
+The checks show that the `push` run on `main` repeats the PR run's jobs and
+steps. Run them at the pushed SHA:
+
+1. Each workflow file that `git show "<pushed SHA>:.forgejo/workflows/"`
+   lists triggers on both `push` and `pull_request`. It has no filter on
+   `pull_request`, and none beyond `branches: [main]` on `push`. Read each
+   file with `git show "<pushed SHA>:.forgejo/workflows/<file>"`.
+2. `git grep -nP 'github\.(?!run_id\b)|\bif:(?!\s*always\(\)\s*$)' "<pushed SHA>" -- .forgejo/workflows`
+   prints nothing. It prints any read of the `github` context other than
+   `github.run_id`, and any `if:` other than `if: always()`.
+3. `git grep -n GITHUB_ "<pushed SHA>" -- ':!*.md' ':!graphify-out'` prints
+   nothing, so no script reads the event from the runner's environment.
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.
