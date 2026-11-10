@@ -1,87 +1,85 @@
 // Tells the merging agent whether the CI run that a merge starts on `main`
 // repeats the PR run's jobs and steps (AGENTS.md, "Merge authority"). Run it
-// from a checkout, after `git fetch origin`, with the SHA the PR's CI passed:
+// from a checkout with its dependencies installed (`npm ci`), after
+// `git fetch origin`, with the SHA the PR's CI passed:
 //
 //   node scripts/check-push-repeats-pr.js <pushed SHA>
 //
 // It reads the files at that SHA through git, not the working tree, and
 // prints each difference it finds:
 //
-// - a workflow in .forgejo/workflows/ that lacks a `push` or a
+// - a workflow anywhere under .forgejo/workflows/ that lacks a `push` or a
 //   `pull_request` trigger, filters `pull_request`, filters `push` beyond
 //   `branches: [main]`, or has a trigger other than those two, `schedule`
 //   and `workflow_dispatch`;
-// - in .forgejo/ or any action.yml or action.yaml, a use of the `github`
-//   context or its `forgejo` and `forge` aliases other than `run_id`, and
-//   any `if:` other than `if: always()`;
-// - outside Markdown and graphify-out/, any GITHUB_, FORGEJO_ or FORGE_
-//   name, which a script could read the event through.
+// - in a workflow, in any other YAML file under .forgejo/, or in an
+//   action.yml or action.yaml anywhere: an `if` key whose value is not
+//   `always()`, and a `${{ }}` expression other than `${{ github.run_id }}`;
+// - in any file outside Markdown and graphify-out/, a name made of GITHUB,
+//   FORGEJO or FORGE and an underscore, which a script could read the event
+//   through. Neither this script nor its test holds one, so both are read.
 //
-// Exit 0: no difference, so the push run repeats the PR run. Exit 1: a
-// difference, so wait on main's run. Exit 2: the script could not read the
-// SHA. It reads YAML with the `yaml` devDependency, so run `npm ci` first.
+// Exit 0: no difference, so the push run repeats the PR run. Exit 1: it
+// printed a difference, so wait on main's run. Exit 2: git failed, the SHA
+// is unknown or the `yaml` devDependency is missing; wait too.
 // test/check-push-repeats-pr.test.js holds one case per difference.
 import { execFileSync } from "node:child_process";
-import { parse } from "yaml";
 
-const SELF = ["scripts/check-push-repeats-pr.js", "test/check-push-repeats-pr.test.js"];
+const RUNNER_NAMES = ["GITHUB", "FORGEJO", "FORGE"].map((name) => `${name}_`);
 const ALLOWED_TRIGGERS = new Set(["push", "pull_request", "schedule", "workflow_dispatch"]);
-const CONTEXT = /\b(github|forgejo|forge)\b(?!\.run_id\b)/;
-const IF = /\bif:(?!\s*always\(\)\s*$)/;
+const ALLOWED_EXPRESSION = "github.run_id";
+const EXPRESSION = /\$\{\{([\s\S]*?)\}\}/g;
 
-const sha = process.argv[2];
-if (!sha || process.argv.length > 3) {
-    console.error("usage: node scripts/check-push-repeats-pr.js <pushed SHA>");
+function fail(message) {
+    console.error(`check-push-repeats-pr: ${message}`);
     process.exit(2);
 }
 
+const sha = process.argv[2];
+if (!sha || process.argv.length > 3) fail("usage: node scripts/check-push-repeats-pr.js <pushed SHA>");
+
+let parse;
+try {
+    ({ parse } = await import("yaml"));
+} catch {
+    fail("cannot load the yaml package; run npm ci first");
+}
+
+let cwd = process.cwd();
 function git(args, okCodes = [0]) {
     try {
-        return execFileSync("git", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+        return execFileSync("git", args, { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
     } catch (err) {
         if (okCodes.includes(err.status)) return err.stdout;
-        console.error(`check-push-repeats-pr: git ${args.join(" ")} failed: ${(err.stderr || err.message).trim()}`);
-        process.exit(2);
+        fail(`git ${args.join(" ")} failed: ${(err.stderr || err.message).trim()}`);
     }
 }
 
+cwd = git(["rev-parse", "--show-toplevel"]).trim();
 const commit = git(["rev-parse", "--verify", "--quiet", `${sha}^{commit}`]).trim();
 const files = git(["ls-tree", "-r", "--name-only", "-z", commit]).split("\0").filter(Boolean);
-const workflows = files.filter((f) => /^\.forgejo\/workflows\/[^/]+\.ya?ml$/.test(f));
-const scanned = files.filter((f) => f.startsWith(".forgejo/") || /(^|\/)action\.ya?ml$/.test(f));
+const isYaml = (f) => /\.ya?ml$/.test(f);
+const workflows = files.filter((f) => f.startsWith(".forgejo/workflows/") && isYaml(f));
+const scanned = files.filter((f) => (f.startsWith(".forgejo/") && isYaml(f)) || /(^|\/)action\.ya?ml$/.test(f));
 const differences = [];
 if (!workflows.length) differences.push(".forgejo/workflows/: no workflow file");
 
-function isEmpty(value) {
-    return value === null || value === undefined || (typeof value === "object" && Object.keys(value).length === 0);
-}
+const isEmpty = (value) => value == null || (typeof value === "object" && Object.keys(value).length === 0);
 
 function pushIsMainOnly(value) {
     if (isEmpty(value)) return true;
-    if (typeof value !== "object" || Array.isArray(value)) return false;
     const keys = Object.keys(value);
-    if (keys.length !== 1 || keys[0] !== "branches") return false;
     const branches = [value.branches].flat();
-    return branches.length === 1 && branches[0] === "main";
+    return keys.length === 1 && keys[0] === "branches" && branches.length === 1 && branches[0] === "main";
 }
 
-for (const file of workflows) {
-    let doc;
-    try {
-        doc = parse(git(["show", `${commit}:${file}`]));
-    } catch (err) {
-        differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
-        continue;
-    }
+function checkTriggers(file, doc) {
     const on = doc?.on;
     let triggers;
     if (typeof on === "string") triggers = { [on]: null };
     else if (Array.isArray(on)) triggers = Object.fromEntries(on.map((t) => [t, null]));
     else if (on && typeof on === "object") triggers = on;
-    else {
-        differences.push(`${file}: no on: triggers`);
-        continue;
-    }
+    else return differences.push(`${file}: no on: triggers`);
     for (const name of ["push", "pull_request"]) {
         if (!(name in triggers)) differences.push(`${file}: no ${name} trigger`);
     }
@@ -96,18 +94,41 @@ for (const file of workflows) {
     }
 }
 
-for (const file of scanned) {
-    const lines = git(["show", `${commit}:${file}`]).split("\n");
-    lines.forEach((line, i) => {
-        if (CONTEXT.test(line)) differences.push(`${file}:${i + 1}: reads the event context: ${line.trim()}`);
-        if (IF.test(line)) differences.push(`${file}:${i + 1}: an if: other than always(): ${line.trim()}`);
-    });
+// Every `if` key at any depth, however the YAML spells it ("if":, if :).
+function checkIfs(file, node, where) {
+    if (Array.isArray(node)) return node.forEach((item, i) => checkIfs(file, item, `${where}[${i}]`));
+    if (!node || typeof node !== "object") return;
+    for (const [key, value] of Object.entries(node)) {
+        if (key === "if" && String(value).trim() !== "always()") {
+            differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
+        }
+        checkIfs(file, value, `${where}.${key}`);
+    }
 }
 
-const exclude = [":!*.md", ":!graphify-out", ...SELF.map((f) => `:!${f}`)];
-const envHits = git(["grep", "-nIE", "GITHUB_|FORGEJO_|FORGE_", commit, "--", ".", ...exclude], [0, 1]);
-for (const hit of envHits.split("\n").filter(Boolean)) {
-    differences.push(`${hit.slice(commit.length + 1)}: names a runner variable`);
+for (const file of scanned) {
+    const text = git(["show", `${commit}:${file}`]);
+    for (const match of text.matchAll(EXPRESSION)) {
+        if (match[1].trim() !== ALLOWED_EXPRESSION) {
+            const line = text.slice(0, match.index).split("\n").length;
+            differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
+        }
+    }
+    let doc;
+    try {
+        doc = parse(text);
+    } catch (err) {
+        differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
+        continue;
+    }
+    checkIfs(file, doc, "");
+    if (workflows.includes(file)) checkTriggers(file, doc);
+}
+
+const pattern = RUNNER_NAMES.join("|");
+const hits = git(["grep", "-nE", pattern, commit, "--", ".", ":!*.md", ":!graphify-out"], [0, 1]);
+for (const hit of hits.split("\n").filter(Boolean)) {
+    differences.push(`${hit.replace(`${commit}:`, "")}: names a runner variable`);
 }
 
 if (differences.length) {

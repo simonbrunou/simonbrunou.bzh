@@ -1,13 +1,15 @@
 // scripts/check-push-repeats-pr.js (#159) against a small git repo written
 // per test. The base repo holds the shapes the script must pass: a workflow
-// on `push` to `main` and a bare `pull_request`, `github.run_id` in a name,
-// `if: always()` on a cleanup step, and GITHUB_ in Markdown. Each other case
-// edits one file into one difference and asserts exit 1 and the line that
-// names it, so removing any rule from the script turns a case red.
+// on `push` to `main` and a bare `pull_request`, `${{ github.run_id }}` in a
+// name, `if: always()` on a cleanup step, and a runner variable name in
+// Markdown. Each other case edits one file into one difference and asserts
+// exit 1 and the line that names it, so removing any rule from the script
+// turns a case red. The runner variable names are built from parts here, as
+// in the script, so neither file holds one and the script reads both.
 import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +17,7 @@ import { fileURLToPath } from "node:url";
 const repo = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = path.join(repo, "scripts", "check-push-repeats-pr.js");
 const CI = ".forgejo/workflows/ci.yml";
+const [GH, FJ, FG] = ["GITHUB", "FORGEJO", "FORGE"].map((name) => `${name}_`);
 const root = mkdtempSync(path.join(tmpdir(), "push-repeats-pr-"));
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -38,17 +41,16 @@ const baseCi = [
 ].join("\n");
 const base = {
     [CI]: baseCi,
-    "README.md": "CI reads GITHUB_TOKEN; Markdown is not run.\n",
+    "README.md": `CI reads ${GH}TOKEN; Markdown is not run.\n`,
     "scripts/build.sh": "echo build\n",
 };
 
 let count = 0;
 // Commits `files` over the base repo (a null value deletes a base file) and
-// runs the script on that commit.
-function check(files = {}) {
+// runs `script` on that commit from `subdir` of the repo.
+function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
     const dir = path.join(root, String(count++));
-    const all = { ...base, ...files };
-    for (const [file, content] of Object.entries(all)) {
+    for (const [file, content] of Object.entries({ ...base, ...files })) {
         if (content === null) continue;
         mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
         writeFileSync(path.join(dir, file), content);
@@ -58,7 +60,7 @@ function check(files = {}) {
     git("add", "-A");
     git("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-qm", "c");
     const sha = git("rev-parse", "HEAD").trim();
-    const res = spawnSync(process.execPath, [scriptPath, sha], { cwd: dir, encoding: "utf8" });
+    const res = spawnSync(process.execPath, [script, sha], { cwd: path.join(dir, subdir), encoding: "utf8" });
     return { status: res.status, out: res.stdout + res.stderr };
 }
 
@@ -74,8 +76,14 @@ function ciWith(...extraSteps) {
     return `${baseCi}\n${extraSteps.join("\n")}\n`;
 }
 
-function assertDifference(files, pattern) {
-    const { status, out } = check(files);
+function assertPass(files, options) {
+    const { status, out } = check(files, options);
+    assert.equal(status, 0, out);
+    assert.match(out, /the push run repeats the PR run/);
+}
+
+function assertDifference(files, pattern, options) {
+    const { status, out } = check(files, options);
     assert.equal(status, 1, out);
     assert.match(out, pattern);
     assert.match(out, /wait on main's run/);
@@ -88,24 +96,32 @@ describe("check-push-repeats-pr passes", () => {
         assert.match(out, /the push run repeats the PR run \(1 workflow file\(s\), 1 file\(s\) scanned\)/);
     });
     test("triggers written as a list", () => {
-        const { status, out } = check({ [CI]: edit(baseCi, /on:\n {2}push:\n {4}branches: \[main\]\n {2}pull_request:/, "on: [push, pull_request]") });
-        assert.equal(status, 0, out);
+        assertPass({ [CI]: edit(baseCi, /on:\n {2}push:\n {4}branches: \[main\]\n {2}pull_request:/, "on: [push, pull_request]") });
     });
     test("push with no filter, and workflow_dispatch and schedule beside it", () => {
         const ci = edit(baseCi, "  push:\n    branches: [main]\n", "  push:\n  workflow_dispatch:\n  schedule:\n    - cron: '0 3 * * *'\n");
-        const { status, out } = check({ [CI]: ci });
-        assert.equal(status, 0, out);
+        assertPass({ [CI]: ci });
     });
-    test("the script and this test, which name GITHUB_ and FORGEJO_", () => {
-        const names = "// GITHUB_ FORGEJO_ FORGE_\n";
-        const { status, out } = check({ "scripts/check-push-repeats-pr.js": names, "test/check-push-repeats-pr.test.js": names });
-        assert.equal(status, 0, out);
+    test("an action from data.forgejo.org", () => {
+        assertPass({ [CI]: ciWith("      - uses: https://data.forgejo.org/actions/setup-node@v7") });
+    });
+    test("a runner variable name in graphify-out", () => {
+        assertPass({ "graphify-out/graph.json": `{"label": "${GH}REF"}\n` });
+    });
+    test("run from a subfolder of the repo", () => {
+        assertPass({}, { subdir: "scripts" });
     });
 });
 
 describe("check-push-repeats-pr finds a difference", () => {
     test("a workflow that runs only on push", () => {
         assertDifference({ ".forgejo/workflows/deploy.yml": "on: push\njobs: {}\n" }, /deploy\.yml: no pull_request trigger/);
+    });
+    test("a push-only workflow in a subfolder of .forgejo/workflows", () => {
+        assertDifference({ ".forgejo/workflows/sub/deploy.yaml": "on: push\njobs: {}\n" }, /sub\/deploy\.yaml: no pull_request trigger/);
+    });
+    test("a push-only workflow, run from a subfolder of the repo", () => {
+        assertDifference({ ".forgejo/workflows/deploy.yml": "on: push\njobs: {}\n" }, /deploy\.yml: no pull_request trigger/, { subdir: "scripts" });
     });
     test("a workflow that runs only on pull_request", () => {
         assertDifference({ ".forgejo/workflows/lint.yml": "on:\n  pull_request:\njobs: {}\n" }, /lint\.yml: no push trigger/);
@@ -135,41 +151,82 @@ describe("check-push-repeats-pr finds a difference", () => {
         assertDifference({ [CI]: null }, /\.forgejo\/workflows\/: no workflow file/);
     });
     test("an if: on github.event_name", () => {
-        assertDifference({ [CI]: ciWith("      - run: echo push", "        if: github.event_name == 'push'") }, /ci\.yml:18: reads the event context[\s\S]*ci\.yml:18: an if: other than always\(\)/);
-    });
-    test("github.ref on the same line as github.run_id", () => {
-        assertDifference({ [CI]: edit(baseCi, "ci-${{ github.run_id }}", "ci-${{ github.run_id }}-${{ github.ref }}") }, /ci\.yml:10: reads the event context/);
-    });
-    test("the index form github['event_name']", () => {
-        assertDifference({ [CI]: ciWith("      - run: echo ${{ github['event_name'] }}") }, /ci\.yml:17: reads the event context/);
-    });
-    test("github.event_name outside an if:", () => {
-        assertDifference({ [CI]: ciWith("      - run: npm run e2e", "        continue-on-error: ${{ github.event_name == 'push' }}") }, /ci\.yml:18: reads the event context/);
-    });
-    test("the forgejo and forge aliases", () => {
-        assertDifference({ [CI]: ciWith("      - run: echo ${{ forgejo.event_name }}", "      - run: echo ${{ forge.ref }}") }, /ci\.yml:17: reads the event context[\s\S]*ci\.yml:18: reads the event context/);
+        assertDifference({ [CI]: ciWith("      - run: echo push", "        if: github.event_name == 'push'") }, /ci\.yml: \.jobs\.test\.steps\[3\]\.if is not always\(\): github\.event_name == 'push'/);
     });
     test("an if: that reads no event", () => {
-        assertDifference({ [CI]: ciWith("      - run: npm ci", "        if: steps.cache.outputs.cache-hit != 'true'") }, /ci\.yml:18: an if: other than always\(\)/);
+        assertDifference({ [CI]: ciWith("      - run: npm ci", "        if: steps.cache.outputs.cache-hit != 'true'") }, /steps\[3\]\.if is not always\(\)/);
+    });
+    test("an if: that starts with always() and goes on", () => {
+        assertDifference({ [CI]: ciWith("      - run: echo main", "        if: always() && steps.co.outputs.ref == 'refs/heads/main'") }, /steps\[3\]\.if is not always\(\)/);
+    });
+    test("an if key written in quotes", () => {
+        assertDifference({ [CI]: ciWith("      - run: echo push", "        \"if\": steps.co.outputs.ref == 'refs/heads/main'") }, /steps\[3\]\.if is not always\(\)/);
+    });
+    test("an if key with a space before its colon", () => {
+        assertDifference({ [CI]: ciWith("      - run: echo push", "        if : steps.co.outputs.ref == 'refs/heads/main'") }, /steps\[3\]\.if is not always\(\)/);
+    });
+    test("github.ref beside github.run_id", () => {
+        assertDifference({ [CI]: edit(baseCi, "ci-${{ github.run_id }}", "ci-${{ github.run_id }}-${{ github.ref }}") }, /ci\.yml:10: an expression other than \$\{\{ github\.run_id \}\}: \$\{\{ github\.ref \}\}/);
+    });
+    test("the index form github['event_name']", () => {
+        assertDifference({ [CI]: ciWith("      - run: echo ${{ github['event_name'] }}") }, /ci\.yml:17: an expression other/);
+    });
+    test("an expression on a step output that follows the event", () => {
+        assertDifference({ [CI]: ciWith("      - run: npm run e2e", "        continue-on-error: ${{ steps.co.outputs.ref != 'refs/heads/main' }}") }, /ci\.yml:18: an expression other/);
+    });
+    test("the forgejo and forge aliases", () => {
+        assertDifference({ [CI]: ciWith("      - run: echo ${{ forgejo.event_name }}", "      - run: echo ${{ forge.ref }}") }, /ci\.yml:17: an expression other[\s\S]*ci\.yml:18: an expression other/);
+    });
+    test("an expression split over lines", () => {
+        assertDifference({ [CI]: ciWith("      - run: >-", "          echo ${{", "          github.event_name }}") }, /ci\.yml:18: an expression other/);
     });
     test("an if: in a local action under .forgejo", () => {
-        assertDifference({ ".forgejo/actions/setup/action.yml": "runs:\n  using: composite\n  steps:\n    - run: echo x\n      if: env.X == '1'\n" }, /\.forgejo\/actions\/setup\/action\.yml:5: an if: other than always\(\)/);
+        assertDifference({ ".forgejo/actions/setup/action.yml": "runs:\n  using: composite\n  steps:\n    - run: echo x\n      if: env.X == '1'\n" }, /\.forgejo\/actions\/setup\/action\.yml: \.runs\.steps\[0\]\.if is not always\(\)/);
     });
-    test("an event read in a local action outside .forgejo", () => {
-        assertDifference({ "actions/setup/action.yaml": "runs:\n  using: composite\n  steps:\n    - run: echo ${{ github.event_name }}\n" }, /actions\/setup\/action\.yaml:4: reads the event context/);
+    test("an expression in an action.yaml outside .forgejo", () => {
+        assertDifference({ "actions/setup/action.yaml": "runs:\n  using: composite\n  steps:\n    - run: echo ${{ github.event_name }}\n" }, /actions\/setup\/action\.yaml:4: an expression other/);
     });
-    test("a script that reads GITHUB_REF", () => {
-        assertDifference({ "scripts/build.sh": "echo build\necho \"$GITHUB_REF\"\n" }, /scripts\/build\.sh:2:.*names a runner variable/);
+    test("an if: in an action.yml outside .forgejo", () => {
+        assertDifference({ "actions/build/action.yml": "runs:\n  using: composite\n  steps:\n    - run: echo x\n      if: env.X == '1'\n" }, /actions\/build\/action\.yml: \.runs\.steps\[0\]\.if is not always\(\)/);
     });
-    test("a module that reads FORGEJO_ or FORGE_ variables", () => {
-        assertDifference({ "lib/env.js": "export const ref = process.env.FORGEJO_REF;\nexport const e = process.env.FORGE_EVENT_NAME;\n" }, /lib\/env\.js:1:.*names a runner variable[\s\S]*lib\/env\.js:2:.*names a runner variable/);
+    test("a script that reads the ref from the runner", () => {
+        assertDifference({ "scripts/build.sh": `echo build\necho "$${GH}REF"\n` }, /scripts\/build\.sh:2:.*names a runner variable/);
+    });
+    test("a test that reads the event from the runner", () => {
+        assertDifference({ "test/e2e.test.js": `if (process.env.${GH}EVENT_NAME === "push") run();\n` }, /test\/e2e\.test\.js:1:.*names a runner variable/);
+    });
+    test("a module that reads the forgejo and forge variable names", () => {
+        assertDifference({ "lib/env.js": `export const ref = process.env.${FJ}REF;\nexport const e = process.env.${FG}EVENT_NAME;\n` }, /lib\/env\.js:1:.*names a runner variable[\s\S]*lib\/env\.js:2:.*names a runner variable/);
+    });
+    test("a binary file that holds a runner variable name", () => {
+        assertDifference({ "bin/tool": `\0\x01${GH}REF\0` }, /bin\/tool matches: names a runner variable/);
     });
 });
 
-test("check-push-repeats-pr exits 2 on a SHA the repo lacks", () => {
-    const dir = path.join(root, "nosha");
-    mkdirSync(dir);
-    execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
-    const res = spawnSync(process.execPath, [scriptPath, "0123456789abcdef0123456789abcdef01234567"], { cwd: dir, encoding: "utf8" });
-    assert.equal(res.status, 2, res.stdout + res.stderr);
+test("the script and this test hold no runner variable name, so the script reads both", () => {
+    const names = new RegExp([GH, FJ, FG].join("|"));
+    for (const file of [scriptPath, fileURLToPath(import.meta.url)]) {
+        assert.doesNotMatch(readFileSync(file, "utf8"), names, file);
+    }
+});
+
+describe("check-push-repeats-pr exits 2", () => {
+    test("on a SHA the repo lacks", () => {
+        const dir = path.join(root, "nosha");
+        mkdirSync(dir);
+        execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir });
+        const res = spawnSync(process.execPath, [scriptPath, "0123456789abcdef0123456789abcdef01234567"], { cwd: dir, encoding: "utf8" });
+        assert.equal(res.status, 2, res.stdout + res.stderr);
+    });
+    test("when the yaml package is missing", () => {
+        const copy = path.join(mkdtempSync(path.join(tmpdir(), "push-repeats-pr-noyaml-")), "check.js");
+        copyFileSync(scriptPath, copy);
+        try {
+            const { status, out } = check({}, { script: copy });
+            assert.equal(status, 2, out);
+            assert.match(out, /cannot load the yaml package; run npm ci first/);
+        } finally {
+            rmSync(path.dirname(copy), { recursive: true, force: true });
+        }
+    });
 });
