@@ -282,6 +282,20 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
     test("a %FOO directive, which the yaml package reads with a warning", () => {
         assertDifference({ [CI]: "%FOO bar\n---\n" + baseCi }, /ci\.yml: not readable as YAML \(Unknown directive %FOO/);
     });
+    test("a YAML error stops the file's other YAML checks", () => {
+        const out = assertDifference({ [CI]: ciWith("      - run: !!str npm run lint", "        run: npm run build") }, /ci\.yml: not readable as YAML \(Map keys must be unique/);
+        assert.doesNotMatch(out, /has a tag/);
+    });
+    test("an alias inside its own anchor, and a later file's difference", () => {
+        const out = assertDifference(
+            { [CI]: "x-loop: &loop [*loop]\n" + baseCi, ".forgejo/workflows/z.yml": "on: push\njobs: {}\n" },
+            /ci\.yml: the script failed while checking it \(Maximum call stack size exceeded/,
+        );
+        assert.match(out, /z\.yml: no pull_request trigger/);
+    });
+    test("an if: holding an object whose toString is not a function", () => {
+        assertDifference({ [CI]: ciWith("      - run: npm run lint", "        if: {toString: x}") }, /ci\.yml: the script failed while checking it \(Cannot convert object to primitive value/);
+    });
     test("a %FOO directive, an unknown tag and a !!str tag in one file", () => {
         const out = assertDifference(
             { [CI]: "%FOO bar\n---\n" + ciWith("      - run: !custom npm run lint", "      - run: !!str npm run build") },

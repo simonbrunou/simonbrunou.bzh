@@ -33,6 +33,8 @@
 //     reported as not readable as YAML. An error stops the file's other
 //     YAML checks. A warning (an unknown directive such as `%FOO`, an
 //     unknown tag) leaves the file whole, so the other checks still run;
+//   - a file whose YAML checks throw (an alias inside its own anchor),
+//     naming the error, so the files after it are still checked;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -176,6 +178,30 @@ function walk(file, lines, node, where) {
     }
 }
 
+// Every check of a scanned file that reads it as YAML. An error can leave
+// the document half read, so it stops them; a warning does not.
+function checkYaml(file, text) {
+    const lines = new YAML.LineCounter();
+    const parsed = YAML.parseDocument(text, { lineCounter: lines });
+    for (const problem of [...parsed.errors, ...parsed.warnings]) {
+        differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
+    }
+    if (parsed.errors.length) return;
+    walk(file, lines, parsed.contents, "");
+    let doc;
+    try {
+        // Throws on an alias whose anchor is missing, which parsing allows.
+        doc = parsed.toJS();
+    } catch (err) {
+        return differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
+    }
+    checkKeys(file, doc, "");
+    if (workflows.includes(file)) {
+        checkTriggers(file, doc);
+        checkJobs(file, doc);
+    }
+}
+
 for (const file of scanned) {
     const text = git(["show", `${commit}:${file}`]);
     for (const match of text.matchAll(EXPRESSION)) {
@@ -184,25 +210,12 @@ for (const file of scanned) {
             differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
         }
     }
-    const lines = new YAML.LineCounter();
-    const parsed = YAML.parseDocument(text, { lineCounter: lines });
-    for (const problem of [...parsed.errors, ...parsed.warnings]) {
-        differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
-    }
-    if (parsed.errors.length) continue;
-    walk(file, lines, parsed.contents, "");
-    let doc;
     try {
-        // Throws on an alias whose anchor is missing, which parsing allows.
-        doc = parsed.toJS();
+        checkYaml(file, text);
     } catch (err) {
-        differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
-        continue;
-    }
-    checkKeys(file, doc, "");
-    if (workflows.includes(file)) {
-        checkTriggers(file, doc);
-        checkJobs(file, doc);
+        // A shape the checks do not expect, such as an alias inside its own
+        // anchor or an object with a `toString` key where a string belongs.
+        differences.push(`${file}: the script failed while checking it (${err.message.split("\n")[0]})`);
     }
 }
 
