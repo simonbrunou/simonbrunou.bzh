@@ -134,25 +134,23 @@ function checkJobs(file, doc) {
 }
 
 // Every `if` and `uses` key at any depth, however the YAML spells it
-// ("if":, if :). An alias inside its own anchor (`&a [*a]`) makes a value
-// that holds itself, so `inside` stops the descent there; the walk reports
-// the alias.
-function checkKeys(file, node, where, inside = new Set()) {
-    if (!node || typeof node !== "object" || inside.has(node)) return;
-    inside.add(node);
-    if (Array.isArray(node)) node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`, inside));
-    else {
-        for (const [key, value] of Object.entries(node)) {
-            if (key === "if" && String(value).trim() !== "always()") {
-                differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
-            }
-            if (key === "uses" && String(value).includes("github-script")) {
-                differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
-            }
-            checkKeys(file, value, `${where}.${key}`, inside);
+// ("if":, if :). Each alias resolves to its anchor's value, so `seen` checks
+// that value once, where the anchor is: a value used through many aliases
+// would otherwise be reported once per path, and one inside its own anchor
+// (`&a [*a]`) without end. The walk reports each alias.
+function checkKeys(file, node, where, seen = new Set()) {
+    if (!node || typeof node !== "object" || seen.has(node)) return;
+    seen.add(node);
+    if (Array.isArray(node)) return node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`, seen));
+    for (const [key, value] of Object.entries(node)) {
+        if (key === "if" && String(value).trim() !== "always()") {
+            differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
         }
+        if (key === "uses" && String(value).includes("github-script")) {
+            differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
+        }
+        checkKeys(file, value, `${where}.${key}`, seen);
     }
-    inside.delete(node);
 }
 
 // Every node of the file as the `yaml` package decodes it, keys included:

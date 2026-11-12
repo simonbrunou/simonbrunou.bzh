@@ -292,6 +292,11 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
         assert.equal(out.match(/is not always\(\)/g)?.length, 1, out.slice(0, 2000));
         assert.doesNotMatch(out.slice(0, 2000), /the script failed/);
     });
+    test("an anchor holding an if:, used through two aliases", () => {
+        const out = assertDifference({ [CI]: "x: &a {if: y}\np: *a\nq: [*a]\n" + baseCi }, /ci\.yml: \.x\.if is not always\(\): y/);
+        assert.match(out, /ci\.yml:2: \.p is an alias: \*a[\s\S]*ci\.yml:3: \.q\[0\] is an alias: \*a/);
+        assert.equal(out.match(/is not always\(\)/g)?.length, 1, out);
+    });
     test("an if: holding an object whose toString is not a function, and a later file's difference", () => {
         const out = assertDifference(
             { [CI]: ciWith("      - run: npm run lint", "        if: {toString: x}"), ".forgejo/workflows/z.yml": "on: push\njobs: {}\n" },
