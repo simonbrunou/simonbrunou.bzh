@@ -22,15 +22,17 @@
 //   - a `${{ }}` expression other than `${{ github.run_id }}` in a key or a
 //     value, so an escape (`\x24`, `\u0024`) or a line continuation that
 //     builds one counts, though the raw text holds no `${{`;
-//   - a node with a tag the `yaml` package knows (`!!binary`, whose value
-//     YAML decodes to bytes, `!!str`, `!!omap`), naming the tag;
+//   - a node with a tag (`!!binary`, whose value YAML decodes to bytes,
+//     `!!str`, `!custom`), naming the tag. The `yaml` package turns the
+//     entries of an `!!omap` or `!!pairs` into plain pairs, so a tag or an
+//     anchor on one is lost and only the collection's own tag is named;
 //   - an alias (`*name`, `<<: *name` included), naming it: the `yaml`
 //     package keeps `<<` as a plain key, so a job holding only `<<: *name`
 //     shows no `uses`, and the runner's YAML reader may merge it;
-//   - a file the `yaml` package reads with a warning, reported as not
-//     readable as YAML, like a parse error, and not checked further: an
-//     unknown directive (`%FOO`) or an unknown tag (`!custom`), which the
-//     warning names;
+//   - each error and each warning the `yaml` package reads the file with,
+//     reported as not readable as YAML. An error stops the file's other
+//     YAML checks. A warning (an unknown directive such as `%FOO`, an
+//     unknown tag) leaves the file whole, so the other checks still run;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -184,11 +186,10 @@ for (const file of scanned) {
     }
     const lines = new YAML.LineCounter();
     const parsed = YAML.parseDocument(text, { lineCounter: lines });
-    const problem = parsed.errors[0] ?? parsed.warnings[0];
-    if (problem) {
+    for (const problem of [...parsed.errors, ...parsed.warnings]) {
         differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
-        continue;
     }
+    if (parsed.errors.length) continue;
     walk(file, lines, parsed.contents, "");
     let doc;
     try {

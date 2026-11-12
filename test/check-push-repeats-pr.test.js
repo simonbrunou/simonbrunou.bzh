@@ -282,6 +282,15 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
     test("a %FOO directive, which the yaml package reads with a warning", () => {
         assertDifference({ [CI]: "%FOO bar\n---\n" + baseCi }, /ci\.yml: not readable as YAML \(Unknown directive %FOO/);
     });
+    test("a %FOO directive, an unknown tag and a !!str tag in one file", () => {
+        const out = assertDifference(
+            { [CI]: "%FOO bar\n---\n" + ciWith("      - run: !custom npm run lint", "      - run: !!str npm run build") },
+            /ci\.yml: not readable as YAML \(Unknown directive %FOO/,
+        );
+        assert.match(out, /ci\.yml: not readable as YAML \(Unresolved tag: !custom/);
+        assert.match(out, /ci\.yml:19: \.jobs\.test\.steps\[3\]\.run has a tag: !custom/);
+        assert.match(out, /ci\.yml:20: \.jobs\.test\.steps\[4\]\.run has a tag: !!str/);
+    });
 });
 
 test("the script and this test hold none of the names they search for, so the script reads both", () => {
