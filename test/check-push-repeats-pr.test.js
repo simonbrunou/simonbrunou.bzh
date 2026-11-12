@@ -315,6 +315,61 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
     });
 });
 
+// Shapes the yaml package builds beyond plain maps, sequences and strings:
+// tags, the !!omap, !!pairs and !!set collections, aliases (inside their own
+// anchor, or one anchor used many times) and merge keys. Review of #163 found
+// a crash or a flood of output in four of them, one round at a time. Each
+// shape goes in five places of a workflow, one file per place. Whatever the
+// script reports, the run must end on its summary line, with no file it
+// failed to check and a bounded output.
+describe("check-push-repeats-pr ends on its summary line", () => {
+    const deep = `${"{if: y, k: ".repeat(20)}{if: y}${"}".repeat(20)}`;
+    const anchors = `x-m: &m {if: y}\nx-s: &s [a]\nx-deep: &deep ${deep}\n`;
+    const shapes = {
+        "a !!str scalar": "!!str x",
+        "a !!binary scalar": "!!binary eA==",
+        "an unknown tag on a scalar": "!custom x",
+        "a !!map map": "!!map {a: b}",
+        "a !!seq sequence": "!!seq [a]",
+        "an unknown tag on a map": "!custom {a: b}",
+        "an !!omap": "!!omap [a: b]",
+        "a !!pairs": "!!pairs [a: b]",
+        "an !!omap inside an !!omap": "!!omap [a: !!omap [b: c]]",
+        "a !!set": "!!set {a, b}",
+        "an alias to a map holding an if:": "*m",
+        "an alias to a sequence": "*s",
+        "a merge key": "{<<: *m}",
+        "a sequence inside its own anchor": "&loop [*loop]",
+        "a map inside its own anchor, holding an if:": "&c {if: y, l: *c}",
+        "an anchor of 21 nested if: keys, used 50 times": `[${Array(50).fill("*deep").join(", ")}]`,
+        "an if: holding a map": "{if: {a: b}}",
+        "an if: holding a sequence": "{if: [a]}",
+        "a \\x24 escape": '"\\x24{{ github.ref }}"',
+    };
+    const places = {
+        "a step's with": (v) => ciWith("      - run: npm test", `        with: ${v}`),
+        "a step's env": (v) => ciWith("      - run: npm test", `        env: {A: ${v}}`),
+        "a job": (v) => `${baseCi}\n  extra: ${v}\n`,
+        "on:": (v) => edit(baseCi, /on:\n {2}push:\n {4}branches: \[main\]\n {2}pull_request:/, `on: ${v}`),
+        "a top-level key": (v) => `x-extra: ${v}\n${baseCi}`,
+    };
+    for (const [name, shape] of Object.entries(shapes)) {
+        test(name, () => {
+            const files = Object.fromEntries(Object.values(places).map((place, i) => [`.forgejo/workflows/p${i}.yml`, anchors + place(shape)]));
+            const { status, out } = check(files);
+            // Exit 0 ends on the "repeats" line, exit 1 on the count of differences.
+            const summary = {
+                0: /^check-push-repeats-pr: [0-9a-f]{8}: the push run repeats the PR run \(\d+ workflow file\(s\), \d+ file\(s\) scanned\)$/,
+                1: /^check-push-repeats-pr: [0-9a-f]{8}: \d+ difference\(s\); wait on main's run$/,
+            }[status];
+            assert.ok(summary, `exit ${status}:\n${out.slice(0, 4000)}`);
+            assert.match(out.trimEnd().split("\n").at(-1), summary, out.slice(-4000));
+            assert.doesNotMatch(out, /the script failed while checking it/, out.slice(0, 4000));
+            assert.ok(out.length < 100_000, `${out.length} characters of output:\n${out.slice(0, 4000)}`);
+        });
+    }
+});
+
 test("the script and this test hold none of the names they search for, so the script reads both", () => {
     const names = new RegExp([GH, FJ, FG, LIB, EV].join("|"));
     for (const file of [scriptPath, fileURLToPath(import.meta.url)]) {
