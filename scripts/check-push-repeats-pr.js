@@ -33,8 +33,9 @@
 //     reported as not readable as YAML. An error stops the file's other
 //     YAML checks. A warning (an unknown directive such as `%FOO`, an
 //     unknown tag) leaves the file whole, so the other checks still run;
-//   - a file whose YAML checks throw (an alias inside its own anchor),
-//     naming the error, so the files after it are still checked;
+//   - a file whose YAML checks throw (an `if` holding an object with a
+//     `toString` key), naming the error, so the files after it are still
+//     checked;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -133,19 +134,25 @@ function checkJobs(file, doc) {
 }
 
 // Every `if` and `uses` key at any depth, however the YAML spells it
-// ("if":, if :).
-function checkKeys(file, node, where) {
-    if (Array.isArray(node)) return node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`));
-    if (!node || typeof node !== "object") return;
-    for (const [key, value] of Object.entries(node)) {
-        if (key === "if" && String(value).trim() !== "always()") {
-            differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
+// ("if":, if :). An alias inside its own anchor (`&a [*a]`) makes a value
+// that holds itself, so `inside` stops the descent there; the walk reports
+// the alias.
+function checkKeys(file, node, where, inside = new Set()) {
+    if (!node || typeof node !== "object" || inside.has(node)) return;
+    inside.add(node);
+    if (Array.isArray(node)) node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`, inside));
+    else {
+        for (const [key, value] of Object.entries(node)) {
+            if (key === "if" && String(value).trim() !== "always()") {
+                differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
+            }
+            if (key === "uses" && String(value).includes("github-script")) {
+                differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
+            }
+            checkKeys(file, value, `${where}.${key}`, inside);
         }
-        if (key === "uses" && String(value).includes("github-script")) {
-            differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
-        }
-        checkKeys(file, value, `${where}.${key}`);
     }
+    inside.delete(node);
 }
 
 // Every node of the file as the `yaml` package decodes it, keys included:
@@ -213,8 +220,8 @@ for (const file of scanned) {
     try {
         checkYaml(file, text);
     } catch (err) {
-        // A shape the checks do not expect, such as an alias inside its own
-        // anchor or an object with a `toString` key where a string belongs.
+        // A shape the checks do not expect, such as an object with a
+        // `toString` key where a string belongs.
         differences.push(`${file}: the script failed while checking it (${err.message.split("\n")[0]})`);
     }
 }

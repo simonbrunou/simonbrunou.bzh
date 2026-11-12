@@ -286,15 +286,18 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
         const out = assertDifference({ [CI]: ciWith("      - run: !!str npm run lint", "        run: npm run build") }, /ci\.yml: not readable as YAML \(Map keys must be unique/);
         assert.doesNotMatch(out, /has a tag/);
     });
-    test("an alias inside its own anchor, and a later file's difference", () => {
+    test("a sequence and a map inside their own anchors, one holding an if:", () => {
+        const out = assertDifference({ [CI]: "x-loop: &loop [*loop]\nx-c: &c {if: y, l: *c}\n" + baseCi }, /ci\.yml:1: \.x-loop\[0\] is an alias: \*loop/);
+        assert.match(out, /ci\.yml:2: \.x-c\.l is an alias: \*c/);
+        assert.equal(out.match(/is not always\(\)/g)?.length, 1, out.slice(0, 2000));
+        assert.doesNotMatch(out.slice(0, 2000), /the script failed/);
+    });
+    test("an if: holding an object whose toString is not a function, and a later file's difference", () => {
         const out = assertDifference(
-            { [CI]: "x-loop: &loop [*loop]\n" + baseCi, ".forgejo/workflows/z.yml": "on: push\njobs: {}\n" },
-            /ci\.yml: the script failed while checking it \(Maximum call stack size exceeded/,
+            { [CI]: ciWith("      - run: npm run lint", "        if: {toString: x}"), ".forgejo/workflows/z.yml": "on: push\njobs: {}\n" },
+            /ci\.yml: the script failed while checking it \(Cannot convert object to primitive value/,
         );
         assert.match(out, /z\.yml: no pull_request trigger/);
-    });
-    test("an if: holding an object whose toString is not a function", () => {
-        assertDifference({ [CI]: ciWith("      - run: npm run lint", "        if: {toString: x}") }, /ci\.yml: the script failed while checking it \(Cannot convert object to primitive value/);
     });
     test("a %FOO directive, an unknown tag and a !!str tag in one file", () => {
         const out = assertDifference(
