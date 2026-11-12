@@ -357,8 +357,13 @@ describe("check-push-repeats-pr ends on its summary line", () => {
         test(name, () => {
             const files = Object.fromEntries(Object.values(places).map((place, i) => [`.forgejo/workflows/p${i}.yml`, anchors + place(shape)]));
             const { status, out } = check(files);
-            assert.ok(status === 0 || status === 1, `exit ${status}:\n${out.slice(0, 4000)}`);
-            assert.match(out.trimEnd().split("\n").at(-1), /^check-push-repeats-pr: [0-9a-f]{8}: (the push run repeats the PR run \(\d+ workflow file\(s\), \d+ file\(s\) scanned\)|\d+ difference\(s\); wait on main's run)$/, out.slice(-4000));
+            // Exit 0 ends on the "repeats" line, exit 1 on the count of differences.
+            const summary = {
+                0: /^check-push-repeats-pr: [0-9a-f]{8}: the push run repeats the PR run \(\d+ workflow file\(s\), \d+ file\(s\) scanned\)$/,
+                1: /^check-push-repeats-pr: [0-9a-f]{8}: \d+ difference\(s\); wait on main's run$/,
+            }[status];
+            assert.ok(summary, `exit ${status}:\n${out.slice(0, 4000)}`);
+            assert.match(out.trimEnd().split("\n").at(-1), summary, out.slice(-4000));
             assert.doesNotMatch(out, /the script failed while checking it/, out.slice(0, 4000));
             assert.ok(out.length < 100_000, `${out.length} characters of output:\n${out.slice(0, 4000)}`);
         });
