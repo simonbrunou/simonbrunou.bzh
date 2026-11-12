@@ -275,6 +275,10 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
         const ci = "x-reuse: &reuse\n  uses: owner/repo/.forgejo/workflows/deploy.yml@main\n" + baseCi + "\n  deploy:\n    <<: *reuse\n";
         assertDifference({ [CI]: ci }, /ci\.yml:20: \.jobs\.deploy\.<< is an alias: \*reuse/);
     });
+    test("an alias whose anchor is missing, which parses but does not resolve", () => {
+        const out = assertDifference({ [CI]: ciWith("      - *missing") }, /ci\.yml: not readable as YAML \(Unresolved alias/);
+        assert.match(out, /ci\.yml:17: \.jobs\.test\.steps\[3\] is an alias: \*missing/);
+    });
     test("a %FOO directive, which the yaml package reads with a warning", () => {
         assertDifference({ [CI]: "%FOO bar\n---\n" + baseCi }, /ci\.yml: not readable as YAML \(Unknown directive %FOO/);
     });
