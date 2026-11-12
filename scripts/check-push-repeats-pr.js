@@ -18,6 +18,17 @@
 //   action.yml or action.yaml anywhere: an `if` key whose value is not
 //   `always()`, a `${{ }}` expression other than `${{ github.run_id }}`,
 //   and a step that uses actions/github-script, whose code gets the event;
+// - in those same files, read as the `yaml` package decodes them:
+//   - a `${{ }}` expression other than `${{ github.run_id }}` in a key or a
+//     value, so an escape (`\x24`, `\u0024`) or a line continuation that
+//     builds one counts, though the raw text holds no `${{`;
+//   - a node with a tag (`!!binary`, whose value YAML decodes to bytes,
+//     `!!str`, `!custom`), naming the tag;
+//   - an alias (`*name`, `<<: *name` included), naming it: the `yaml`
+//     package keeps `<<` as a plain key, so a job holding only `<<: *name`
+//     shows no `uses`, and the runner's YAML reader may merge it;
+//   - a file the `yaml` package reads with a warning (an unknown directive
+//     or tag), reported as not readable as YAML, like a parse error;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -49,9 +60,9 @@ function fail(message) {
 const sha = process.argv[2];
 if (!sha || process.argv.length > 3) fail("usage: node scripts/check-push-repeats-pr.js <pushed SHA>");
 
-let parse;
+let YAML;
 try {
-    ({ parse } = await import("yaml"));
+    YAML = await import("yaml");
 } catch {
     fail("cannot load the yaml package; run npm ci first");
 }
@@ -131,6 +142,33 @@ function checkKeys(file, node, where) {
     }
 }
 
+// Every node of the file as the `yaml` package decodes it, keys included:
+// a tag, an alias, and an expression in a decoded string, which the raw-text
+// scan misses when an escape or a line continuation builds it.
+function walk(file, lines, node, where) {
+    if (!node) return;
+    const at = `${file}:${lines.linePos(node.range[0]).line}: ${where || "the document"}`;
+    if (node.tag) differences.push(`${at} has a tag: ${node.tag.replace(/^tag:yaml\.org,2002:/, "!!")}`);
+    if (YAML.isAlias(node)) {
+        differences.push(`${at} is an alias: *${node.source}`);
+    } else if (YAML.isScalar(node)) {
+        if (typeof node.value !== "string") return;
+        for (const match of node.value.matchAll(EXPRESSION)) {
+            if (match[1].trim() !== ALLOWED_EXPRESSION) {
+                differences.push(`${at} decodes to an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
+            }
+        }
+    } else if (YAML.isSeq(node)) {
+        node.items.forEach((item, i) => walk(file, lines, item, `${where}[${i}]`));
+    } else if (YAML.isMap(node)) {
+        for (const { key, value } of node.items) {
+            const path = `${where}.${YAML.isScalar(key) ? String(key.value) : "?"}`;
+            walk(file, lines, key, `${path} (key)`);
+            walk(file, lines, value, path);
+        }
+    }
+}
+
 for (const file of scanned) {
     const text = git(["show", `${commit}:${file}`]);
     for (const match of text.matchAll(EXPRESSION)) {
@@ -139,9 +177,18 @@ for (const file of scanned) {
             differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
         }
     }
+    const lines = new YAML.LineCounter();
+    const parsed = YAML.parseDocument(text, { lineCounter: lines });
+    const problem = parsed.errors[0] ?? parsed.warnings[0];
+    if (problem) {
+        differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
+        continue;
+    }
+    walk(file, lines, parsed.contents, "");
     let doc;
     try {
-        doc = parse(text);
+        // Throws on an alias whose anchor is missing, which parsing allows.
+        doc = parsed.toJS();
     } catch (err) {
         differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
         continue;

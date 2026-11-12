@@ -89,6 +89,7 @@ function assertDifference(files, pattern, options) {
     assert.equal(status, 1, out);
     assert.match(out, pattern);
     assert.match(out, /wait on main's run/);
+    return out;
 }
 
 describe("check-push-repeats-pr passes", () => {
@@ -218,6 +219,56 @@ describe("check-push-repeats-pr finds a difference", () => {
     test("a job that calls a reusable workflow", () => {
         const ci = `${baseCi}\n  deploy:\n    uses: owner/repo/.forgejo/workflows/deploy.yml@main\n`;
         assertDifference({ [CI]: ci }, /ci\.yml: job deploy calls a reusable workflow: owner\/repo\/\.forgejo\/workflows\/deploy\.yml@main/);
+    });
+    test("a pull_request filter on branches: [main]", () => {
+        assertDifference({ [CI]: edit(baseCi, "  pull_request:", "  pull_request:\n    branches: [main]") }, /ci\.yml: pull_request has a filter/);
+    });
+    test("an expression in a YAML file under .forgejo that is neither a workflow nor an action", () => {
+        assertDifference({ ".forgejo/config/extra.yml": "steps:\n  - run: echo ${{ github.event_name }}\n" }, /\.forgejo\/config\/extra\.yml:2: an expression other/);
+    });
+});
+
+// Each form below spells an expression that only the decoded YAML holds, so
+// the raw-text scan must not report it: a fixture whose JS string lost an
+// escape would hold a raw `${{` and fail here.
+describe("check-push-repeats-pr finds a difference in the YAML as it decodes", () => {
+    const RAW_SCAN = /ci\.yml:\d+: an expression other than/;
+    function assertDecoded(extraSteps, pattern) {
+        assert.doesNotMatch(assertDifference({ [CI]: ciWith(...extraSteps) }, pattern), RAW_SCAN);
+    }
+
+    test("a \\x24 escape in a value", () => {
+        assertDecoded(['      - run: "echo \\x24{{ github.event_name }}"'], /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run decodes to an expression other than \$\{\{ github\.run_id \}\}: \$\{\{ github\.event_name \}\}/);
+    });
+    test("a \\x24 escape in a key", () => {
+        assertDecoded(
+            ["      - run: npm run lint", "        env:", '          "A\\x24{{ github.ref }}": "1"'],
+            /ci\.yml:19: \.jobs\.test\.steps\[3\]\.env\.A\$\{\{ github\.ref \}\} \(key\) decodes to an expression other than \$\{\{ github\.run_id \}\}: \$\{\{ github\.ref \}\}/,
+        );
+    });
+    test("${ spelled with \\u and \\U escapes", () => {
+        assertDecoded(['      - run: "echo \\u0024\\U0000007B{ github.event_name }}"'], /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run decodes to an expression other than [^:]*: \$\{\{ github\.event_name \}\}/);
+    });
+    test("a double-quoted line continuation that joins $ and {{", () => {
+        assertDecoded(['      - run: "echo $\\', '          {{ github.event_name }}"'], /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run decodes to an expression other than [^:]*: \$\{\{ github\.event_name \}\}/);
+    });
+    test("a !!binary value holding an expression in base64", () => {
+        const payload = Buffer.from("echo ${{ github.event_name }}").toString("base64");
+        assertDifference({ [CI]: ciWith(`      - run: !!binary ${payload}`) }, /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run has a tag: !!binary/);
+    });
+    test("a !!str tag on a value with no expression", () => {
+        assertDifference({ [CI]: ciWith("      - run: !!str npm run lint") }, /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run has a tag: !!str/);
+    });
+    test("a step written as an alias", () => {
+        const ci = "x-step: &lint\n  run: npm run lint\n" + ciWith("      - *lint");
+        assertDifference({ [CI]: ci }, /ci\.yml:19: \.jobs\.test\.steps\[3\] is an alias: \*lint/);
+    });
+    test("a job holding only a merge key whose anchor calls a reusable workflow", () => {
+        const ci = "x-reuse: &reuse\n  uses: owner/repo/.forgejo/workflows/deploy.yml@main\n" + baseCi + "\n  deploy:\n    <<: *reuse\n";
+        assertDifference({ [CI]: ci }, /ci\.yml:20: \.jobs\.deploy\.<< is an alias: \*reuse/);
+    });
+    test("a %FOO directive, which the yaml package reads with a warning", () => {
+        assertDifference({ [CI]: "%FOO bar\n---\n" + baseCi }, /ci\.yml: not readable as YAML \(Unknown directive %FOO/);
     });
 });
 
