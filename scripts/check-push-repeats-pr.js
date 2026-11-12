@@ -22,13 +22,15 @@
 //   - a `${{ }}` expression other than `${{ github.run_id }}` in a key or a
 //     value, so an escape (`\x24`, `\u0024`) or a line continuation that
 //     builds one counts, though the raw text holds no `${{`;
-//   - a node with a tag (`!!binary`, whose value YAML decodes to bytes,
-//     `!!str`, `!custom`), naming the tag;
+//   - a node with a tag the `yaml` package knows (`!!binary`, whose value
+//     YAML decodes to bytes, `!!str`, `!!omap`), naming the tag;
 //   - an alias (`*name`, `<<: *name` included), naming it: the `yaml`
 //     package keeps `<<` as a plain key, so a job holding only `<<: *name`
 //     shows no `uses`, and the runner's YAML reader may merge it;
-//   - a file the `yaml` package reads with a warning (an unknown directive
-//     or tag), reported as not readable as YAML, like a parse error;
+//   - a file the `yaml` package reads with a warning, reported as not
+//     readable as YAML, like a parse error, and not checked further: an
+//     unknown directive (`%FOO`) or an unknown tag (`!custom`), which the
+//     warning names;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -147,6 +149,13 @@ function checkKeys(file, node, where) {
 // scan misses when an escape or a line continuation builds it.
 function walk(file, lines, node, where) {
     if (!node) return;
+    // A map's entries, and the items of an `!!omap` or `!!pairs` sequence,
+    // which have no range of their own.
+    if (YAML.isPair(node)) {
+        const path = `${where}.${YAML.isScalar(node.key) ? String(node.key.value) : "?"}`;
+        walk(file, lines, node.key, `${path} (key)`);
+        return walk(file, lines, node.value, path);
+    }
     const at = `${file}:${lines.linePos(node.range[0]).line}: ${where || "the document"}`;
     if (node.tag) differences.push(`${at} has a tag: ${node.tag.replace(/^tag:yaml\.org,2002:/, "!!")}`);
     if (YAML.isAlias(node)) {
@@ -161,11 +170,7 @@ function walk(file, lines, node, where) {
     } else if (YAML.isSeq(node)) {
         node.items.forEach((item, i) => walk(file, lines, item, `${where}[${i}]`));
     } else if (YAML.isMap(node)) {
-        for (const { key, value } of node.items) {
-            const path = `${where}.${YAML.isScalar(key) ? String(key.value) : "?"}`;
-            walk(file, lines, key, `${path} (key)`);
-            walk(file, lines, value, path);
-        }
+        for (const pair of node.items) walk(file, lines, pair, where);
     }
 }
 

@@ -259,6 +259,14 @@ describe("check-push-repeats-pr finds a difference in the YAML as it decodes", (
     test("a !!str tag on a value with no expression", () => {
         assertDifference({ [CI]: ciWith("      - run: !!str npm run lint") }, /ci\.yml:17: \.jobs\.test\.steps\[3\]\.run has a tag: !!str/);
     });
+    test("an !!omap whose entry decodes to an expression", () => {
+        const out = assertDifference(
+            { [CI]: ciWith("      - run: npm run lint", '        with: !!omap [a: "\\x24{{ github.ref }}"]') },
+            /ci\.yml:18: \.jobs\.test\.steps\[3\]\.with has a tag: !!omap/,
+        );
+        assert.match(out, /ci\.yml:18: \.jobs\.test\.steps\[3\]\.with\[0\]\.a decodes to an expression other than [^:]*: \$\{\{ github\.ref \}\}/);
+        assert.doesNotMatch(out, RAW_SCAN);
+    });
     test("a step written as an alias", () => {
         const ci = "x-step: &lint\n  run: npm run lint\n" + ciWith("      - *lint");
         assertDifference({ [CI]: ci }, /ci\.yml:19: \.jobs\.test\.steps\[3\] is an alias: \*lint/);
