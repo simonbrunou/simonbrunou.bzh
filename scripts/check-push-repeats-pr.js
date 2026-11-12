@@ -18,6 +18,24 @@
 //   action.yml or action.yaml anywhere: an `if` key whose value is not
 //   `always()`, a `${{ }}` expression other than `${{ github.run_id }}`,
 //   and a step that uses actions/github-script, whose code gets the event;
+// - in those same files, read as the `yaml` package decodes them:
+//   - a `${{ }}` expression other than `${{ github.run_id }}` in a key or a
+//     value, so an escape (`\x24`, `\u0024`) or a line continuation that
+//     builds one counts, though the raw text holds no `${{`;
+//   - a node with a tag (`!!binary`, whose value YAML decodes to bytes,
+//     `!!str`, `!custom`), naming the tag. The `yaml` package turns the
+//     entries of an `!!omap` or `!!pairs` into plain pairs, so a tag or an
+//     anchor on one is lost and only the collection's own tag is named;
+//   - an alias (`*name`, `<<: *name` included), naming it: the `yaml`
+//     package keeps `<<` as a plain key, so a job holding only `<<: *name`
+//     shows no `uses`, and the runner's YAML reader may merge it;
+//   - each error and each warning the `yaml` package reads the file with,
+//     reported as not readable as YAML. An error stops the file's other
+//     YAML checks. A warning (an unknown directive such as `%FOO`, an
+//     unknown tag) leaves the file whole, so the other checks still run;
+//   - a file whose YAML checks throw (an `if` holding an object with a
+//     `toString` key), naming the error, so the files after it are still
+//     checked;
 // - in any file outside Markdown and graphify-out/, a name made of GITHUB,
 //   FORGEJO or FORGE and an underscore, which a script could read the event
 //   through, and the names of the actions toolkit's github module and its
@@ -49,9 +67,9 @@ function fail(message) {
 const sha = process.argv[2];
 if (!sha || process.argv.length > 3) fail("usage: node scripts/check-push-repeats-pr.js <pushed SHA>");
 
-let parse;
+let YAML;
 try {
-    ({ parse } = await import("yaml"));
+    YAML = await import("yaml");
 } catch {
     fail("cannot load the yaml package; run npm ci first");
 }
@@ -116,10 +134,14 @@ function checkJobs(file, doc) {
 }
 
 // Every `if` and `uses` key at any depth, however the YAML spells it
-// ("if":, if :).
-function checkKeys(file, node, where) {
-    if (Array.isArray(node)) return node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`));
-    if (!node || typeof node !== "object") return;
+// ("if":, if :). Each alias resolves to its anchor's value, so `seen` checks
+// that value once, where the anchor is: a value used through many aliases
+// would otherwise be reported once per path, and one inside its own anchor
+// (`&a [*a]`) without end. The walk reports each alias.
+function checkKeys(file, node, where, seen = new Set()) {
+    if (!node || typeof node !== "object" || seen.has(node)) return;
+    seen.add(node);
+    if (Array.isArray(node)) return node.forEach((item, i) => checkKeys(file, item, `${where}[${i}]`, seen));
     for (const [key, value] of Object.entries(node)) {
         if (key === "if" && String(value).trim() !== "always()") {
             differences.push(`${file}: ${where}.if is not always(): ${String(value).trim()}`);
@@ -127,7 +149,61 @@ function checkKeys(file, node, where) {
         if (key === "uses" && String(value).includes("github-script")) {
             differences.push(`${file}: ${where}.uses runs code that gets the event: ${value}`);
         }
-        checkKeys(file, value, `${where}.${key}`);
+        checkKeys(file, value, `${where}.${key}`, seen);
+    }
+}
+
+// Every node of the file as the `yaml` package decodes it, keys included:
+// a tag, an alias, and an expression in a decoded string, which the raw-text
+// scan misses when an escape or a line continuation builds it.
+function walk(file, lines, node, where) {
+    if (!node) return;
+    // A map's entries, and the items of an `!!omap` or `!!pairs` sequence,
+    // which have no range of their own.
+    if (YAML.isPair(node)) {
+        const path = `${where}.${YAML.isScalar(node.key) ? String(node.key.value) : "?"}`;
+        walk(file, lines, node.key, `${path} (key)`);
+        return walk(file, lines, node.value, path);
+    }
+    const at = `${file}:${lines.linePos(node.range[0]).line}: ${where || "the document"}`;
+    if (node.tag) differences.push(`${at} has a tag: ${node.tag.replace(/^tag:yaml\.org,2002:/, "!!")}`);
+    if (YAML.isAlias(node)) {
+        differences.push(`${at} is an alias: *${node.source}`);
+    } else if (YAML.isScalar(node)) {
+        if (typeof node.value !== "string") return;
+        for (const match of node.value.matchAll(EXPRESSION)) {
+            if (match[1].trim() !== ALLOWED_EXPRESSION) {
+                differences.push(`${at} decodes to an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
+            }
+        }
+    } else if (YAML.isSeq(node)) {
+        node.items.forEach((item, i) => walk(file, lines, item, `${where}[${i}]`));
+    } else if (YAML.isMap(node)) {
+        for (const pair of node.items) walk(file, lines, pair, where);
+    }
+}
+
+// Every check of a scanned file that reads it as YAML. An error can leave
+// the document half read, so it stops them; a warning does not.
+function checkYaml(file, text) {
+    const lines = new YAML.LineCounter();
+    const parsed = YAML.parseDocument(text, { lineCounter: lines });
+    for (const problem of [...parsed.errors, ...parsed.warnings]) {
+        differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
+    }
+    if (parsed.errors.length) return;
+    walk(file, lines, parsed.contents, "");
+    let doc;
+    try {
+        // Throws on an alias whose anchor is missing, which parsing allows.
+        doc = parsed.toJS();
+    } catch (err) {
+        return differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
+    }
+    checkKeys(file, doc, "");
+    if (workflows.includes(file)) {
+        checkTriggers(file, doc);
+        checkJobs(file, doc);
     }
 }
 
@@ -139,17 +215,12 @@ for (const file of scanned) {
             differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
         }
     }
-    let doc;
     try {
-        doc = parse(text);
+        checkYaml(file, text);
     } catch (err) {
-        differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
-        continue;
-    }
-    checkKeys(file, doc, "");
-    if (workflows.includes(file)) {
-        checkTriggers(file, doc);
-        checkJobs(file, doc);
+        // A shape the checks do not expect, such as an object with a
+        // `toString` key where a string belongs.
+        differences.push(`${file}: the script failed while checking it (${err.message.split("\n")[0]})`);
     }
 }
 
