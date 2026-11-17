@@ -79,7 +79,10 @@ function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
 // (#175). The reader starts on a timer, not on the child's exit: a child
 // that waits for its stdout to drain would never exit.
 async function runWithLateReader(args, cwd) {
-    const socketPath = path.join(root, `late-${count++}.sock`);
+    // A name in Linux's abstract socket namespace (the leading \0), not a
+    // file under the temp folder: a socket path longer than 107 bytes fails
+    // with EINVAL, and nix develop nests the temp folder deeper.
+    const socketPath = `\0push-repeats-pr-${process.pid}-${count++}`;
     const server = net.createServer({ pauseOnConnect: true });
     server.listen(socketPath);
     await once(server, "listening");
