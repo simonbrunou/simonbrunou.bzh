@@ -80,7 +80,7 @@ function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
 // that waits for its stdout to drain would never exit.
 async function runWithLateReader(args, cwd) {
     // A name in Linux's abstract socket namespace (the leading \0), not a
-    // file under the temp folder: a socket path longer than 107 bytes fails
+    // file under the temp folder: a socket path longer than 108 bytes fails
     // with EINVAL, and nix develop nests the temp folder deeper.
     const socketPath = `\0push-repeats-pr-${process.pid}-${count++}`;
     const server = net.createServer({ pauseOnConnect: true });
