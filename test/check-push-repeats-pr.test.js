@@ -8,8 +8,10 @@
 // in the script, so neither file holds one and the script reads both.
 import { after, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
+import { once } from "node:events";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import net from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,9 +50,9 @@ const base = {
 };
 
 let count = 0;
-// Commits `files` over the base repo (a null value deletes a base file) and
-// runs `script` on that commit from `subdir` of the repo.
-function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
+// Commits `files` over the base repo (a null value deletes a base file) in a
+// new repo and returns its folder and the commit's SHA.
+function commit(files = {}) {
     const dir = path.join(root, String(count++));
     for (const [file, content] of Object.entries({ ...base, ...files })) {
         if (content === null) continue;
@@ -61,9 +63,49 @@ function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
     git("init", "-q", "-b", "main");
     git("add", "-A");
     git("-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-qm", "c");
-    const sha = git("rev-parse", "HEAD").trim();
+    return { dir, sha: git("rev-parse", "HEAD").trim() };
+}
+
+// Commits `files` as `commit` does and runs `script` on that commit from
+// `subdir` of the repo.
+function check(files = {}, { script = scriptPath, subdir = "" } = {}) {
+    const { dir, sha } = commit(files);
     const res = spawnSync(process.execPath, [script, sha], { cwd: path.join(dir, subdir), encoding: "utf8" });
     return { status: res.status, out: res.stdout + res.stderr };
+}
+
+// Runs node with `args` from `cwd`, its stdout on a Unix socket that this
+// process starts to read 1 s after the child starts, as a busy runner may
+// (#175). The reader starts on a timer, not on the child's exit: a child
+// that waits for its stdout to drain would never exit.
+async function runWithLateReader(args, cwd) {
+    const socketPath = path.join(root, `late-${count++}.sock`);
+    const server = net.createServer({ pauseOnConnect: true });
+    server.listen(socketPath);
+    await once(server, "listening");
+    const accepted = once(server, "connection");
+    const client = net.connect(socketPath);
+    await once(client, "connect");
+    const [reader] = await accepted;
+    const child = spawn(process.execPath, args, { cwd, stdio: ["ignore", client, "pipe"] });
+    // The child holds its own copy of the socket; closing this one lets the
+    // reader see the end once the child exits.
+    client.destroy();
+    const exited = once(child, "exit");
+    let stderr = "";
+    child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
+    const chunks = [];
+    const ended = once(reader, "end");
+    // pauseOnConnect leaves the reader paused until resume() is called.
+    const timer = setTimeout(() => reader.on("data", (chunk) => chunks.push(chunk)).resume(), 1000);
+    try {
+        await ended;
+        const [status] = await exited;
+        return { status, stdout: Buffer.concat(chunks).toString("utf8"), stderr };
+    } finally {
+        clearTimeout(timer);
+        server.close();
+    }
 }
 
 // Replaces `from` in `text`, failing the test when `from` is not there, so a
@@ -368,6 +410,30 @@ describe("check-push-repeats-pr ends on its summary line", () => {
             assert.ok(out.length < 100_000, `${out.length} characters of output:\n${out.slice(0, 4000)}`);
         });
     }
+
+    // spawnSync gives the child a Unix socket as stdout, and Node drops the
+    // writes still queued on it when a script calls process.exit, so a test
+    // process that read late saw the output end on a difference (#175).
+    test("the largest output, read 1 s late", { timeout: 60_000 }, async () => {
+        const shape = shapes["an anchor of 21 nested if: keys, used 50 times"];
+        const { dir, sha } = commit(Object.fromEntries(Object.values(places).map((place, i) => [`.forgejo/workflows/p${i}.yml`, anchors + place(shape)])));
+        const { status, stdout, stderr } = await runWithLateReader([scriptPath, sha], dir);
+        assert.equal(status, 1, stderr + stdout.slice(0, 4000));
+        const lines = stdout.trimEnd().split("\n");
+        assert.match(lines.at(-1), /^check-push-repeats-pr: [0-9a-f]{8}: (\d+) difference\(s\); wait on main's run$/, `${stdout.length} characters, ending:\n${stdout.slice(-2000)}`);
+        const differences = Number(lines.at(-1).match(/(\d+) difference/)[1]);
+        assert.equal(lines.length, differences + 1, stdout.slice(-2000));
+
+        // A control child prints as many lines of the same length, then
+        // calls process.exit(1). If its last line still arrives, this reader
+        // is not late enough here to catch the loss, and the check above
+        // proved nothing.
+        const width = Math.ceil(stdout.length / lines.length);
+        const control = `for (let i = 0; i < ${differences}; i++) console.log(String(i).padEnd(${width}, "x"));\nconsole.log("control end");\nprocess.exit(1);\n`;
+        const late = await runWithLateReader(["-e", control], dir);
+        assert.equal(late.status, 1, late.stderr);
+        assert.doesNotMatch(late.stdout, /control end/, `the control child's last line arrived (${late.stdout.length} characters), so a reader 1 s late loses nothing on this machine`);
+    });
 });
 
 test("the script and this test hold none of the names they search for, so the script reads both", () => {

@@ -233,9 +233,12 @@ for (const hit of hits.split("\n").filter(Boolean)) {
 if (differences.length) {
     for (const d of differences) console.log(d);
     console.log(`check-push-repeats-pr: ${commit.slice(0, 8)}: ${differences.length} difference(s); wait on main's run`);
-    process.exit(1);
+    // Not process.exit(1): it drops the lines still queued for a stdout that
+    // its reader drains late, the summary line included (#175).
+    process.exitCode = 1;
+} else {
+    console.log(
+        `check-push-repeats-pr: ${commit.slice(0, 8)}: the push run repeats the PR run ` +
+            `(${workflows.length} workflow file(s), ${scanned.length} file(s) scanned)`,
+    );
 }
-console.log(
-    `check-push-repeats-pr: ${commit.slice(0, 8)}: the push run repeats the PR run ` +
-        `(${workflows.length} workflow file(s), ${scanned.length} file(s) scanned)`,
-);
