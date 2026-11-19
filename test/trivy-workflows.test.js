@@ -263,8 +263,16 @@ test("fails when ci.yml scans after the image is removed", () => {
     assertProblem(moved, read(TRIVY), `${CI}: the Trivy steps are not in order`);
 });
 
+test("fails when trivy.yml checks out another way", () => {
+    // Read the pinned line rather than spell it out, so a digest bump in both
+    // workflows leaves this case working.
+    const trivy = read(TRIVY);
+    const checkout = stepText(trivy, "      - uses: actions/checkout@");
+    const edited = edit(trivy, checkout, "      - uses: actions/checkout@v7\n");
+    assertProblem(read(CI), edited, `${TRIVY}: steps are not ci.yml's checkout`);
+});
+
 for (const [what, from, to] of [
-    ["checks out another way", "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n      # An attempt", "      - uses: actions/checkout@v7\n      # An attempt"],
     ["builds the image another way", '        run: docker build --tag "$IMAGE" .\n', '        run: docker build --pull --tag "$IMAGE" .\n'],
     ["runs the earlier attempts' removal under sh", "        shell: bash\n", "        shell: sh\n"],
     ["gives the earlier attempts' removal another attempt", "          RUN_ATTEMPT: ${{ github.run_attempt }}\n", "          RUN_ATTEMPT: 1\n"],
