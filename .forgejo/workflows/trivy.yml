@@ -4,8 +4,9 @@
 # night and scans it with a fresh Trivy DB (AGENTS.md, "Trivy gate"). Start a
 # scan on demand with
 #   POST /api/v1/repos/simonbrunou/simonbrunou.bzh/actions/workflows/trivy.yml/dispatches {"ref": "main"}
-# The three Trivy steps are the test job's in ci.yml, word for word:
-# test/trivy-workflows.test.js fails `npm test` when they differ.
+# The checkout, the build and the three Trivy steps read the same as the test
+# job's in ci.yml once parsed as YAML: test/trivy-workflows.test.js fails
+# `npm test` when they differ.
 name: Trivy
 
 on:
@@ -24,7 +25,48 @@ jobs:
       # earlier attempt's.
       IMAGE: simonbrunou-bzh:trivy-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - uses: actions/checkout@v7
+      # Every action is pinned by commit SHA, the tag in its comment, as the CI
+      # runner's porting rules ask (homelab-stacks ct-125-ci-runner.md).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # An attempt the runner lost never runs the cleanup step, so remove the
+      # images earlier attempts of this run left, as the CI runner runbook's
+      # "Docker resource names on the shared daemon" asks (copied from cinder's
+      # "Remove earlier attempts' container and image"). The image goes by tag,
+      # never by ID: ci.yml's run of the same tree builds the same image ID.
+      # `--force` would skip a missing tag, but `image rm` still prints an error
+      # for it, so the step checks first. `shell: bash` runs it with `-e`, so a
+      # failed `docker` call fails the step, and `((...))` needs bash.
+      # test/trivy-workflows.test.js runs this text against a stub docker.
+      - name: Remove earlier attempts' images
+        shell: bash
+        env:
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          case "$RUN_ATTEMPT" in
+            '' | 0* | *[!0-9]*)
+              echo "::error::github.run_attempt is '$RUN_ATTEMPT', not a positive integer, so the image names do not tell this run's attempts apart"
+              exit 1
+              ;;
+          esac
+          image_base=${IMAGE%-"$RUN_ATTEMPT"}
+          if [ "$image_base" = "$IMAGE" ]; then
+            echo "::error::IMAGE ($IMAGE) must end in -$RUN_ATTEMPT"
+            exit 1
+          fi
+          if [ "$RUN_ATTEMPT" = 1 ]; then
+            echo "This is attempt 1: no earlier attempt to clean up"
+          fi
+          for ((n = 1; n < RUN_ATTEMPT; n++)); do
+            image="$image_base-$n"
+            found=$(docker images --quiet "$image")
+            if [ -n "$found" ]; then
+              docker image rm --force "$image" >/dev/null
+              state=removed
+            else
+              state=absent
+            fi
+            echo "Attempt $n: image $image $state"
+          done
       - name: Build the production image
         run: docker build --tag "$IMAGE" .
       # trivy-action's own setup step checks out aquasecurity/trivy from github.com

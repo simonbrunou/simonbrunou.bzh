@@ -186,10 +186,13 @@ so a new advisory against `main`'s image shows up first in the nightly run
 or on the next PR. To start a nightly run by hand, call
 `POST $API/actions/workflows/trivy.yml/dispatches` with `{"ref": "main"}`
 (or a branch name), `$API` as in `docs/agents/issue-tracker.md`. The three
-Trivy steps are the same in both files: `test/trivy-workflows.test.js` fails
-`npm test` when they differ, when either file lacks one, when the scan step's
-`exit-code` is not 1, or when that step gains a key such as `if` or
-`continue-on-error`.
+Trivy steps read the same in both files once parsed as YAML:
+`test/trivy-workflows.test.js` fails `npm test` when they differ, when
+either file lacks one, when the scan step's `exit-code` is not 1, or when
+that step gains a key such as `if` or `continue-on-error`. trivy.yml tags
+its image with the run id and attempt and first removes the images earlier
+attempts of the run left, as the CI runner runbook asks; the same test runs
+that step against a stub `docker`.
 
 - **Reading a red run.** A red `aquasecurity/trivy-action` step is an
   advisory: its log ends with a table per target that lists each library,
@@ -218,7 +221,7 @@ Trivy steps are the same in both files: `test/trivy-workflows.test.js` fails
 - **`scripts/check-push-repeats-pr.js` exits 1 on every SHA since #180**:
   trivy.yml runs on neither `push` nor `pull_request`, and the Trivy steps
   use `${{ env.IMAGE }}` and runner variable names. Merge authority then
-  says to wait on `main`'s run.
+  says to wait on `main`'s run. #182 tracks teaching the script these forms.
 
 **Operating production.** Before queueing a deploy, changing application 4's
 settings or custom Docker options, or running browser checks against
@@ -324,7 +327,8 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   with its dependencies installed. It checks that the `push` run on `main`
   repeats the PR run's jobs and steps. Its header lists what it reads and
   what it cannot see. On exit 0, skip the wait. On any other exit, wait as
-  for different hashes. The script prints each difference it found.
+  for different hashes. The script prints each difference it found. Until
+  #182 lands it exits 1 on every SHA, on the Trivy steps (**Trivy gate**).
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.

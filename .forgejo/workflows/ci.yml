@@ -12,8 +12,10 @@ jobs:
       IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}
       CONTAINER: simonbrunou-bzh-ci-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      # Every action is pinned by commit SHA, the tag in its comment, as the CI
+      # runner's porting rules ask (homelab-stacks ct-125-ci-runner.md).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
       # Before npm ci, so a Node pin that moved alone fails here, by name.
@@ -71,8 +73,9 @@ jobs:
           test "$code" = 0
       # The Trivy gate (AGENTS.md, "Trivy gate"): a HIGH or CRITICAL advisory
       # with a fixed release turns the job red. These three steps are copied
-      # from cinder's container job and must match trivy.yml's word for word:
-      # test/trivy-workflows.test.js fails `npm test` when they differ.
+      # from cinder's container job and must read the same as trivy.yml's once
+      # parsed as YAML: test/trivy-workflows.test.js fails `npm test` when they
+      # differ.
       #
       # trivy-action's own setup step checks out aquasecurity/trivy from github.com
       # with this forge's job token, which github.com rejects. Install the same
