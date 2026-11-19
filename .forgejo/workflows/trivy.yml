@@ -1,0 +1,69 @@
+# Coolify builds production's image itself, and the push run on main scans the
+# image of a commit whose PR run scanned it already. A new advisory against an
+# unchanged image shows up only here: this workflow builds main's image every
+# night and scans it with a fresh Trivy DB (AGENTS.md, "Trivy gate"). Start a
+# scan on demand with
+#   POST /api/v1/repos/simonbrunou/simonbrunou.bzh/actions/workflows/trivy.yml/dispatches {"ref": "main"}
+# The three Trivy steps are the test job's in ci.yml, word for word:
+# test/trivy-workflows.test.js fails `npm test` when they differ.
+name: Trivy
+
+on:
+  schedule:
+    # 01:30 UTC is 02:30 in Paris in winter and 03:30 in summer, before the
+    # host's backups, updates and CI runner prune (04:00 to 05:45 Paris).
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    env:
+      # The job drives the runner's own Docker daemon, which other jobs share:
+      # the run id and attempt keep this image apart from ci.yml's and from an
+      # earlier attempt's.
+      IMAGE: simonbrunou-bzh:trivy-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the production image
+        run: docker build --tag "$IMAGE" .
+      # trivy-action's own setup step checks out aquasecurity/trivy from github.com
+      # with this forge's job token, which github.com rejects. Install the same
+      # Trivy version directly and tell the action to skip its setup. The release
+      # tarball is pinned by sha256 (from the release's trivy_0.70.0_checksums.txt)
+      # rather than piping an install script from the network into a shell.
+      - name: Install Trivy
+        run: |
+          set -eu
+          cd "$(mktemp -d)"
+          curl -sfL -o trivy.tar.gz https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_Linux-64bit.tar.gz
+          echo "8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9  trivy.tar.gz" | sha256sum -c -
+          tar -xzf trivy.tar.gz -C /usr/local/bin trivy
+      # cinder#835: see the same step in ci.yml.
+      - name: Download the Trivy vulnerability DB
+        run: |
+          for repo in ghcr.io/aquasecurity/trivy-db:2 mirror.gcr.io/aquasec/trivy-db:2; do
+            if env -u GITHUB_TOKEN timeout --kill-after=10s 3m \
+              trivy image --download-db-only --db-repository "$repo" \
+              --cache-dir "$GITHUB_WORKSPACE/.cache/trivy"; then
+              exit 0
+            else
+              echo "::warning::Trivy DB download from $repo failed (exit $?)"
+            fi
+          done
+          exit 1
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true"
+        with:
+          skip-setup-trivy: true
+          cache: false
+          image-ref: ${{ env.IMAGE }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          # The action fails when this file is missing and prints it under "Found ignorefile".
+          trivyignores: .trivyignore
+          exit-code: 1
+      - name: Remove the scanned image
+        if: always()
+        run: docker image rm -f "$IMAGE" || true

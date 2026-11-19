@@ -1,0 +1,7 @@
+# CVEs the Trivy scans accept (ci.yml's test job and trivy.yml), read through
+# trivy-action's `trivyignores` input. An entry goes here only for a CVE that
+# no fixed release reachable from this Dockerfile fixes yet: no newer base
+# digest, no Dockerfile change. AGENTS.md "Trivy gate" says how to look.
+# Each entry is one bare CVE or GHSA ID, with comment lines right above it
+# that name the package and version, why the site's use is or is not exposed,
+# and the condition that removes the entry.
