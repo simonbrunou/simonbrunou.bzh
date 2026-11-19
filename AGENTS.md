@@ -147,7 +147,9 @@ assertions, so run `npm test` after touching `site.js`. Key concerns:
 `Dockerfile` with its Dockerfile build pack on every push to `main`, and
 Traefik fronts the container. The image is the Alpine `node` image, with no
 browser: `puppeteer-core` is a devDependency only. Dependencies install with
-`npm ci --omit=dev` from the lockfile. The `COPY` lines are the allowlist of
+`npm ci --omit=dev` from the lockfile in the `deps` stage. The `runtime`
+stage deletes npm and npx, which the server never runs: npm's bundled
+packages held the image's only HIGH advisories (#180). The `COPY` lines are the allowlist of
 what ships: `server.js`, `site.js`, `package.json`, production
 `node_modules`, and every file `site.js` serves (`profile.js` and `data.js`
 are also imports of `site.js`). The files belong to root and
@@ -170,9 +172,56 @@ Docker to report it healthy, and runs
 `scripts/check-image.js` inside it against the files the checkout's
 `site.js` serves: each of their routes answers, `/app` outside
 `node_modules` holds exactly those files plus `server.js`, `site.js` and
-`package.json`, and nothing under `/app` is writable. Last, it runs
+`package.json`, and nothing under `/app` is writable. It then runs
 `docker stop` and expects exit code 0, as when Coolify replaces the
-container on a deploy.
+container on a deploy. Last, it scans the image with Trivy (**Trivy gate**
+below).
+
+**Trivy gate** (#180, copied from cinder). Two workflows scan the image with
+Trivy 0.70.0 for HIGH and CRITICAL advisories that have a fixed release, and
+fail when they find one: ci.yml's `test` job on every PR and push, and
+`.forgejo/workflows/trivy.yml` every night at 01:30 UTC on `main`. Coolify
+builds production's image itself and `main` takes no push between merges,
+so a new advisory against `main`'s image shows up first in the nightly run
+or on the next PR. To start a nightly run by hand, call
+`POST $API/actions/workflows/trivy.yml/dispatches` with `{"ref": "main"}`
+(or a branch name), `$API` as in `docs/agents/issue-tracker.md`. The three
+Trivy steps read the same in both files once parsed as YAML:
+`test/trivy-workflows.test.js` fails `npm test` when they differ, when
+either file lacks one, when the scan step's `exit-code` is not 1, or when
+that step gains a key such as `if` or `continue-on-error`. trivy.yml tags
+its image with the run id and attempt and first removes the images earlier
+attempts of the run left, as the CI runner runbook asks; the same test runs
+that step against a stub `docker`.
+
+- **Reading a red run.** A red `aquasecurity/trivy-action` step is an
+  advisory: its log ends with a table per target that lists each library,
+  CVE, installed and fixed version. A red "Install Trivy" or "Download the
+  Trivy vulnerability DB" step is a download failure (github.com, ghcr.io or
+  mirror.gcr.io), not an advisory: re-run the job.
+- **A new advisory turns every PR red**, whatever its diff, and Renovate's
+  automerge PRs with it, until a fix lands on `main`. When the CVEs name
+  packages the PR does not change, fix them in their own PR first, then
+  merge `origin/main` into the blocked branches.
+- **The fix depends on the target.** A target under `app/node_modules` is a
+  production dependency: move it to a fixed release in `package-lock.json`
+  (Renovate may have the PR open already). The Alpine target, or a file the
+  base image ships under `usr/`, comes from `node:26-alpine`: bump the
+  `FROM` digest in the `Dockerfile` once a rebuilt base holds the fix (look
+  for Renovate's digest PR first). A tool in the base that the server never
+  runs gets deleted in the `runtime` stage, as npm was. Scan the rebuilt
+  image locally before pushing:
+  `trivy image --severity HIGH,CRITICAL --ignore-unfixed <image>`.
+- **`.trivyignore` is the last resort.** An entry goes there only for a CVE
+  that no fixed release reachable from this `Dockerfile` fixes yet: no newer
+  base digest, no dependency release, no deletion. Each entry is a bare CVE
+  or GHSA ID with comment lines above it naming the package and version,
+  whether the site's use reaches the flaw, and the condition that removes
+  the entry. The scan step prints the file under "Found ignorefile".
+- **`scripts/check-push-repeats-pr.js` exits 1 on every SHA since #180**:
+  trivy.yml runs on neither `push` nor `pull_request`, and the Trivy steps
+  use `${{ env.IMAGE }}` and runner variable names. Merge authority then
+  says to wait on `main`'s run. #182 tracks teaching the script these forms.
 
 **Operating production.** Before queueing a deploy, changing application 4's
 settings or custom Docker options, or running browser checks against
@@ -278,7 +327,8 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   with its dependencies installed. It checks that the `push` run on `main`
   repeats the PR run's jobs and steps. Its header lists what it reads and
   what it cannot see. On exit 0, skip the wait. On any other exit, wait as
-  for different hashes. The script prints each difference it found.
+  for different hashes. The script prints each difference it found. Until
+  #182 lands it exits 1 on every SHA, on the Trivy steps (**Trivy gate**).
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.

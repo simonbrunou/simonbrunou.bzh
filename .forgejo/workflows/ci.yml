@@ -12,8 +12,10 @@ jobs:
       IMAGE: simonbrunou-bzh:ci-${{ github.run_id }}
       CONTAINER: simonbrunou-bzh-ci-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      # Every action is pinned by commit SHA, the tag in its comment, as the CI
+      # runner's porting rules ask (homelab-stacks ct-125-ci-runner.md).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
       # Before npm ci, so a Node pin that moved alone fails here, by name.
@@ -69,6 +71,57 @@ jobs:
           code=$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER")
           echo "exit code: $code"
           test "$code" = 0
+      # The Trivy gate (AGENTS.md, "Trivy gate"): a HIGH or CRITICAL advisory
+      # with a fixed release turns the job red. These three steps are copied
+      # from cinder's container job and must read the same as trivy.yml's once
+      # parsed as YAML: test/trivy-workflows.test.js fails `npm test` when they
+      # differ.
+      #
+      # trivy-action's own setup step checks out aquasecurity/trivy from github.com
+      # with this forge's job token, which github.com rejects. Install the same
+      # Trivy version directly and tell the action to skip its setup. The release
+      # tarball is pinned by sha256 (from the release's trivy_0.70.0_checksums.txt)
+      # rather than piping an install script from the network into a shell.
+      - name: Install Trivy
+        run: |
+          set -eu
+          cd "$(mktemp -d)"
+          curl -sfL -o trivy.tar.gz https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_Linux-64bit.tar.gz
+          echo "8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9  trivy.tar.gz" | sha256sum -c -
+          tar -xzf trivy.tar.gz -C /usr/local/bin trivy
+      # cinder#835: Trivy moves on to its second DB repository only after some
+      # registry errors, not after a stalled download, and its --timeout does not
+      # bound the download. So fetch the DB here, one attempt per repository under
+      # coreutils `timeout`, into the directory the action points Trivy at (its
+      # cache-dir default), and scan without updating it. The action's own cache
+      # stays off: restoring it after this step could swap in an older DB. The Java
+      # DB is not fetched: the image ships no JARs. GITHUB_TOKEN is unset for the
+      # download: Trivy sends it to ghcr.io, and this forge's job token gets DENIED
+      # there.
+      - name: Download the Trivy vulnerability DB
+        run: |
+          for repo in ghcr.io/aquasecurity/trivy-db:2 mirror.gcr.io/aquasec/trivy-db:2; do
+            if env -u GITHUB_TOKEN timeout --kill-after=10s 3m \
+              trivy image --download-db-only --db-repository "$repo" \
+              --cache-dir "$GITHUB_WORKSPACE/.cache/trivy"; then
+              exit 0
+            else
+              echo "::warning::Trivy DB download from $repo failed (exit $?)"
+            fi
+          done
+          exit 1
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true"
+        with:
+          skip-setup-trivy: true
+          cache: false
+          image-ref: ${{ env.IMAGE }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          # The action fails when this file is missing and prints it under "Found ignorefile".
+          trivyignores: .trivyignore
+          exit-code: 1
       - name: Remove the container and image
         if: always()
         run: |

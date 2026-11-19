@@ -38,6 +38,11 @@ COPY index.html 404.html data.js profile.js app.js styles.css \
 COPY images/*.webp images/
 COPY fonts/*.woff2 fonts/
 
+# The server never runs npm (CMD runs node), and npm's bundled packages are
+# the only HIGH or CRITICAL advisories Trivy found in the image (#180). The
+# deps stage keeps npm for `npm ci`. The base ships no corepack or yarn.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 # The base image's unprivileged user.
 USER node
 EXPOSE 3000
