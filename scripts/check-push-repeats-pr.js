@@ -36,11 +36,10 @@
 //   - a file whose YAML checks throw (an `if` holding an object with a
 //     `toString` key), naming the error, so the files after it are still
 //     checked;
-// - in any file outside Markdown and graphify-out/, a name made of GITHUB,
-//   FORGEJO or FORGE and an underscore, which a script could read the event
-//   through, and the names of the actions toolkit's github module and its
-//   event property. Neither this script nor its test holds one, so both are
-//   read.
+// - in any file outside Markdown, a name made of GITHUB, FORGEJO or FORGE
+//   and an underscore, which a script could read the event through, and the
+//   names of the actions toolkit's github module and its event property.
+//   Neither this script nor its test holds one, so both are read.
 //
 // It cannot see code that branches on commit metadata (the merge commit's
 // subject, SHA and parents differ from the pushed SHA's) or reads the event
@@ -225,7 +224,7 @@ for (const file of scanned) {
 }
 
 const pattern = [...RUNNER_NAMES, ...EVENT_READS].join("|");
-const hits = git(["grep", "-nE", pattern, commit, "--", ".", ":!*.md", ":!graphify-out"], [0, 1]);
+const hits = git(["grep", "-nE", pattern, commit, "--", ".", ":!*.md"], [0, 1]);
 for (const hit of hits.split("\n").filter(Boolean)) {
     differences.push(`${hit.replace(`${commit}:`, "")}: reads the event or names a runner variable`);
 }

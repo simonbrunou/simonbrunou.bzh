@@ -153,9 +153,6 @@ describe("check-push-repeats-pr passes", () => {
     test("an action from data.forgejo.org", () => {
         assertPass({ [CI]: ciWith("      - uses: https://data.forgejo.org/actions/setup-node@v7") });
     });
-    test("a runner variable name in graphify-out", () => {
-        assertPass({ "graphify-out/graph.json": `{"label": "${GH}REF"}\n` });
-    });
     test("run from a subfolder of the repo", () => {
         assertPass({}, { subdir: "scripts" });
     });
