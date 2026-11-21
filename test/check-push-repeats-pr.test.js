@@ -469,6 +469,7 @@ const dbStep = [
     "          exit 1",
 ];
 const RUN_ATTEMPT = /trivy\.yml:\d+: an expression other than [^:]*: \$\{\{ github\.run_attempt \}\}/;
+const RUN_ATTEMPT_DECODED = /trivy\.yml:\d+: \S+ decodes to an expression other than [^:]*: \$\{\{ github\.run_attempt \}\}/;
 const ENV_RAW = /ci\.yml:\d+: an expression other than [^:]*: \$\{\{ env\.IMAGE \}\}/;
 const ENV_DECODED = /ci\.yml:\d+: \S+ decodes to an expression other than [^:]*: \$\{\{ env\.IMAGE \}\}/;
 const RUNNER = (file, text) => new RegExp(`${file.replace(/\./g, "\\.")}:\\d+:.*${text}.*: reads the event or names a runner variable`);
@@ -503,14 +504,21 @@ describe("check-push-repeats-pr passes the Trivy gate's forms", () => {
 });
 
 describe("check-push-repeats-pr keeps the limits of an off-event workflow", () => {
+    // Each of the three skips an off-event workflow gets: the raw scan, the
+    // decoded walk and the trigger check.
+    function assertOffEventDifference(files) {
+        const out = assertDifference(files, RUN_ATTEMPT);
+        assert.match(out, RUN_ATTEMPT_DECODED);
+        assert.match(out, /trivy\.yml: no pull_request trigger/);
+    }
     test("plus a push trigger", () => {
-        assertDifference({ [TRIVY]: edit(offEvent, "  workflow_dispatch:", "  workflow_dispatch:\n  push:") }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: edit(offEvent, "  workflow_dispatch:", "  workflow_dispatch:\n  push:") });
     });
     test("plus a workflow_call trigger", () => {
-        assertDifference({ [TRIVY]: edit(offEvent, "  workflow_dispatch:", "  workflow_dispatch:\n  workflow_call:") }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: edit(offEvent, "  workflow_dispatch:", "  workflow_dispatch:\n  workflow_call:") });
     });
     test("an empty on: map", () => {
-        assertDifference({ [TRIVY]: edit(offEvent, /on:\n[\s\S]*?workflow_dispatch:/, "on: {}") }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: edit(offEvent, /on:\n[\s\S]*?workflow_dispatch:/, "on: {}") });
     });
     test("the missing triggers of an empty on: map", () => {
         assertDifference({ [TRIVY]: edit(offEvent, /on:\n[\s\S]*?workflow_dispatch:/, "on: {}") }, /trivy\.yml: no push trigger/);
@@ -519,16 +527,16 @@ describe("check-push-repeats-pr keeps the limits of an off-event workflow", () =
         assertDifference({ [TRIVY]: offEventWith(`      - run: echo "$${GH}REF"`) }, RUNNER(TRIVY, `${GH}REF`));
     });
     test("an alias in the file", () => {
-        assertDifference({ [TRIVY]: `x-a: &a b\nx-b: *a\n${offEvent}` }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: `x-a: &a b\nx-b: *a\n${offEvent}` });
     });
     test("a !!str tag in the file", () => {
-        assertDifference({ [TRIVY]: offEventWith("      - run: !!str npm test") }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: offEventWith("      - run: !!str npm test") });
     });
     test("a YAML error in the off-event file", () => {
         assertDifference({ [TRIVY]: offEventWith("      - run: a", "        run: b") }, RUN_ATTEMPT);
     });
     test("a YAML warning in the file", () => {
-        assertDifference({ [TRIVY]: `%FOO bar\n---\n${offEvent}` }, RUN_ATTEMPT);
+        assertOffEventDifference({ [TRIVY]: `%FOO bar\n---\n${offEvent}` });
     });
     test("a YAML file under .forgejo that is not a workflow", () => {
         assertDifference({ ".forgejo/config/extra.yml": "on: workflow_dispatch\nsteps:\n  - run: echo ${{ github.ref }}\n" }, /extra\.yml:3: an expression other/);
@@ -607,6 +615,10 @@ describe("check-push-repeats-pr keeps the limits of the Trivy DB step", () => {
             assertDifference({ [CI]: ciWith(...dbStep, `        ${key}`) }, RUNNER(CI, `env -u ${TOKEN}`));
         });
     }
+    test("a comment after the one-line run", () => {
+        const step = ["      - name: Download the Trivy vulnerability DB", `        run: echo ok # env -u ${TOKEN}`];
+        assertDifference({ [CI]: ciWith(...step) }, RUNNER(CI, `run: echo ok # env -u ${TOKEN}`));
+    });
     test("the step's run as a map", () => {
         const step = ["      - name: Download the Trivy vulnerability DB", "        run:", `          a: env -u ${TOKEN} true`];
         assertDifference({ [CI]: ciWith(...step) }, RUNNER(CI, `env -u ${TOKEN}`));
@@ -621,13 +633,14 @@ describe("check-push-repeats-pr keeps the limits of the Trivy DB step", () => {
     test("a runner name on the line right after the run", () => {
         assertDifference({ [CI]: ciWith(...dbStep, `      - run: env -u ${TOKEN} true`) }, RUNNER(CI, `- run: env -u ${TOKEN} true`));
     });
-    // On line 19 of scripts/db.sh, as on the line of ci.yml's DB step that
-    // holds the same text, so only the file name tells them apart.
+    // On lines 19 and 20 of scripts/db.sh, as on the lines of ci.yml's DB
+    // step that hold the same forms, and no longer than those lines, so only
+    // the file name tells them apart.
     test("the two forms in a file under scripts/", () => {
-        const script = `${"\n".repeat(18)}env -u ${TOKEN} trivy --cache-dir "$${WS}/.cache/trivy"\n`;
+        const script = `${"\n".repeat(18)}env -u ${TOKEN} true\nls "$${WS}/.cache/trivy"\n`;
         const out = assertDifference({ [CI]: ciWith(...dbStep), "scripts/db.sh": script }, RUNNER("scripts/db.sh", `env -u ${TOKEN}`));
-        assert.match(out, /scripts\/db\.sh:19:/);
-        assert.doesNotMatch(out, /ci\.yml:19:/);
+        assert.match(out, RUNNER("scripts/db.sh", `${WS}/\\.cache/trivy`));
+        assert.doesNotMatch(out, /ci\.yml:(19|20):/);
     });
     // The file holds a workflow's jobs, so only its path keeps it out.
     test("the step in an action.yml", () => {
