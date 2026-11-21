@@ -218,10 +218,6 @@ that step against a stub `docker`.
   or GHSA ID with comment lines above it naming the package and version,
   whether the site's use reaches the flaw, and the condition that removes
   the entry. The scan step prints the file under "Found ignorefile".
-- **`scripts/check-push-repeats-pr.js` exits 1 on every SHA since #180**:
-  trivy.yml runs on neither `push` nor `pull_request`, and the Trivy steps
-  use `${{ env.IMAGE }}` and runner variable names. Merge authority then
-  says to wait on `main`'s run. #182 tracks teaching the script these forms.
 
 **Operating production.** Before queueing a deploy, changing application 4's
 settings or custom Docker options, or running browser checks against
@@ -317,8 +313,7 @@ After the merge, take the merge SHA from the `merge_commit_sha` field of
   with its dependencies installed. It checks that the `push` run on `main`
   repeats the PR run's jobs and steps. Its header lists what it reads and
   what it cannot see. On exit 0, skip the wait. On any other exit, wait as
-  for different hashes. The script prints each difference it found. Until
-  #182 lands it exits 1 on every SHA, on the Trivy steps (**Trivy gate**).
+  for different hashes. The script prints each difference it found.
 
 Check the production deploy whatever the hashes say, as the next paragraph
 says.
