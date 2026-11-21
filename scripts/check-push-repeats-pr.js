@@ -41,9 +41,35 @@
 //   names of the actions toolkit's github module and its event property.
 //   Neither this script nor its test holds one, so both are read.
 //
+// It accepts three forms that the list above would report (#182):
+//
+// - An off-event workflow: one that reads as YAML with no error, warning,
+//   tag or alias, and whose `on`, as a string, a list or a map, names
+//   `schedule` or `workflow_dispatch` or both and nothing else. It runs in
+//   neither the PR run nor the push run, so its missing `push` and
+//   `pull_request` triggers and its `${{ }}` expressions, raw and decoded,
+//   pass. Every other check still reads it, the runner-name scan included:
+//   `npm test` runs trivy.yml's step text.
+// - `${{ env.<NAME> }}`, its body exactly `env.` and an identifier, in a
+//   step of a workflow job (`jobs.<id>.steps`), raw and decoded, when that
+//   job's own `env` sets NAME to a string whose only expressions are
+//   `${{ github.run_id }}` and the step's own `env` does not set NAME. A
+//   NAME set only at workflow level or in another job, an index or compound
+//   form, and any use outside a workflow's steps still count.
+// - In a workflow step whose keys are exactly `name` and `run`, its name
+//   `Download the Trivy vulnerability DB`, the runner's token and workspace
+//   names (GITHUB, then `_TOKEN` or `_WORKSPACE`) on the lines of its `run`,
+//   only as `env -u` of the token and as the workspace followed by
+//   `/.cache/trivy`. The scan removes those two forms from the part of the
+//   line the value spans and reports any name left on the line. A line that
+//   starts with `#`, and a comment after a one-line value, get no allowance.
+//
+// The last two need a file that reads as YAML with no error.
+//
 // It cannot see code that branches on commit metadata (the merge commit's
-// subject, SHA and parents differ from the pushed SHA's) or reads the event
-// by a route the list above leaves out. Such code passes.
+// subject, SHA and parents differ from the pushed SHA's), reads the event
+// by a route the list above leaves out, or exports a NAME that a later
+// step's `${{ env.<NAME> }}` reads. Such code passes.
 //
 // Exit 0: no difference, so the push run repeats the PR run. Exit 1: it
 // printed a difference, so wait on main's run. Exit 2: git failed, the SHA
@@ -57,6 +83,11 @@ const EVENT_READS = [["@actions", "github"].join("/"), ["event", "Name"].join(""
 const ALLOWED_TRIGGERS = new Set(["push", "pull_request", "schedule", "workflow_dispatch"]);
 const ALLOWED_EXPRESSION = "github.run_id";
 const EXPRESSION = /\$\{\{([\s\S]*?)\}\}/g;
+const OFF_EVENT_TRIGGERS = new Set(["schedule", "workflow_dispatch"]);
+const ENV_REFERENCE = /^env\.([A-Za-z_][A-Za-z0-9_]*)$/;
+const TRIVY_DB_STEP = "Download the Trivy vulnerability DB";
+const [TOKEN, WORKSPACE] = ["TOKEN", "WORKSPACE"].map((name) => RUNNER_NAMES[0] + name);
+const TRIVY_DB_FORMS = [new RegExp(`env -u ${TOKEN}(?![A-Za-z0-9_])`, "g"), `$${WORKSPACE}/.cache/trivy`];
 
 function fail(message) {
     console.error(`check-push-repeats-pr: ${message}`);
@@ -155,67 +186,185 @@ function checkKeys(file, node, where, seen = new Set()) {
 // Every node of the file as the `yaml` package decodes it, keys included:
 // a tag, an alias, and an expression in a decoded string, which the raw-text
 // scan misses when an escape or a line continuation builds it.
-function walk(file, lines, node, where) {
+function walk(file, yamlFile, node, where) {
     if (!node) return;
     // A map's entries, and the items of an `!!omap` or `!!pairs` sequence,
     // which have no range of their own.
     if (YAML.isPair(node)) {
         const path = `${where}.${YAML.isScalar(node.key) ? String(node.key.value) : "?"}`;
-        walk(file, lines, node.key, `${path} (key)`);
-        return walk(file, lines, node.value, path);
+        walk(file, yamlFile, node.key, `${path} (key)`);
+        return walk(file, yamlFile, node.value, path);
     }
-    const at = `${file}:${lines.linePos(node.range[0]).line}: ${where || "the document"}`;
+    const at = `${file}:${yamlFile.lines.linePos(node.range[0]).line}: ${where || "the document"}`;
     if (node.tag) differences.push(`${at} has a tag: ${node.tag.replace(/^tag:yaml\.org,2002:/, "!!")}`);
     if (YAML.isAlias(node)) {
         differences.push(`${at} is an alias: *${node.source}`);
     } else if (YAML.isScalar(node)) {
-        if (typeof node.value !== "string") return;
+        if (typeof node.value !== "string" || yamlFile.offEvent) return;
         for (const match of node.value.matchAll(EXPRESSION)) {
-            if (match[1].trim() !== ALLOWED_EXPRESSION) {
+            if (!expressionPasses(match[1], yamlFile.steps.get(node))) {
                 differences.push(`${at} decodes to an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
             }
         }
     } else if (YAML.isSeq(node)) {
-        node.items.forEach((item, i) => walk(file, lines, item, `${where}[${i}]`));
+        node.items.forEach((item, i) => walk(file, yamlFile, item, `${where}[${i}]`));
     } else if (YAML.isMap(node)) {
-        for (const pair of node.items) walk(file, lines, pair, where);
+        for (const pair of node.items) walk(file, yamlFile, pair, where);
     }
+}
+
+const isMap = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const sets = (env, name) => isMap(env) && Object.hasOwn(env, name);
+const onlyRunId = (text) => [...text.matchAll(EXPRESSION)].every((match) => match[1].trim() === ALLOWED_EXPRESSION);
+
+// The body of a `${{ }}` expression passes when it is `github.run_id`, or
+// `env.<NAME>` in a step (`step` holds its job's and its own `env`) whose
+// job sets NAME to a string holding only `${{ github.run_id }}`.
+function expressionPasses(body, step) {
+    if (body.trim() === ALLOWED_EXPRESSION) return true;
+    const name = body.trim().match(ENV_REFERENCE)?.[1];
+    if (!name || !step || !sets(step.jobEnv, name) || step.env != null && (!isMap(step.env) || sets(step.env, name))) return false;
+    const value = step.jobEnv[name];
+    return typeof value === "string" && onlyRunId(value);
+}
+
+// The decoded `on` names `schedule` or `workflow_dispatch` or both, and
+// nothing else, as a string, a list or a map.
+function isOffEvent(doc) {
+    const on = isMap(doc) ? doc.on : undefined;
+    let names;
+    if (typeof on === "string") names = [on];
+    else if (Array.isArray(on)) names = on;
+    else if (isMap(on)) names = Object.keys(on);
+    else return false;
+    return names.length > 0 && names.every((name) => OFF_EVENT_TRIGGERS.has(name));
+}
+
+function hasTagOrAlias(parsed) {
+    let found = false;
+    YAML.visit(parsed, {
+        Node(_, node) {
+            if (!node.tag && !YAML.isAlias(node)) return undefined;
+            found = true;
+            return YAML.visit.BREAK;
+        },
+    });
+    return found;
+}
+
+// The lines of a scalar's value, without a block scalar's header line, each
+// with the columns its value spans: a comment after a plain or quoted value
+// on its line lies outside them.
+function valueSpans(lines, node) {
+    const block = node.type === "BLOCK_LITERAL" || node.type === "BLOCK_FOLDED";
+    const first = lines.linePos(node.range[0]).line + (block ? 1 : 0);
+    const last = lines.linePos(Math.max(node.range[0], node.range[1] - 1)).line;
+    const spans = new Map();
+    for (let line = first; line <= last; line++) {
+        const start = lines.lineStarts[line - 1];
+        const next = lines.lineStarts[line] ?? Infinity;
+        spans.set(line, [Math.max(node.range[0], start) - start, Math.min(node.range[1], next) - start]);
+    }
+    return spans;
+}
+
+// What the allowances need from a workflow read with no YAML error: for
+// each scalar (key or value) in a job's step, that step's `env` and its
+// job's; and the lines of each Trivy DB step's `run`.
+function readSteps(yamlFile) {
+    const jobs = yamlFile.parsed.contents?.get?.("jobs", true);
+    if (!YAML.isMap(jobs) || !isMap(yamlFile.doc?.jobs)) return;
+    for (const pair of jobs.items) {
+        const job = YAML.isScalar(pair.key) ? yamlFile.doc.jobs[pair.key.value] : undefined;
+        const stepNodes = YAML.isMap(pair.value) ? pair.value.get("steps", true) : undefined;
+        if (!isMap(job) || !Array.isArray(job.steps) || !YAML.isSeq(stepNodes)) continue;
+        stepNodes.items.forEach((stepNode, i) => {
+            const step = job.steps[i];
+            if (!isMap(step) || !YAML.isMap(stepNode)) return;
+            const context = { jobEnv: job.env, env: step.env };
+            YAML.visit(stepNode, {
+                Scalar(_, node) {
+                    yamlFile.steps.set(node, context);
+                },
+            });
+            const keys = Object.keys(step).sort().join(" ");
+            const run = stepNode.get("run", true);
+            if (keys === "name run" && step.name === TRIVY_DB_STEP && YAML.isScalar(run)) {
+                for (const [line, span] of valueSpans(yamlFile.lines, run)) yamlFile.trivyDbLines.set(line, span);
+            }
+        });
+    }
+}
+
+// Reads a scanned file as YAML once, before any check, since the raw-text
+// scan needs to know what the allowances accept.
+function readYaml(file, text) {
+    const lines = new YAML.LineCounter();
+    const parsed = YAML.parseDocument(text, { lineCounter: lines });
+    const yamlFile = { lines, parsed, doc: undefined, docError: undefined, offEvent: false, steps: new Map(), trivyDbLines: new Map() };
+    if (parsed.errors.length) return yamlFile;
+    try {
+        // Throws on an alias whose anchor is missing, which parsing allows.
+        yamlFile.doc = parsed.toJS();
+    } catch (err) {
+        yamlFile.docError = err;
+        return yamlFile;
+    }
+    if (!workflows.includes(file)) return yamlFile;
+    yamlFile.offEvent = !parsed.warnings.length && !hasTagOrAlias(parsed) && isOffEvent(yamlFile.doc);
+    readSteps(yamlFile);
+    return yamlFile;
 }
 
 // Every check of a scanned file that reads it as YAML. An error can leave
 // the document half read, so it stops them; a warning does not.
-function checkYaml(file, text) {
-    const lines = new YAML.LineCounter();
-    const parsed = YAML.parseDocument(text, { lineCounter: lines });
+function checkYaml(file, yamlFile) {
+    const { parsed } = yamlFile;
     for (const problem of [...parsed.errors, ...parsed.warnings]) {
         differences.push(`${file}: not readable as YAML (${problem.message.split("\n")[0]})`);
     }
     if (parsed.errors.length) return;
-    walk(file, lines, parsed.contents, "");
-    let doc;
-    try {
-        // Throws on an alias whose anchor is missing, which parsing allows.
-        doc = parsed.toJS();
-    } catch (err) {
-        return differences.push(`${file}: not readable as YAML (${err.message.split("\n")[0]})`);
-    }
-    checkKeys(file, doc, "");
+    walk(file, yamlFile, parsed.contents, "");
+    if (yamlFile.docError) return differences.push(`${file}: not readable as YAML (${yamlFile.docError.message.split("\n")[0]})`);
+    checkKeys(file, yamlFile.doc, "");
     if (workflows.includes(file)) {
-        checkTriggers(file, doc);
-        checkJobs(file, doc);
+        if (!yamlFile.offEvent) checkTriggers(file, yamlFile.doc);
+        checkJobs(file, yamlFile.doc);
     }
 }
 
+// The step of a job that holds the raw text from `start` to `end`, if any.
+function stepAt(yamlFile, start, end) {
+    for (const [node, step] of yamlFile.steps) {
+        if (node.range[0] <= start && end <= node.range[1]) return step;
+    }
+    return undefined;
+}
+
+const trivyDbLines = new Map();
 for (const file of scanned) {
     const text = git(["show", `${commit}:${file}`]);
-    for (const match of text.matchAll(EXPRESSION)) {
-        if (match[1].trim() !== ALLOWED_EXPRESSION) {
-            const line = text.slice(0, match.index).split("\n").length;
-            differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
+    // A file that the script fails to read gets no allowance, but the raw
+    // scan still reads it.
+    let yamlFile = { offEvent: false, steps: new Map(), trivyDbLines: new Map() };
+    let failure;
+    try {
+        yamlFile = readYaml(file, text);
+    } catch (err) {
+        failure = err;
+    }
+    trivyDbLines.set(file, yamlFile.trivyDbLines);
+    if (!yamlFile.offEvent) {
+        for (const match of text.matchAll(EXPRESSION)) {
+            if (!expressionPasses(match[1], stepAt(yamlFile, match.index, match.index + match[0].length))) {
+                const line = text.slice(0, match.index).split("\n").length;
+                differences.push(`${file}:${line}: an expression other than \${{ ${ALLOWED_EXPRESSION} }}: ${match[0]}`);
+            }
         }
     }
     try {
-        checkYaml(file, text);
+        if (failure) throw failure;
+        checkYaml(file, yamlFile);
     } catch (err) {
         // A shape the checks do not expect, such as an object with a
         // `toString` key where a string belongs.
@@ -226,7 +375,15 @@ for (const file of scanned) {
 const pattern = [...RUNNER_NAMES, ...EVENT_READS].join("|");
 const hits = git(["grep", "-nE", pattern, commit, "--", ".", ":!*.md"], [0, 1]);
 for (const hit of hits.split("\n").filter(Boolean)) {
-    differences.push(`${hit.replace(`${commit}:`, "")}: reads the event or names a runner variable`);
+    const found = hit.replace(`${commit}:`, "");
+    const [, file, line, text] = found.match(/^(.*?):(\d+):(.*)$/) ?? [];
+    const span = file && trivyDbLines.get(file)?.get(Number(line));
+    if (span && !text.trimStart().startsWith("#")) {
+        const [start, end] = span;
+        const value = TRIVY_DB_FORMS.reduce((rest, form) => rest.replaceAll(form, ""), text.slice(start, end));
+        if (!new RegExp(pattern).test(text.slice(0, start) + value + text.slice(end))) continue;
+    }
+    differences.push(`${found}: reads the event or names a runner variable`);
 }
 
 if (differences.length) {

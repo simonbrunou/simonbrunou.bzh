@@ -95,9 +95,9 @@ jobs:
       # coreutils `timeout`, into the directory the action points Trivy at (its
       # cache-dir default), and scan without updating it. The action's own cache
       # stays off: restoring it after this step could swap in an older DB. The Java
-      # DB is not fetched: the image ships no JARs. GITHUB_TOKEN is unset for the
-      # download: Trivy sends it to ghcr.io, and this forge's job token gets DENIED
-      # there.
+      # DB is not fetched: the image ships no JARs. The job token is unset for the
+      # download: Trivy sends it to ghcr.io, which answers DENIED to this forge's
+      # job token.
       - name: Download the Trivy vulnerability DB
         run: |
           for repo in ghcr.io/aquasecurity/trivy-db:2 mirror.gcr.io/aquasec/trivy-db:2; do
